@@ -1,0 +1,183 @@
+{
+  "common": {
+    "signIn": "Autentificare",
+    "signOut": "Deconectare",
+    "getStarted": "Începe Acum - Este Gratuit",
+    "loading": "Se încarcă...",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "add": "Adaugă",
+    "search": "Caută",
+    "all": "Toate",
+    "viewAll": "Vezi Tot",
+    "noResults": "Nu s-au găsit rezultate",
+    "yes": "Da",
+    "no": "Nu",
+    "confirm": "Confirmă",
+    "close": "Închide"
+  },
+  "nav": {
+    "dashboard": "Panou Principal",
+    "calendar": "Calendar",
+    "appointments": "Programări",
+    "clinics": "Clinici",
+    "doctors": "Medici",
+    "users": "Utilizatori"
+  },
+  "landing": {
+    "title": "Sănătate Modernă",
+    "subtitle": "Programare Consultații",
+    "description": "Programează consultații cu cei mai buni medici. Fără cozi la telefon sau suprapuneri. Sănătatea ta, programul tău, simplificat.",
+    "whyChoose": "De Ce Să Alegi MediConnect?",
+    "features": {
+      "easyScheduling": {
+        "title": "Programare Ușoară",
+        "desc": "Programează consultații 24/7 cu interfața noastră intuitivă. Vezi locurile disponibile în timp real."
+      },
+      "noDoubleBooking": {
+        "title": "Fără Suprapuneri",
+        "desc": "Sistemul nostru inteligent previne conflictele de programare cu operațiuni atomice."
+      },
+      "multiClinic": {
+        "title": "Suport Multi-Clinică",
+        "desc": "Accesează mai multe centre medicale de pe o singură platformă. Alege locația preferată."
+      }
+    },
+    "footer": "Toate drepturile rezervate."
+  },
+  "dashboard": {
+    "welcomeBack": "Bine ai revenit, {{name}}!",
+    "adminSubtitle": "Gestionează programările și monitorizează performanța clinicii.",
+    "patientSubtitle": "Gestionează-ți programările medicale într-un singur loc.",
+    "stats": {
+      "totalAppointments": "Total Programări",
+      "upcoming": "Viitoare",
+      "totalDoctors": "Total Medici",
+      "totalClinics": "Total Clinici"
+    },
+    "quickActions": "Acțiuni Rapide",
+    "bookAppointment": "Programează Consultație",
+    "viewAllAppointments": "Vezi Toate Programările",
+    "browseClinics": "Răsfoiește Clinici",
+    "upcomingAppointments": "Programări Viitoare",
+    "noUpcoming": "Nu ai programări viitoare",
+    "bookFirst": "Programează prima ta consultație"
+  },
+  "calendar": {
+    "selectClinicDoctor": "Selectează Clinica și Medicul pentru Programare",
+    "clinic": "Clinică",
+    "doctor": "Medic",
+    "selectClinic": "Selectează o clinică...",
+    "selectDoctor": "Selectează un medic...",
+    "clickToBook": "Apasă pe o dată din calendar pentru a programa o consultație",
+    "bookAppointment": "Programează Consultație",
+    "selectedDate": "Data Selectată",
+    "selectFirst": "Te rugăm să selectezi mai întâi o clinică și un medic din filtrele de mai sus.",
+    "notes": "Observații (opțional)",
+    "notesPlaceholder": "Orice observații suplimentare pentru consultație...",
+    "recurringAppointment": "Programare Recurentă",
+    "noRecurrence": "Fără recurență",
+    "daily": "Zilnic",
+    "weekly": "Săptămânal",
+    "monthly": "Lunar",
+    "recurrenceEndDate": "Data Sfârșit Recurență",
+    "availableSlots": "Intervale Orare Disponibile",
+    "noSlots": "Nu sunt intervale disponibile pentru această dată. Încearcă altă dată."
+  },
+  "appointments": {
+    "title": "Programări",
+    "searchPlaceholder": "Caută programări...",
+    "total": "Total",
+    "scheduled": "Programate",
+    "confirmed": "Confirmate",
+    "completed": "Finalizate",
+    "cancelled": "Anulate",
+    "noAppointments": "Nu s-au găsit programări",
+    "patient": "Pacient",
+    "complete": "Finalizează",
+    "cancelAppointment": "Anulează Programarea",
+    "cancelConfirm": "Ești sigur că vrei să anulezi programarea cu {{doctor}} din {{date}} la ora {{time}}?",
+    "keepAppointment": "Păstrează Programarea",
+    "yesCancel": "Da, Anulează"
+  },
+  "clinics": {
+    "title": "Clinici",
+    "subtitle": "Răsfoiește și gestionează unitățile medicale",
+    "addClinic": "Adaugă Clinică",
+    "noClinics": "Nu există clinici înregistrate",
+    "addFirst": "Adaugă prima ta clinică",
+    "workingHours": "Program de Lucru",
+    "editClinic": "Editează Clinica",
+    "addNewClinic": "Adaugă Clinică Nouă",
+    "clinicName": "Numele Clinicii",
+    "address": "Adresă",
+    "phone": "Telefon",
+    "email": "Email",
+    "description": "Descriere (opțional)",
+    "updateClinic": "Actualizează Clinica",
+    "deleteConfirm": "Ești sigur că vrei să ștergi această clinică?"
+  },
+  "doctors": {
+    "title": "Medici",
+    "subtitle": "Gestionează medicii și specialitățile lor",
+    "addDoctor": "Adaugă Medic",
+    "noDoctors": "Nu există medici înregistrați",
+    "addFirst": "Adaugă primul tău medic",
+    "consultation": "Consultație de {{duration}} min",
+    "editDoctor": "Editează Medic",
+    "addNewDoctor": "Adaugă Medic Nou",
+    "userAccount": "Cont Utilizator",
+    "selectUser": "Selectează un utilizator...",
+    "userHelp": "Selectează un utilizator existent pentru a-l face medic",
+    "specialty": "Specialitate",
+    "selectSpecialty": "Selectează specialitatea...",
+    "consultationDuration": "Durata Consultației (minute)",
+    "bio": "Biografie (opțional)",
+    "bioPlaceholder": "Scurtă descriere a experienței și expertizei medicului",
+    "updateDoctor": "Actualizează Medic",
+    "deleteConfirm": "Ești sigur că vrei să elimini acest medic?"
+  },
+  "users": {
+    "title": "Utilizatori",
+    "searchPlaceholder": "Caută utilizatori...",
+    "allUsers": "Toți Utilizatorii",
+    "admins": "Administratori",
+    "patients": "Pacienți",
+    "totalUsers": "Total Utilizatori",
+    "noUsers": "Nu s-au găsit utilizatori",
+    "user": "Utilizator",
+    "role": "Rol",
+    "joined": "Înregistrat",
+    "actions": "Acțiuni",
+    "administrator": "Administrator",
+    "patient": "Pacient",
+    "makeAdmin": "Fă Administrator",
+    "makePatient": "Fă Pacient",
+    "changeRoleConfirm": "Ești sigur că vrei să schimbi rolul acestui utilizator în {{role}}?"
+  },
+  "auth": {
+    "signingIn": "Te autentificăm...",
+    "accessDenied": "Acces Refuzat",
+    "noPermission": "Nu ai permisiunea să vizualizezi această pagină."
+  },
+  "notifications": {
+    "bookingSuccess": "Programare realizată cu succes!",
+    "bookingError": "Eroare la programare. Te rugăm să încerci din nou.",
+    "cancelSuccess": "Programare anulată cu succes",
+    "saveSuccess": "Salvat cu succes",
+    "deleteSuccess": "Șters cu succes",
+    "error": "A apărut o eroare. Te rugăm să încerci din nou."
+  },
+  "days": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mie",
+    "thu": "Joi",
+    "fri": "Vin",
+    "sat": "Sâm",
+    "sun": "Dum"
+  },
+  "minutes": "{{count}} minute"
+}
