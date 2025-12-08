@@ -185,7 +185,7 @@ const Calendar = () => {
               <option value="">Select a doctor...</option>
               {doctors.map(doctor => (
                 <option key={doctor.doctor_id} value={doctor.doctor_id}>
-                  Dr. {doctor.name} - {doctor.specialty}
+                  {doctor.name?.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`} - {doctor.specialty}
                 </option>
               ))}
             </select>
