@@ -268,7 +268,7 @@ const Appointments = () => {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-fadeIn">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Cancel Appointment</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to cancel your appointment with Dr. {selectedAppointment.doctor_name} on {formatDate(selectedAppointment.date_time)} at {formatTime(selectedAppointment.date_time)}?
+              Are you sure you want to cancel your appointment with {selectedAppointment.doctor_name?.startsWith('Dr.') ? selectedAppointment.doctor_name : `Dr. ${selectedAppointment.doctor_name}`} on {formatDate(selectedAppointment.date_time)} at {formatTime(selectedAppointment.date_time)}?
             </p>
             <div className="flex justify-end space-x-3">
               <button
