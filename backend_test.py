@@ -17,15 +17,11 @@ class MediConnectAPITester:
         self.failed_tests = []
         self.session = requests.Session()  # Use session for cookies
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, use_session=True):
         """Run a single API test"""
         url = f"{self.api_url}/{endpoint}" if not endpoint.startswith('http') else endpoint
         test_headers = {'Content-Type': 'application/json'}
         
-        # Add session token for authenticated requests
-        if self.session_token:
-            test_headers['Authorization'] = f'Bearer {self.session_token}'
-            
         if headers:
             test_headers.update(headers)
 
@@ -34,14 +30,26 @@ class MediConnectAPITester:
         print(f"   URL: {url}")
         
         try:
-            if method == 'GET':
-                response = requests.get(url, headers=test_headers, timeout=10)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers, timeout=10)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers, timeout=10)
-            elif method == 'DELETE':
-                response = requests.delete(url, headers=test_headers, timeout=10)
+            if use_session:
+                # Use session for cookie-based auth
+                if method == 'GET':
+                    response = self.session.get(url, headers=test_headers, timeout=10)
+                elif method == 'POST':
+                    response = self.session.post(url, json=data, headers=test_headers, timeout=10)
+                elif method == 'PUT':
+                    response = self.session.put(url, json=data, headers=test_headers, timeout=10)
+                elif method == 'DELETE':
+                    response = self.session.delete(url, headers=test_headers, timeout=10)
+            else:
+                # Use regular requests without session
+                if method == 'GET':
+                    response = requests.get(url, headers=test_headers, timeout=10)
+                elif method == 'POST':
+                    response = requests.post(url, json=data, headers=test_headers, timeout=10)
+                elif method == 'PUT':
+                    response = requests.put(url, json=data, headers=test_headers, timeout=10)
+                elif method == 'DELETE':
+                    response = requests.delete(url, headers=test_headers, timeout=10)
 
             success = response.status_code == expected_status
             if success:
