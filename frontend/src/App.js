@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Building2,
   Stethoscope,
-  Users,
   UserCog,
   Briefcase,
   Settings,
