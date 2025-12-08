@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
+import "./i18n";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 
 // Configure axios defaults
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -26,6 +29,7 @@ export const useAuth = () => useContext(AuthContext);
 
 // Landing Page Component
 const LandingPage = () => {
+  const { t } = useTranslation();
   const handleLogin = () => {
     const redirectUrl = window.location.origin + '/dashboard';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
@@ -47,7 +51,9 @@ const LandingPage = () => {
                 MediConnect
               </span>
             </div>
-            <button
+            <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
+              <button
               onClick={handleLogin}
               data-testid="login-btn"
               className="bg-gradient-to-r from-blue-600 to-teal-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
