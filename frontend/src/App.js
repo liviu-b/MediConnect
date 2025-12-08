@@ -76,7 +76,7 @@ const LandingPage = () => {
             data-testid="get-started-btn"
             className="bg-gradient-to-r from-blue-600 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105"
           >
-            Get Started - It's Free
+            Get Started - It&apos;s Free
           </button>
         </div>
       </section>
