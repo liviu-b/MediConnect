@@ -9,11 +9,13 @@ class MediConnectAPITester:
     def __init__(self, base_url="https://healthsync-33.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
-        self.session_token = "test_admin_session_12345"  # Test admin session
-        self.user_id = "user_admin001"  # Test admin user ID
+        self.session_token = None  # Will be set after login
+        self.user_id = None  # Will be set after login
+        self.clinic_admin_token = None  # For clinic admin tests
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
+        self.session = requests.Session()  # Use session for cookies
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
         """Run a single API test"""
