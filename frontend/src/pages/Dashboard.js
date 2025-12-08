@@ -228,7 +228,7 @@ const Dashboard = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Dr. {apt.doctor_name}</p>
+                      <p className="font-medium text-gray-900">{apt.doctor_name?.startsWith('Dr.') ? apt.doctor_name : `Dr. ${apt.doctor_name}`}</p>
                       <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
                     </div>
                   </div>
