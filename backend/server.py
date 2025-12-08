@@ -834,7 +834,7 @@ async def cancel_appointment(appointment_id: str, request: Request):
         user_id=appointment["patient_id"],
         appointment_id=appointment_id,
         notification_type="CANCELLATION",
-        message=f"Your appointment has been cancelled."
+        message="Your appointment has been cancelled."
     )
     
     return {"message": "Appointment cancelled successfully"}
