@@ -1,26 +1,8 @@
-import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../App';
-import {
-  Users as UsersIcon,
-  Search,
-  Shield,
-  User,
-  Loader2
-} from 'lucide-react';
+import { Users as UsersIcon } from 'lucide-react';
 
 const Users = () => {
   const { t } = useTranslation();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-
-  useEffect(() => {
-    // This page might not be accessible to regular users
-    // For now, we'll show a simple placeholder
-    setLoading(false);
-  }, []);
 
   return (
     <div className="space-y-4">
