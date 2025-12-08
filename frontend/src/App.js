@@ -58,8 +58,9 @@ const LandingPage = () => {
               data-testid="login-btn"
               className="bg-gradient-to-r from-blue-600 to-teal-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
             >
-              Sign In
+              {t('common.signIn')}
             </button>
+            </div>
           </div>
         </div>
       </header>
@@ -68,28 +69,27 @@ const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Modern Healthcare
+            {t('landing.title')}
             <span className="block bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
-              Appointment Scheduling
+              {t('landing.subtitle')}
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Book appointments with top healthcare providers. No more phone queues or double bookings. 
-            Your health, your schedule, simplified.
+            {t('landing.description')}
           </p>
           <button
             onClick={handleLogin}
             data-testid="get-started-btn"
             className="bg-gradient-to-r from-blue-600 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105"
           >
-            Get Started - It&apos;s Free
+            {t('common.getStarted')}
           </button>
         </div>
       </section>
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose MediConnect?</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">{t('landing.whyChoose')}</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
@@ -98,8 +98,8 @@ const LandingPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               ),
-              title: "Easy Scheduling",
-              desc: "Book appointments 24/7 with our intuitive calendar interface. View available slots in real-time."
+              title: t('landing.features.easyScheduling.title'),
+              desc: t('landing.features.easyScheduling.desc')
             },
             {
               icon: (
@@ -107,8 +107,8 @@ const LandingPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               ),
-              title: "No Double Bookings",
-              desc: "Our smart system prevents scheduling conflicts with atomic booking operations."
+              title: t('landing.features.noDoubleBooking.title'),
+              desc: t('landing.features.noDoubleBooking.desc')
             },
             {
               icon: (
@@ -116,8 +116,8 @@ const LandingPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               ),
-              title: "Multi-Clinic Support",
-              desc: "Access multiple healthcare facilities from one platform. Choose your preferred location."
+              title: t('landing.features.multiClinic.title'),
+              desc: t('landing.features.multiClinic.desc')
             }
           ].map((feature, i) => (
             <div key={i} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
