@@ -327,9 +327,7 @@ const Layout = ({ children }) => {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <NavLink key={item.path} item={item} />
-            ))}
+            {navItems.map(renderNavItem)}
           </nav>
 
           {/* User & Collapse */}
