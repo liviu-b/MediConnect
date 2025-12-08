@@ -459,8 +459,10 @@ async def register_clinic(data: ClinicRegistration, response: Response):
     
     session_token = await create_session(user_id, response)
     
-    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
-    return {"user": user_data, "clinic": clinic_doc, "session_token": session_token}
+    # Remove _id fields that MongoDB adds
+    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
+    clinic_data = {k: v for k, v in clinic_doc.items() if k != '_id'}
+    return {"user": user_data, "clinic": clinic_data, "session_token": session_token}
 
 @api_router.post("/auth/session")
 async def create_oauth_session(request: Request, response: Response):
