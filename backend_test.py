@@ -85,8 +85,10 @@ class MediConnectAPITester:
 
     def test_user_registration(self):
         """Test user registration"""
+        import time
+        unique_email = f"newuser{int(time.time())}@test.com"
         data = {
-            "email": "newuser@test.com",
+            "email": unique_email,
             "password": "test123456",
             "name": "New User",
             "phone": "1234567890"
