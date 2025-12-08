@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, useAuth } from '../App';
 
 const Appointments = () => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
@@ -62,7 +64,7 @@ const Appointments = () => {
       setSelectedAppointment(null);
     } catch (error) {
       console.error('Error cancelling appointment:', error);
-      alert('Failed to cancel appointment');
+      alert(t('notifications.error'));
     }
   };
 
@@ -72,13 +74,14 @@ const Appointments = () => {
       await fetchAppointments();
     } catch (error) {
       console.error('Error updating appointment:', error);
-      alert('Failed to update appointment');
+      alert(t('notifications.error'));
     }
   };
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    const locale = i18n.language === 'ro' ? 'ro-RO' : 'en-US';
+    return date.toLocaleDateString(locale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -88,7 +91,8 @@ const Appointments = () => {
 
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', {
+    const locale = i18n.language === 'ro' ? 'ro-RO' : 'en-US';
+    return date.toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -102,6 +106,16 @@ const Appointments = () => {
       'COMPLETED': 'bg-purple-100 text-purple-700 border-purple-200'
     };
     return colors[status] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      'SCHEDULED': t('appointments.scheduled'),
+      'CONFIRMED': t('appointments.confirmed'),
+      'CANCELLED': t('appointments.cancelled'),
+      'COMPLETED': t('appointments.completed')
+    };
+    return labels[status] || status;
   };
 
   const isUpcoming = (dateStr) => {
@@ -128,7 +142,7 @@ const Appointments = () => {
               </svg>
               <input
                 type="text"
-                placeholder="Search appointments..."
+                placeholder={t('appointments.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 data-testid="search-appointments"
@@ -137,7 +151,7 @@ const Appointments = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-2">
             {['all', 'SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].map((status) => (
               <button
                 key={status}
@@ -149,7 +163,7 @@ const Appointments = () => {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {status === 'all' ? 'All' : status}
+                {status === 'all' ? t('common.all') : getStatusLabel(status)}
               </button>
             ))}
           </div>
@@ -159,10 +173,10 @@ const Appointments = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total', count: appointments.length, color: 'bg-gray-100 text-gray-700' },
-          { label: 'Scheduled', count: appointments.filter(a => a.status === 'SCHEDULED').length, color: 'bg-blue-100 text-blue-700' },
-          { label: 'Confirmed', count: appointments.filter(a => a.status === 'CONFIRMED').length, color: 'bg-green-100 text-green-700' },
-          { label: 'Completed', count: appointments.filter(a => a.status === 'COMPLETED').length, color: 'bg-purple-100 text-purple-700' },
+          { label: t('appointments.total'), count: appointments.length, color: 'bg-gray-100 text-gray-700' },
+          { label: t('appointments.scheduled'), count: appointments.filter(a => a.status === 'SCHEDULED').length, color: 'bg-blue-100 text-blue-700' },
+          { label: t('appointments.confirmed'), count: appointments.filter(a => a.status === 'CONFIRMED').length, color: 'bg-green-100 text-green-700' },
+          { label: t('appointments.completed'), count: appointments.filter(a => a.status === 'COMPLETED').length, color: 'bg-purple-100 text-purple-700' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500">{stat.label}</p>
@@ -180,7 +194,7 @@ const Appointments = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <p className="text-gray-500">No appointments found</p>
+            <p className="text-gray-500">{t('appointments.noAppointments')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -202,7 +216,7 @@ const Appointments = () => {
                       <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
                       {user?.role === 'ADMIN' && (
                         <p className="text-sm text-gray-500 mt-1">
-                          Patient: {apt.patient_name} ({apt.patient_email})
+                          {t('appointments.patient')}: {apt.patient_name} ({apt.patient_email})
                         </p>
                       )}
                       {apt.notes && (
@@ -218,7 +232,7 @@ const Appointments = () => {
                     </div>
 
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(apt.status)}`}>
-                      {apt.status}
+                      {getStatusLabel(apt.status)}
                     </span>
 
                     {/* Actions */}
@@ -230,7 +244,7 @@ const Appointments = () => {
                             data-testid={`confirm-${apt.appointment_id}`}
                             className="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 text-sm font-medium transition-colors"
                           >
-                            Confirm
+                            {t('common.confirm')}
                           </button>
                         )}
                         {user?.role === 'ADMIN' && (
@@ -239,7 +253,7 @@ const Appointments = () => {
                             data-testid={`complete-${apt.appointment_id}`}
                             className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm font-medium transition-colors"
                           >
-                            Complete
+                            {t('appointments.complete')}
                           </button>
                         )}
                         <button
@@ -250,7 +264,7 @@ const Appointments = () => {
                           data-testid={`cancel-${apt.appointment_id}`}
                           className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 text-sm font-medium transition-colors"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </div>
                     )}
@@ -266,9 +280,13 @@ const Appointments = () => {
       {showCancelModal && selectedAppointment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop" data-testid="cancel-modal">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 animate-fadeIn">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Cancel Appointment</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('appointments.cancelAppointment')}</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to cancel your appointment with {selectedAppointment.doctor_name?.startsWith('Dr.') ? selectedAppointment.doctor_name : `Dr. ${selectedAppointment.doctor_name}`} on {formatDate(selectedAppointment.date_time)} at {formatTime(selectedAppointment.date_time)}?
+              {t('appointments.cancelConfirm', { 
+                doctor: selectedAppointment.doctor_name?.startsWith('Dr.') ? selectedAppointment.doctor_name : `Dr. ${selectedAppointment.doctor_name}`, 
+                date: formatDate(selectedAppointment.date_time), 
+                time: formatTime(selectedAppointment.date_time) 
+              })}
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -278,14 +296,14 @@ const Appointments = () => {
                 }}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
-                Keep Appointment
+                {t('appointments.keepAppointment')}
               </button>
               <button
                 onClick={handleCancelAppointment}
                 data-testid="confirm-cancel"
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
               >
-                Yes, Cancel
+                {t('appointments.yesCancel')}
               </button>
             </div>
           </div>

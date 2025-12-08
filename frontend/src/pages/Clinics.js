@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, useAuth } from '../App';
 
 const Clinics = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,21 +47,21 @@ const Clinics = () => {
       handleCloseModal();
     } catch (error) {
       console.error('Error saving clinic:', error);
-      alert(error.response?.data?.detail || 'Failed to save clinic');
+      alert(error.response?.data?.detail || t('notifications.error'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (clinicId) => {
-    if (!window.confirm('Are you sure you want to delete this clinic?')) return;
+    if (!window.confirm(t('clinics.deleteConfirm'))) return;
 
     try {
       await api.delete(`/clinics/${clinicId}`);
       await fetchClinics();
     } catch (error) {
       console.error('Error deleting clinic:', error);
-      alert(error.response?.data?.detail || 'Failed to delete clinic');
+      alert(error.response?.data?.detail || t('notifications.error'));
     }
   };
 
@@ -98,6 +100,9 @@ const Clinics = () => {
     });
   };
 
+  const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayLabels = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -111,7 +116,7 @@ const Clinics = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <p className="text-gray-500">Browse and manage healthcare facilities</p>
+          <p className="text-gray-500">{t('clinics.subtitle')}</p>
         </div>
         {user?.role === 'ADMIN' && (
           <button
@@ -122,7 +127,7 @@ const Clinics = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span>Add Clinic</span>
+            <span>{t('clinics.addClinic')}</span>
           </button>
         )}
       </div>
@@ -135,13 +140,13 @@ const Clinics = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <p className="text-gray-500 mb-4">No clinics registered yet</p>
+          <p className="text-gray-500 mb-4">{t('clinics.noClinics')}</p>
           {user?.role === 'ADMIN' && (
             <button
               onClick={() => handleOpenModal()}
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              Add your first clinic
+              {t('clinics.addFirst')}
             </button>
           )}
         </div>
@@ -212,17 +217,17 @@ const Clinics = () => {
 
               {/* Working Hours Preview */}
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Working Hours</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('clinics.workingHours')}</p>
                 <div className="flex flex-wrap gap-1">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                    const dayKey = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][i];
+                  {dayLabels.map((day, i) => {
+                    const dayKey = dayKeys[i];
                     const isOpen = clinic.working_hours?.[dayKey] !== null;
                     return (
                       <span
                         key={day}
                         className={`px-2 py-1 rounded text-xs font-medium ${isOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}
                       >
-                        {day}
+                        {t(`days.${day}`)}
                       </span>
                     );
                   })}
@@ -238,12 +243,12 @@ const Clinics = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop" data-testid="clinic-modal">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg mx-4 animate-fadeIn">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">
-              {editingClinic ? 'Edit Clinic' : 'Add New Clinic'}
+              {editingClinic ? t('clinics.editClinic') : t('clinics.addNewClinic')}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Clinic Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.clinicName')}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -251,12 +256,12 @@ const Clinics = () => {
                   required
                   data-testid="clinic-name-input"
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter clinic name"
+                  placeholder={t('clinics.clinicName')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.address')}</label>
                 <input
                   type="text"
                   value={formData.address}
@@ -264,13 +269,13 @@ const Clinics = () => {
                   required
                   data-testid="clinic-address-input"
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter address"
+                  placeholder={t('clinics.address')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.phone')}</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -278,11 +283,11 @@ const Clinics = () => {
                     required
                     data-testid="clinic-phone-input"
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Phone number"
+                    placeholder={t('clinics.phone')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.email')}</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -290,20 +295,20 @@ const Clinics = () => {
                     required
                     data-testid="clinic-email-input"
                     className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Email address"
+                    placeholder={t('clinics.email')}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   data-testid="clinic-description-input"
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="Brief description of the clinic"
+                  placeholder={t('clinics.description')}
                 />
               </div>
 
@@ -313,7 +318,7 @@ const Clinics = () => {
                   onClick={handleCloseModal}
                   className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -321,7 +326,7 @@ const Clinics = () => {
                   data-testid="save-clinic-btn"
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-teal-500 text-white font-medium hover:shadow-lg disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : editingClinic ? 'Update Clinic' : 'Add Clinic'}
+                  {saving ? t('common.loading') : editingClinic ? t('clinics.updateClinic') : t('clinics.addClinic')}
                 </button>
               </div>
             </form>
