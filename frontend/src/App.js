@@ -189,7 +189,7 @@ const AuthCallback = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Signing you in...</p>
+        <p className="text-gray-600">{t('auth.signingIn')}</p>
       </div>
     </div>
   );
@@ -197,6 +197,7 @@ const AuthCallback = () => {
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
   const location = useLocation();
@@ -233,7 +234,7 @@ const ProtectedRoute = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
