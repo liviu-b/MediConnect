@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, useAuth } from '../App';
 
 const Users = () => {
+  const { t, i18n } = useTranslation();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,14 +26,14 @@ const Users = () => {
   };
 
   const handleUpdateRole = async (userId, newRole) => {
-    if (!window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+    if (!window.confirm(t('users.changeRoleConfirm', { role: newRole === 'ADMIN' ? t('users.administrator') : t('users.patient') }))) return;
 
     try {
       await api.put(`/auth/role?user_id=${userId}&role=${newRole}`);
       await fetchUsers();
     } catch (error) {
       console.error('Error updating role:', error);
-      alert(error.response?.data?.detail || 'Failed to update role');
+      alert(error.response?.data?.detail || t('notifications.error'));
     }
   };
 
@@ -45,7 +47,8 @@ const Users = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    const locale = i18n.language === 'ro' ? 'ro-RO' : 'en-US';
+    return date.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -68,8 +71,8 @@ const Users = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
-        <p className="text-gray-500">You don&apos;t have permission to view this page.</p>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('auth.accessDenied')}</h3>
+        <p className="text-gray-500">{t('auth.noPermission')}</p>
       </div>
     );
   }
@@ -85,7 +88,7 @@ const Users = () => {
             </svg>
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder={t('users.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               data-testid="search-users"
@@ -105,7 +108,7 @@ const Users = () => {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {role === 'all' ? 'All Users' : role === 'ADMIN' ? 'Admins' : 'Patients'}
+                {role === 'all' ? t('users.allUsers') : role === 'ADMIN' ? t('users.admins') : t('users.patients')}
               </button>
             ))}
           </div>
@@ -115,15 +118,15 @@ const Users = () => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Total Users</p>
+          <p className="text-sm text-gray-500">{t('users.totalUsers')}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{users.length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Admins</p>
+          <p className="text-sm text-gray-500">{t('users.admins')}</p>
           <p className="text-2xl font-bold text-purple-600 mt-1">{users.filter(u => u.role === 'ADMIN').length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Patients</p>
+          <p className="text-sm text-gray-500">{t('users.patients')}</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{users.filter(u => u.role === 'USER').length}</p>
         </div>
       </div>
@@ -137,17 +140,17 @@ const Users = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <p className="text-gray-500">No users found</p>
+            <p className="text-gray-500">{t('users.noUsers')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('users.user')}</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('users.role')}</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('users.joined')}</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('users.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -178,7 +181,7 @@ const Users = () => {
                           ? 'bg-purple-100 text-purple-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {u.role === 'ADMIN' ? 'Administrator' : 'Patient'}
+                        {u.role === 'ADMIN' ? t('users.administrator') : t('users.patient')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-sm">
@@ -193,7 +196,7 @@ const Users = () => {
                               data-testid={`promote-${u.user_id}`}
                               className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 text-sm font-medium transition-colors"
                             >
-                              Make Admin
+                              {t('users.makeAdmin')}
                             </button>
                           ) : (
                             <button
@@ -201,7 +204,7 @@ const Users = () => {
                               data-testid={`demote-${u.user_id}`}
                               className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium transition-colors"
                             >
-                              Make Patient
+                              {t('users.makePatient')}
                             </button>
                           )}
                         </div>
