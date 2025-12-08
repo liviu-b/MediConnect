@@ -152,15 +152,18 @@ class MediConnectAPITester:
 
     def test_clinic_registration(self):
         """Test clinic registration"""
+        import time
+        unique_email = f"admin{int(time.time())}@testclinic.com"
+        clinic_email = f"clinic{int(time.time())}@test.com"
         data = {
-            "registration_code": "CLINIC2025C",
+            "registration_code": "MEDICONNECT",
             "clinic_name": "Test Clinic",
             "address": "123 Test St",
             "phone": "+1234567890",
-            "email": "test@clinic.com",
+            "email": clinic_email,
             "description": "Test clinic description",
             "admin_name": "Admin User",
-            "admin_email": "admin@testclinic.com",
+            "admin_email": unique_email,
             "admin_password": "admin123",
             "admin_phone": "+1234567891"
         }
