@@ -156,7 +156,7 @@ class MediConnectAPITester:
         unique_email = f"admin{int(time.time())}@testclinic.com"
         clinic_email = f"clinic{int(time.time())}@test.com"
         data = {
-            "registration_code": "MEDICONNECT",
+            "registration_code": "CLINIC2025A",
             "clinic_name": "Test Clinic",
             "address": "123 Test St",
             "phone": "+1234567890",
