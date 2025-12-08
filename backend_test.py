@@ -282,6 +282,7 @@ def main():
         ("Get Appointments", tester.test_get_appointments),
         ("Get Dashboard Stats", tester.test_get_stats),
         ("Clinic Admin Login", tester.test_clinic_admin_login),
+        ("Create Appointment", tester.test_create_appointment),
     ]
     
     print(f"\nRunning {len(tests)} test categories...")
