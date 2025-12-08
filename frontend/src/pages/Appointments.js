@@ -206,7 +206,7 @@ const Appointments = () => {
                         </p>
                       )}
                       {apt.notes && (
-                        <p className="text-sm text-gray-400 mt-1 italic">"{apt.notes}"</p>
+                        <p className="text-sm text-gray-400 mt-1 italic">&quot;{apt.notes}&quot;</p>
                       )}
                     </div>
                   </div>
