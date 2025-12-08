@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 class MediConnectAPITester:
-    def __init__(self, base_url="https://pdf-launcher-2.preview.emergentagent.com"):
+    def __init__(self, base_url="https://healthsync-33.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_token = "test_admin_session_12345"  # Test admin session
