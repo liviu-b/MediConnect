@@ -146,7 +146,7 @@ const Doctors = () => {
           </svg>
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
-        <p className="text-gray-500">You don't have permission to view this page.</p>
+        <p className="text-gray-500">You don&apos;t have permission to view this page.</p>
       </div>
     );
   }
