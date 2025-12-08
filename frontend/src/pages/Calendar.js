@@ -1,29 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth, api } from '../App';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import listPlugin from '@fullcalendar/list';
-import { useTranslation } from 'react-i18next';
-import { api, useAuth } from '../App';
+import {
+  Building2,
+  Stethoscope,
+  Clock,
+  X,
+  Loader2,
+  ChevronDown
+} from 'lucide-react';
 
-const Calendar = () => {
-  const { t, i18n } = useTranslation();
+const CalendarPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const calendarRef = useRef(null);
-  const [appointments, setAppointments] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState('');
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [booking, setBooking] = useState(false);
   const [notes, setNotes] = useState('');
-  const [recurrence, setRecurrence] = useState('NONE');
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
 
   useEffect(() => {
     fetchInitialData();
@@ -31,103 +39,104 @@ const Calendar = () => {
 
   useEffect(() => {
     if (selectedClinic) {
-      fetchDoctors();
+      fetchDoctors(selectedClinic);
+    } else {
+      setDoctors([]);
+      setSelectedDoctor('');
     }
   }, [selectedClinic]);
 
   useEffect(() => {
-    if (selectedDoctor && selectedSlot) {
+    if (selectedDoctor && selectedDate) {
       fetchAvailability();
     }
-  }, [selectedDoctor, selectedSlot]);
+  }, [selectedDoctor, selectedDate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [selectedDoctor]);
 
   const fetchInitialData = async () => {
     try {
-      const [appointmentsRes, clinicsRes] = await Promise.all([
-        api.get('/appointments'),
-        api.get('/clinics')
-      ]);
-      setAppointments(appointmentsRes.data);
-      setClinics(clinicsRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      const res = await api.get('/clinics');
+      setClinics(res.data);
+      // Auto-select clinic for clinic admin
+      if (isClinicAdmin && user?.clinic_id) {
+        setSelectedClinic(user.clinic_id);
+      }
+    } catch (err) {
+      console.error('Error fetching clinics:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (clinicId) => {
     try {
-      const response = await api.get(`/doctors?clinic_id=${selectedClinic}`);
-      setDoctors(response.data);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
+      const res = await api.get(`/doctors?clinic_id=${clinicId}`);
+      setDoctors(res.data);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    if (!selectedDoctor) return;
+    try {
+      const res = await api.get(`/appointments?doctor_id=${selectedDoctor}`);
+      setAppointments(res.data);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
     }
   };
 
   const fetchAvailability = async () => {
-    if (!selectedDoctor || !selectedSlot) return;
-    
-    const dateStr = selectedSlot.toISOString().split('T')[0];
+    setLoadingSlots(true);
     try {
-      const response = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
-      setAvailableSlots(response.data.available_slots || []);
-    } catch (error) {
-      console.error('Error fetching availability:', error);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
+      setAvailableSlots(res.data.available_slots || []);
+    } catch (err) {
+      console.error('Error fetching availability:', err);
       setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
   };
 
   const handleDateClick = (info) => {
-    setSelectedSlot(info.date);
-    setShowBookingModal(true);
-    setAvailableSlots([]);
-    setNotes('');
-    setRecurrence('NONE');
-    setRecurrenceEndDate('');
-  };
-
-  const handleEventClick = (info) => {
-    const appointment = appointments.find(apt => apt.appointment_id === info.event.id);
-    if (appointment) {
-      const locale = i18n.language === 'ro' ? 'ro-RO' : 'en-US';
-      alert(`${t('appointments.title')}: ${appointment.doctor_name?.startsWith('Dr.') ? appointment.doctor_name : `Dr. ${appointment.doctor_name}`}\n${t('calendar.selectedDate')}: ${new Date(appointment.date_time).toLocaleString(locale)}\nStatus: ${appointment.status}`);
+    const clickedDate = new Date(info.dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (clickedDate < today) return;
+    
+    setSelectedDate(clickedDate);
+    setSelectedSlot(null);
+    if (selectedClinic && selectedDoctor) {
+      setShowBookingModal(true);
     }
   };
 
-  const handleBookAppointment = async (slotTime) => {
-    if (!selectedClinic || !selectedDoctor) {
-      alert(t('calendar.selectFirst'));
-      return;
-    }
-
-    setBookingLoading(true);
+  const handleBook = async () => {
+    if (!selectedSlot) return;
+    setBooking(true);
     try {
-      const appointmentData = {
+      await api.post('/appointments', {
         doctor_id: selectedDoctor,
         clinic_id: selectedClinic,
-        date_time: slotTime,
-        notes: notes || null,
-        recurrence: recurrence !== 'NONE' ? {
-          pattern_type: recurrence,
-          interval: 1,
-          end_date: recurrenceEndDate || null
-        } : null
-      };
-
-      await api.post('/appointments', appointmentData);
-      
-      // Refresh appointments
-      const response = await api.get('/appointments');
-      setAppointments(response.data);
-      
+        date_time: selectedSlot.datetime,
+        notes: notes || null
+      });
       setShowBookingModal(false);
-      alert(t('notifications.bookingSuccess'));
-    } catch (error) {
-      console.error('Error booking appointment:', error);
-      alert(error.response?.data?.detail || t('notifications.bookingError'));
+      setNotes('');
+      setSelectedSlot(null);
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error booking appointment:', err);
+      alert(err.response?.data?.detail || t('notifications.bookingError'));
     } finally {
-      setBookingLoading(false);
+      setBooking(false);
     }
   };
 
@@ -135,43 +144,36 @@ const Calendar = () => {
     .filter(apt => apt.status !== 'CANCELLED')
     .map(apt => ({
       id: apt.appointment_id,
-      title: apt.doctor_name?.startsWith('Dr.') ? apt.doctor_name : `Dr. ${apt.doctor_name}`,
+      title: isClinicAdmin ? apt.patient_name : `Dr. ${apt.doctor_name}`,
       start: apt.date_time,
-      end: new Date(new Date(apt.date_time).getTime() + apt.duration * 60000).toISOString(),
-      backgroundColor: apt.status === 'CONFIRMED' ? '#10b981' : apt.status === 'COMPLETED' ? '#6366f1' : '#3b82f6',
-      borderColor: 'transparent',
-      extendedProps: { appointment: apt }
+      backgroundColor: apt.status === 'COMPLETED' ? '#9CA3AF' : '#3B82F6',
+      borderColor: 'transparent'
     }));
-
-  const calendarLocale = i18n.language === 'ro' ? 'ro' : 'en';
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" data-testid="calendar-page">
+    <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('calendar.selectClinicDoctor')}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <h2 className="font-medium text-gray-700 mb-3">{t('calendar.selectClinicDoctor')}</h2>
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.clinic')}</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('calendar.clinic')}</label>
             <select
               value={selectedClinic}
-              onChange={(e) => {
-                setSelectedClinic(e.target.value);
-                setSelectedDoctor('');
-              }}
-              data-testid="clinic-select"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => setSelectedClinic(e.target.value)}
+              disabled={isClinicAdmin}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
             >
               <option value="">{t('calendar.selectClinic')}</option>
-              {clinics.map(clinic => (
+              {clinics.map((clinic) => (
                 <option key={clinic.clinic_id} value={clinic.clinic_id}>
                   {clinic.name}
                 </option>
@@ -179,169 +181,120 @@ const Calendar = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.doctor')}</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('calendar.doctor')}</label>
             <select
               value={selectedDoctor}
               onChange={(e) => setSelectedDoctor(e.target.value)}
               disabled={!selectedClinic}
-              data-testid="doctor-select"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
             >
               <option value="">{t('calendar.selectDoctor')}</option>
-              {doctors.map(doctor => (
+              {doctors.map((doctor) => (
                 <option key={doctor.doctor_id} value={doctor.doctor_id}>
-                  {doctor.name?.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`} - {doctor.specialty}
+                  Dr. {doctor.name} - {doctor.specialty}
                 </option>
               ))}
             </select>
           </div>
         </div>
+        {!selectedClinic && (
+          <p className="mt-3 text-sm text-gray-500">{t('calendar.selectFirst')}</p>
+        )}
         {selectedClinic && selectedDoctor && (
-          <p className="mt-4 text-sm text-blue-600">
-            {t('calendar.clickToBook')}
-          </p>
+          <p className="mt-3 text-sm text-blue-600">{t('calendar.clickToBook')}</p>
         )}
       </div>
 
       {/* Calendar */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
         <FullCalendar
           ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
-          locale={calendarLocale}
+          events={calendarEvents}
+          dateClick={handleDateClick}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            right: ''
           }}
-          events={calendarEvents}
-          dateClick={handleDateClick}
-          eventClick={handleEventClick}
-          selectable={true}
-          selectMirror={true}
-          dayMaxEvents={3}
-          weekends={true}
           height="auto"
-          eventTimeFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            meridiem: 'short'
-          }}
+          dayMaxEvents={3}
         />
       </div>
 
       {/* Booking Modal */}
-      {showBookingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop" data-testid="booking-modal">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-fadeIn">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">
-                {t('calendar.bookAppointment')}
-              </h3>
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+      {showBookingModal && selectedDate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="font-semibold text-gray-900">{t('calendar.bookAppointment')}</h2>
+              <button onClick={() => setShowBookingModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-xl p-4">
+            <div className="p-4 space-y-4">
+              <div className="text-center py-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-500">{t('calendar.selectedDate')}</p>
-                <p className="font-semibold text-gray-900">
-                  {selectedSlot?.toLocaleDateString(i18n.language === 'ro' ? 'ro-RO' : 'en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                <p className="text-lg font-semibold text-blue-600">
+                  {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
 
-              {!selectedClinic || !selectedDoctor ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">{t('calendar.selectFirst')}</p>
-                </div>
-              ) : (
-                <>
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.notes')}</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder={t('calendar.notesPlaceholder')}
-                      data-testid="appointment-notes"
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={3}
-                    />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.availableSlots')}</label>
+                {loadingSlots ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                   </div>
-
-                  {/* Recurrence */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.recurringAppointment')}</label>
-                    <select
-                      value={recurrence}
-                      onChange={(e) => setRecurrence(e.target.value)}
-                      data-testid="recurrence-select"
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="NONE">{t('calendar.noRecurrence')}</option>
-                      <option value="DAILY">{t('calendar.daily')}</option>
-                      <option value="WEEKLY">{t('calendar.weekly')}</option>
-                      <option value="MONTHLY">{t('calendar.monthly')}</option>
-                    </select>
+                ) : availableSlots.length === 0 ? (
+                  <p className="text-center py-4 text-gray-500">{t('calendar.noSlots')}</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot.time}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          selectedSlot?.time === slot.time
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                        }`}
+                      >
+                        {slot.time}
+                      </button>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  {recurrence !== 'NONE' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.recurrenceEndDate')}</label>
-                      <input
-                        type="date"
-                        value={recurrenceEndDate}
-                        onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                        data-testid="recurrence-end-date"
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('calendar.notes')}</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder={t('calendar.notesPlaceholder')}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
 
-                  {/* Available Slots */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.availableSlots')}</label>
-                    {availableSlots.length === 0 ? (
-                      <p className="text-gray-500 text-sm">{t('calendar.noSlots')}</p>
-                    ) : (
-                      <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                        {availableSlots.map((slot) => (
-                          <button
-                            key={slot.time}
-                            onClick={() => handleBookAppointment(slot.datetime)}
-                            disabled={bookingLoading}
-                            data-testid={`slot-${slot.time}`}
-                            className="px-3 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-all text-sm font-medium disabled:opacity-50"
-                          >
-                            {slot.time}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                {t('common.cancel')}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleBook}
+                  disabled={!selectedSlot || booking}
+                  className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {booking && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('calendar.bookAppointment')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -350,4 +303,4 @@ const Calendar = () => {
   );
 };
 
-export default Calendar;
+export default CalendarPage;
