@@ -142,7 +142,7 @@ const LandingPage = () => {
             </div>
             <span className="text-xl font-bold text-white">MediConnect</span>
           </div>
-          <p>&copy; 2025 MediConnect. All rights reserved.</p>
+          <p>&copy; 2025 MediConnect. {t('landing.footer')}</p>
         </div>
       </footer>
     </div>
@@ -151,6 +151,7 @@ const LandingPage = () => {
 
 // Auth Callback Component
 const AuthCallback = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const processedRef = useRef(false);
