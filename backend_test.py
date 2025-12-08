@@ -221,16 +221,18 @@ def main():
     
     tester = MediConnectAPITester()
     
-    # Test sequence
+    # Test sequence based on review request
     tests = [
-        ("API Health Check", tester.test_health_check),
-        ("Authentication", tester.test_auth_me),
-        ("Clinics API", tester.test_clinics_api),
-        ("Doctors API", tester.test_doctors_api),
-        ("Stats API", tester.test_stats_api),
-        ("Appointments API", tester.test_appointments_api),
-        ("Users API", tester.test_users_api),
-        ("Doctor Availability", tester.test_doctor_availability),
+        ("User Registration", tester.test_user_registration),
+        ("User Login", tester.test_user_login),
+        ("Validate Registration Code", tester.test_validate_registration_code),
+        ("Clinic Registration", tester.test_clinic_registration),
+        ("Get Current User", tester.test_auth_me),
+        ("Get All Clinics", tester.test_get_clinics),
+        ("Get All Doctors", tester.test_get_doctors),
+        ("Get Appointments", tester.test_get_appointments),
+        ("Get Dashboard Stats", tester.test_get_stats),
+        ("Clinic Admin Login", tester.test_clinic_admin_login),
     ]
     
     print(f"\nRunning {len(tests)} test categories...")
