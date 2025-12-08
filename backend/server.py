@@ -373,7 +373,7 @@ async def register_user(data: UserRegister, response: Response):
     
     session_token = await create_session(user_id, response)
     
-    user_data = {k: v for k, v in doc.items() if k != 'password_hash'}
+    user_data = {k: v for k, v in doc.items() if k != 'password_hash' and k != '_id'}
     return {"user": user_data, "session_token": session_token}
 
 @api_router.post("/auth/login")
