@@ -2,7 +2,7 @@
   "common": {
     "signIn": "Sign In",
     "signOut": "Sign Out",
-    "getStarted": "Get Started - It's Free",
+    "getStarted": "Get Started",
     "loading": "Loading...",
     "cancel": "Cancel",
     "save": "Save",
@@ -16,7 +16,12 @@
     "yes": "Yes",
     "no": "No",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "or": "or",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "required": "Required"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -24,7 +29,11 @@
     "appointments": "Appointments",
     "clinics": "Clinics",
     "doctors": "Doctors",
-    "users": "Users"
+    "users": "Users",
+    "staff": "Staff",
+    "services": "Services",
+    "settings": "Settings",
+    "reports": "Reports"
   },
   "landing": {
     "title": "Modern Healthcare",
@@ -34,57 +43,105 @@
     "features": {
       "easyScheduling": {
         "title": "Easy Scheduling",
-        "desc": "Book appointments 24/7 with our intuitive calendar interface. View available slots in real-time."
+        "desc": "Book appointments 24/7 with our intuitive calendar interface."
       },
       "noDoubleBooking": {
         "title": "No Double Bookings",
-        "desc": "Our smart system prevents scheduling conflicts with atomic booking operations."
+        "desc": "Our smart system prevents scheduling conflicts."
       },
       "multiClinic": {
         "title": "Multi-Clinic Support",
-        "desc": "Access multiple healthcare facilities from one platform. Choose your preferred location."
+        "desc": "Access multiple healthcare facilities from one platform."
       }
     },
     "footer": "All rights reserved."
   },
+  "auth": {
+    "signInTitle": "Welcome Back",
+    "signInSubtitle": "Sign in to your account",
+    "signUpTitle": "Create Account",
+    "signUpSubtitle": "Join MediConnect today",
+    "clinicSignUpTitle": "Register Your Clinic",
+    "clinicSignUpSubtitle": "Bring your clinic to MediConnect",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Full Name",
+    "phone": "Phone Number",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUp": "Sign Up",
+    "continueWithGoogle": "Continue with Google",
+    "registerAsUser": "Register as Patient",
+    "registerAsClinic": "Register as Clinic",
+    "registrationCode": "Registration Code",
+    "registrationCodeHelp": "Enter your unique clinic registration code",
+    "clinicName": "Clinic Name",
+    "clinicAddress": "Clinic Address",
+    "clinicPhone": "Clinic Phone",
+    "clinicEmail": "Clinic Email",
+    "clinicDescription": "Description (optional)",
+    "adminDetails": "Administrator Details",
+    "adminName": "Admin Name",
+    "adminEmail": "Admin Email",
+    "adminPassword": "Admin Password",
+    "adminPhone": "Admin Phone (optional)",
+    "validateCode": "Validate Code",
+    "codeValid": "Code is valid!",
+    "codeInvalid": "Invalid or expired code",
+    "signingIn": "Signing you in...",
+    "accessDenied": "Access Denied",
+    "noPermission": "You don't have permission to view this page.",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters"
+  },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",
-    "adminSubtitle": "Manage appointments and monitor your clinic performance.",
-    "patientSubtitle": "Manage your healthcare appointments in one place.",
+    "adminSubtitle": "Manage your clinic and monitor performance.",
+    "patientSubtitle": "Manage your healthcare appointments.",
     "stats": {
       "totalAppointments": "Total Appointments",
       "upcoming": "Upcoming",
-      "totalDoctors": "Total Doctors",
-      "totalClinics": "Total Clinics"
+      "totalDoctors": "Doctors",
+      "totalClinics": "Clinics",
+      "todayAppointments": "Today",
+      "totalPatients": "Patients",
+      "totalStaff": "Staff",
+      "totalServices": "Services"
     },
     "quickActions": "Quick Actions",
     "bookAppointment": "Book Appointment",
-    "viewAllAppointments": "View All Appointments",
+    "viewAllAppointments": "View Appointments",
     "browseClinics": "Browse Clinics",
+    "manageDoctors": "Manage Doctors",
+    "manageStaff": "Manage Staff",
+    "manageServices": "Manage Services",
     "upcomingAppointments": "Upcoming Appointments",
     "noUpcoming": "No upcoming appointments",
-    "bookFirst": "Book your first appointment"
+    "bookFirst": "Book your first appointment",
+    "todaySchedule": "Today's Schedule"
   },
   "calendar": {
-    "selectClinicDoctor": "Select Clinic & Doctor to Book",
+    "selectClinicDoctor": "Select Clinic & Doctor",
     "clinic": "Clinic",
     "doctor": "Doctor",
     "selectClinic": "Select a clinic...",
     "selectDoctor": "Select a doctor...",
-    "clickToBook": "Click on a date in the calendar below to book an appointment",
+    "clickToBook": "Click on a date to book",
     "bookAppointment": "Book Appointment",
     "selectedDate": "Selected Date",
-    "selectFirst": "Please select a clinic and doctor from the filters above first.",
+    "selectFirst": "Please select a clinic and doctor first.",
     "notes": "Notes (optional)",
-    "notesPlaceholder": "Any additional notes for your appointment...",
-    "recurringAppointment": "Recurring Appointment",
+    "notesPlaceholder": "Additional notes...",
+    "recurringAppointment": "Recurring",
     "noRecurrence": "No recurrence",
     "daily": "Daily",
     "weekly": "Weekly",
     "monthly": "Monthly",
-    "recurrenceEndDate": "Recurrence End Date",
-    "availableSlots": "Available Time Slots",
-    "noSlots": "No available slots for this date. Try another date."
+    "recurrenceEndDate": "End Date",
+    "availableSlots": "Available Slots",
+    "noSlots": "No available slots for this date."
   },
   "appointments": {
     "title": "Appointments",
@@ -98,46 +155,77 @@
     "patient": "Patient",
     "complete": "Complete",
     "cancelAppointment": "Cancel Appointment",
-    "cancelConfirm": "Are you sure you want to cancel your appointment with {{doctor}} on {{date}} at {{time}}?",
-    "keepAppointment": "Keep Appointment",
+    "cancelConfirm": "Cancel appointment with {{doctor}} on {{date}} at {{time}}?",
+    "keepAppointment": "Keep",
     "yesCancel": "Yes, Cancel"
   },
   "clinics": {
     "title": "Clinics",
-    "subtitle": "Browse and manage healthcare facilities",
+    "subtitle": "Healthcare facilities",
     "addClinic": "Add Clinic",
-    "noClinics": "No clinics registered yet",
+    "noClinics": "No clinics found",
     "addFirst": "Add your first clinic",
-    "workingHours": "Working Hours",
+    "workingHours": "Hours",
     "editClinic": "Edit Clinic",
     "addNewClinic": "Add New Clinic",
     "clinicName": "Clinic Name",
     "address": "Address",
     "phone": "Phone",
     "email": "Email",
-    "description": "Description (optional)",
-    "updateClinic": "Update Clinic",
-    "deleteConfirm": "Are you sure you want to delete this clinic?"
+    "description": "Description",
+    "updateClinic": "Update",
+    "deleteConfirm": "Delete this clinic?",
+    "myClinic": "My Clinic",
+    "clinicSettings": "Clinic Settings",
+    "allowOnlineBooking": "Allow Online Booking",
+    "bookingAdvanceDays": "Booking Advance (days)",
+    "cancellationHours": "Cancellation Notice (hours)"
   },
   "doctors": {
     "title": "Doctors",
-    "subtitle": "Manage doctors and their specialties",
+    "subtitle": "Manage doctors",
     "addDoctor": "Add Doctor",
-    "noDoctors": "No doctors registered yet",
+    "noDoctors": "No doctors found",
     "addFirst": "Add your first doctor",
-    "consultation": "{{duration}} min consultation",
+    "consultation": "{{duration}} min",
     "editDoctor": "Edit Doctor",
     "addNewDoctor": "Add New Doctor",
-    "userAccount": "User Account",
-    "selectUser": "Select a user...",
-    "userHelp": "Select an existing user to make them a doctor",
+    "doctorName": "Doctor Name",
     "specialty": "Specialty",
     "selectSpecialty": "Select specialty...",
-    "consultationDuration": "Consultation Duration (minutes)",
-    "bio": "Bio (optional)",
-    "bioPlaceholder": "Brief description of the doctor's experience and expertise",
-    "updateDoctor": "Update Doctor",
-    "deleteConfirm": "Are you sure you want to remove this doctor?"
+    "consultationDuration": "Duration (min)",
+    "consultationFee": "Fee",
+    "bio": "Bio",
+    "bioPlaceholder": "Doctor's experience and expertise",
+    "updateDoctor": "Update",
+    "deleteConfirm": "Remove this doctor?"
+  },
+  "staff": {
+    "title": "Staff",
+    "subtitle": "Manage clinic staff",
+    "addStaff": "Add Staff",
+    "noStaff": "No staff found",
+    "addFirst": "Add your first staff member",
+    "staffName": "Name",
+    "staffEmail": "Email",
+    "staffPhone": "Phone",
+    "staffRole": "Role",
+    "receptionist": "Receptionist",
+    "nurse": "Nurse",
+    "admin": "Admin",
+    "deleteConfirm": "Remove this staff member?"
+  },
+  "services": {
+    "title": "Services",
+    "subtitle": "Manage clinic services",
+    "addService": "Add Service",
+    "noServices": "No services found",
+    "addFirst": "Add your first service",
+    "serviceName": "Service Name",
+    "serviceDescription": "Description",
+    "serviceDuration": "Duration (min)",
+    "servicePrice": "Price",
+    "deleteConfirm": "Remove this service?"
   },
   "users": {
     "title": "Users",
@@ -151,24 +239,21 @@
     "role": "Role",
     "joined": "Joined",
     "actions": "Actions",
-    "administrator": "Administrator",
+    "administrator": "Admin",
     "patient": "Patient",
+    "clinicAdmin": "Clinic Admin",
     "makeAdmin": "Make Admin",
-    "makePatient": "Make Patient",
-    "changeRoleConfirm": "Are you sure you want to change this user's role to {{role}}?"
-  },
-  "auth": {
-    "signingIn": "Signing you in...",
-    "accessDenied": "Access Denied",
-    "noPermission": "You don't have permission to view this page."
+    "makePatient": "Make Patient"
   },
   "notifications": {
-    "bookingSuccess": "Appointment booked successfully!",
-    "bookingError": "Failed to book appointment. Please try again.",
-    "cancelSuccess": "Appointment cancelled successfully",
-    "saveSuccess": "Saved successfully",
-    "deleteSuccess": "Deleted successfully",
-    "error": "An error occurred. Please try again."
+    "bookingSuccess": "Appointment booked!",
+    "bookingError": "Booking failed.",
+    "cancelSuccess": "Cancelled",
+    "saveSuccess": "Saved",
+    "deleteSuccess": "Deleted",
+    "error": "An error occurred.",
+    "loginSuccess": "Welcome!",
+    "registerSuccess": "Account created!"
   },
   "days": {
     "mon": "Mon",
@@ -179,5 +264,5 @@
     "sat": "Sat",
     "sun": "Sun"
   },
-  "minutes": "{{count}} minutes"
+  "minutes": "{{count}} min"
 }
