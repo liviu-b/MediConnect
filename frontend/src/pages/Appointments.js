@@ -198,7 +198,7 @@ const Appointments = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Dr. {apt.doctor_name}</p>
+                      <p className="font-semibold text-gray-900">{apt.doctor_name?.startsWith('Dr.') ? apt.doctor_name : `Dr. ${apt.doctor_name}`}</p>
                       <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
                       {user?.role === 'ADMIN' && (
                         <p className="text-sm text-gray-500 mt-1">
