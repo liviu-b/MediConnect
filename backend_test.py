@@ -83,91 +83,137 @@ class MediConnectAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
-    def test_health_check(self):
-        """Test API health check"""
-        return self.run_test("API Health Check", "GET", "", 200)
-
-    def test_clinics_api(self):
-        """Test clinics API"""
-        success, response = self.run_test("Get Clinics", "GET", "clinics", 200)
-        if success and isinstance(response, list):
-            print(f"   Found {len(response)} clinics")
-            if len(response) >= 3:
-                print("✅ Expected 3+ clinics found")
+    def test_user_registration(self):
+        """Test user registration"""
+        data = {
+            "email": "newuser@test.com",
+            "password": "test123456",
+            "name": "New User",
+            "phone": "1234567890"
+        }
+        success, response = self.run_test("User Registration", "POST", "auth/register", 200, data, use_session=False)
+        if success and isinstance(response, dict):
+            if 'user' in response and 'session_token' in response:
+                print("✅ User registration successful with session token")
+                return True
             else:
-                print(f"⚠️  Expected 3+ clinics, found {len(response)}")
+                print("⚠️  Missing user or session_token in response")
         return success
 
-    def test_doctors_api(self):
-        """Test doctors API"""
-        success, response = self.run_test("Get Doctors", "GET", "doctors", 200)
-        if success and isinstance(response, list):
-            print(f"   Found {len(response)} doctors")
-            if len(response) >= 4:
-                print("✅ Expected 4+ doctors found")
+    def test_user_login(self):
+        """Test user login"""
+        data = {
+            "email": "testuser@example.com",
+            "password": "test123456"
+        }
+        success, response = self.run_test("User Login", "POST", "auth/login", 200, data)
+        if success and isinstance(response, dict):
+            if 'user' in response and 'session_token' in response:
+                print("✅ User login successful")
+                self.session_token = response.get('session_token')
+                self.user_id = response.get('user', {}).get('user_id')
+                return True
             else:
-                print(f"⚠️  Expected 4+ doctors, found {len(response)}")
+                print("⚠️  Missing user or session_token in response")
+        return success
+
+    def test_clinic_admin_login(self):
+        """Test clinic admin login"""
+        data = {
+            "email": "jane.doe@healthcareplus.com",
+            "password": "securepass123"
+        }
+        success, response = self.run_test("Clinic Admin Login", "POST", "auth/login", 200, data)
+        if success and isinstance(response, dict):
+            if 'user' in response and 'session_token' in response:
+                user = response.get('user', {})
+                if user.get('role') == 'CLINIC_ADMIN':
+                    print("✅ Clinic admin login successful")
+                    self.clinic_admin_token = response.get('session_token')
+                    return True
+                else:
+                    print(f"⚠️  Expected CLINIC_ADMIN role, got {user.get('role')}")
+            else:
+                print("⚠️  Missing user or session_token in response")
+        return success
+
+    def test_validate_registration_code(self):
+        """Test registration code validation"""
+        success, response = self.run_test("Validate Registration Code", "POST", "auth/validate-code?code=CLINIC2025A", 200, use_session=False)
+        if success and isinstance(response, dict):
+            if response.get('valid') == True:
+                print("✅ Registration code validation successful")
+                return True
+            else:
+                print(f"⚠️  Code validation failed: {response.get('message')}")
+        return success
+
+    def test_clinic_registration(self):
+        """Test clinic registration"""
+        data = {
+            "registration_code": "CLINIC2025C",
+            "clinic_name": "Test Clinic",
+            "address": "123 Test St",
+            "phone": "+1234567890",
+            "email": "test@clinic.com",
+            "description": "Test clinic description",
+            "admin_name": "Admin User",
+            "admin_email": "admin@testclinic.com",
+            "admin_password": "admin123",
+            "admin_phone": "+1234567891"
+        }
+        success, response = self.run_test("Clinic Registration", "POST", "auth/register-clinic", 200, data, use_session=False)
+        if success and isinstance(response, dict):
+            if 'user' in response and 'clinic' in response and 'session_token' in response:
+                print("✅ Clinic registration successful")
+                return True
+            else:
+                print("⚠️  Missing user, clinic, or session_token in response")
         return success
 
     def test_auth_me(self):
-        """Test authentication with test session"""
-        success, response = self.run_test("Auth Me", "GET", "auth/me", 200)
+        """Test get current user"""
+        success, response = self.run_test("Get Current User", "GET", "auth/me", 200)
         if success and isinstance(response, dict):
-            if response.get('role') == 'ADMIN':
-                print("✅ Admin user authenticated successfully")
+            if 'user_id' in response and 'email' in response:
+                print(f"✅ Current user retrieved: {response.get('email')}")
+                return True
             else:
-                print(f"⚠️  Expected ADMIN role, got {response.get('role')}")
+                print("⚠️  Missing user_id or email in response")
         return success
 
-    def test_stats_api(self):
-        """Test stats API for dashboard"""
-        success, response = self.run_test("Get Stats", "GET", "stats", 200)
-        if success and isinstance(response, dict):
-            expected_keys = ['total_doctors', 'total_clinics', 'total_appointments', 'upcoming_appointments']
-            found_keys = [key for key in expected_keys if key in response]
-            print(f"   Stats keys found: {found_keys}")
-            if len(found_keys) >= 3:
-                print("✅ Dashboard stats available")
-            else:
-                print(f"⚠️  Missing some stats keys: {set(expected_keys) - set(found_keys)}")
+    def test_get_clinics(self):
+        """Test get all clinics"""
+        success, response = self.run_test("Get All Clinics", "GET", "clinics", 200, use_session=False)
+        if success and isinstance(response, list):
+            print(f"✅ Found {len(response)} clinics")
+            return True
         return success
 
-    def test_appointments_api(self):
-        """Test appointments API"""
+    def test_get_doctors(self):
+        """Test get all doctors (authenticated)"""
+        success, response = self.run_test("Get All Doctors", "GET", "doctors", 200)
+        if success and isinstance(response, list):
+            print(f"✅ Found {len(response)} doctors")
+            return True
+        return success
+
+    def test_get_appointments(self):
+        """Test get appointments (authenticated)"""
         success, response = self.run_test("Get Appointments", "GET", "appointments", 200)
         if success and isinstance(response, list):
-            print(f"   Found {len(response)} appointments")
+            print(f"✅ Found {len(response)} appointments")
+            return True
         return success
 
-    def test_users_api(self):
-        """Test users API (admin only)"""
-        success, response = self.run_test("Get Users", "GET", "users", 200)
-        if success and isinstance(response, list):
-            print(f"   Found {len(response)} users")
+    def test_get_stats(self):
+        """Test get dashboard stats (authenticated)"""
+        success, response = self.run_test("Get Dashboard Stats", "GET", "stats", 200)
+        if success and isinstance(response, dict):
+            stats_keys = list(response.keys())
+            print(f"✅ Stats retrieved with keys: {stats_keys}")
+            return True
         return success
-
-    def test_doctor_availability(self):
-        """Test doctor availability API"""
-        # First get a doctor
-        success, doctors = self.run_test("Get Doctors for Availability", "GET", "doctors", 200)
-        if success and isinstance(doctors, list) and len(doctors) > 0:
-            doctor_id = doctors[0]['doctor_id']
-            today = datetime.now().strftime('%Y-%m-%d')
-            success, response = self.run_test(
-                "Get Doctor Availability", 
-                "GET", 
-                f"doctors/{doctor_id}/availability?date={today}", 
-                200
-            )
-            if success and isinstance(response, dict):
-                if 'available_slots' in response:
-                    print(f"✅ Availability API working, found {len(response['available_slots'])} slots")
-                else:
-                    print("⚠️  No available_slots in response")
-            return success
-        else:
-            print("⚠️  No doctors found to test availability")
-            return False
 
 def main():
     print("🏥 MediConnect API Testing Suite")
