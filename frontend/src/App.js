@@ -272,10 +272,12 @@ const Layout = ({ children }) => {
     );
   }
 
-  const NavLink = ({ item }) => {
+  const renderNavItem = (item) => {
     const isActive = location.pathname === item.path;
+    const Icon = item.icon;
     return (
       <button
+        key={item.path}
         onClick={() => {
           navigate(item.path);
           setSidebarOpen(false);
@@ -286,7 +288,7 @@ const Layout = ({ children }) => {
             : 'text-gray-600 hover:bg-gray-100'
         }`}
       >
-        <item.icon className="w-5 h-5 flex-shrink-0" />
+        <Icon className="w-5 h-5 flex-shrink-0" />
         {!sidebarCollapsed && <span className="text-sm font-medium">{t(item.labelKey)}</span>}
       </button>
     );
