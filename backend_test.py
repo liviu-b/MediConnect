@@ -141,7 +141,7 @@ class MediConnectAPITester:
 
     def test_validate_registration_code(self):
         """Test registration code validation"""
-        success, response = self.run_test("Validate Registration Code", "GET", "auth/validate-code?code=CLINIC2025A", 200, use_session=False)
+        success, response = self.run_test("Validate Registration Code", "POST", "auth/validate-code?code=CLINIC2025A", 200, use_session=False)
         if success and isinstance(response, dict):
             if response.get('valid') == True:
                 print("✅ Registration code validation successful")
