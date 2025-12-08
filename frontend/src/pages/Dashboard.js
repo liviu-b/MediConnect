@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api, useAuth } from '../App';
 
 const Dashboard = () => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
@@ -37,7 +39,8 @@ const Dashboard = () => {
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    const locale = i18n.language === 'ro' ? 'ro-RO' : 'en-US';
+    return date.toLocaleDateString(locale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -56,6 +59,16 @@ const Dashboard = () => {
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
+  const getStatusLabel = (status) => {
+    const labels = {
+      'SCHEDULED': t('appointments.scheduled'),
+      'CONFIRMED': t('appointments.confirmed'),
+      'CANCELLED': t('appointments.cancelled'),
+      'COMPLETED': t('appointments.completed')
+    };
+    return labels[status] || status;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -68,11 +81,9 @@ const Dashboard = () => {
     <div className="space-y-6" data-testid="dashboard-page">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl p-6 text-white shadow-lg">
-        <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.name?.split(' ')[0]}!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('dashboard.welcomeBack', { name: user?.name?.split(' ')[0] })}</h2>
         <p className="text-blue-100">
-          {user?.role === 'ADMIN'
-            ? 'Manage appointments and monitor your clinic performance.'
-            : 'Manage your healthcare appointments in one place.'}
+          {user?.role === 'ADMIN' ? t('dashboard.adminSubtitle') : t('dashboard.patientSubtitle')}
         </p>
       </div>
 
@@ -81,7 +92,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm hover-card" data-testid="stat-total-appointments">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Total Appointments</p>
+              <p className="text-gray-500 text-sm font-medium">{t('dashboard.stats.totalAppointments')}</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_appointments || 0}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -95,7 +106,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm hover-card" data-testid="stat-upcoming">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Upcoming</p>
+              <p className="text-gray-500 text-sm font-medium">{t('dashboard.stats.upcoming')}</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.upcoming_appointments || 0}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -111,7 +122,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-2xl p-6 shadow-sm hover-card" data-testid="stat-doctors">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-sm font-medium">Total Doctors</p>
+                  <p className="text-gray-500 text-sm font-medium">{t('dashboard.stats.totalDoctors')}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_doctors || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -125,7 +136,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-2xl p-6 shadow-sm hover-card" data-testid="stat-clinics">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-sm font-medium">Total Clinics</p>
+                  <p className="text-gray-500 text-sm font-medium">{t('dashboard.stats.totalClinics')}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_clinics || 0}</p>
                 </div>
                 <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
@@ -143,7 +154,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h3>
           <div className="space-y-3">
             <button
               onClick={() => navigate('/calendar')}
@@ -155,7 +166,7 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-              <span className="font-medium text-gray-900">Book Appointment</span>
+              <span className="font-medium text-gray-900">{t('dashboard.bookAppointment')}</span>
             </button>
 
             <button
@@ -168,7 +179,7 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <span className="font-medium text-gray-700">View All Appointments</span>
+              <span className="font-medium text-gray-700">{t('dashboard.viewAllAppointments')}</span>
             </button>
 
             <button
@@ -181,7 +192,7 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <span className="font-medium text-gray-700">Browse Clinics</span>
+              <span className="font-medium text-gray-700">{t('dashboard.browseClinics')}</span>
             </button>
           </div>
         </div>
@@ -189,12 +200,12 @@ const Dashboard = () => {
         {/* Upcoming Appointments */}
         <div className="bg-white rounded-2xl p-6 shadow-sm lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.upcomingAppointments')}</h3>
             <button
               onClick={() => navigate('/appointments')}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              View All
+              {t('common.viewAll')}
             </button>
           </div>
 
@@ -205,12 +216,12 @@ const Dashboard = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <p className="text-gray-500 mb-4">No upcoming appointments</p>
+              <p className="text-gray-500 mb-4">{t('dashboard.noUpcoming')}</p>
               <button
                 onClick={() => navigate('/calendar')}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                Book your first appointment
+                {t('dashboard.bookFirst')}
               </button>
             </div>
           ) : (
@@ -235,7 +246,7 @@ const Dashboard = () => {
                   <div className="text-right">
                     <p className="font-medium text-gray-900">{formatDate(apt.date_time)}</p>
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
-                      {apt.status}
+                      {getStatusLabel(apt.status)}
                     </span>
                   </div>
                 </div>
