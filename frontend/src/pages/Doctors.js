@@ -208,7 +208,7 @@ const Doctors = () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-semibold text-gray-900">Dr. {doctor.name}</h3>
+                    <h3 className="font-semibold text-gray-900">{doctor.name?.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`}</h3>
                     <p className="text-sm text-blue-600 font-medium">{doctor.specialty}</p>
                   </div>
                 </div>
