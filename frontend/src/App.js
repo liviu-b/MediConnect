@@ -184,19 +184,23 @@ const AuthCallback = () => {
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
-    if (location.state?.user) {
-      setUser(location.state.user);
-      setIsAuthenticated(true);
-      return;
-    }
+    let isMounted = true;
 
     const checkAuth = async () => {
+      // Check if user is passed via location state
+      if (location.state?.user) {
+        if (isMounted) {
+          setUser(location.state.user);
+          setIsAuthenticated(true);
+        }
+        return;
+      }
+
       const justAuth = sessionStorage.getItem('just_authenticated');
       if (!justAuth) {
         await new Promise(r => setTimeout(r, 150));
@@ -206,14 +210,22 @@ const ProtectedRoute = ({ children }) => {
 
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data);
-        setIsAuthenticated(true);
+        if (isMounted) {
+          setUser(response.data);
+          setIsAuthenticated(true);
+        }
       } catch (error) {
-        setIsAuthenticated(false);
+        if (isMounted) {
+          setIsAuthenticated(false);
+        }
       }
     };
 
     checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, [location.state]);
 
   if (isAuthenticated === null) {
