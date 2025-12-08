@@ -159,8 +159,12 @@ class MediConnectAPITester:
         import time
         unique_email = f"admin{int(time.time())}@testclinic.com"
         clinic_email = f"clinic{int(time.time())}@test.com"
+        
+        # Use the valid code from validation test, or fallback
+        code_to_use = getattr(self, 'valid_code', 'CLINIC2025C')
+        
         data = {
-            "registration_code": "CLINIC2025A",
+            "registration_code": code_to_use,
             "clinic_name": "Test Clinic",
             "address": "123 Test St",
             "phone": "+1234567890",
