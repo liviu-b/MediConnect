@@ -338,9 +338,10 @@ const Layout = ({ children }) => {
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">
-              {navItems.find(item => item.path === window.location.pathname)?.label || 'Dashboard'}
+              {t(navItems.find(item => item.path === window.location.pathname)?.labelKey || 'nav.dashboard')}
             </h1>
             <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
               <div className="flex items-center space-x-3">
                 {user?.picture ? (
                   <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" />
@@ -351,13 +352,14 @@ const Layout = ({ children }) => {
                 )}
                 <div className="hidden md:block">
                   <p className="font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.role === 'ADMIN' ? 'Administrator' : 'Patient'}</p>
+                  <p className="text-sm text-gray-500">{user?.role === 'ADMIN' ? t('users.administrator') : t('users.patient')}</p>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
                 data-testid="logout-btn"
                 className="text-gray-500 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
+                title={t('common.signOut')}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
