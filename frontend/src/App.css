@@ -142,6 +142,38 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Page Transitions */
+@keyframes pageSlideIn {
+  from { 
+    opacity: 0; 
+    transform: translateX(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-transition {
+  animation: pageSlideIn 0.3s ease-out;
+}
+
+.page-fade {
+  animation: pageFadeIn 0.25s ease-out;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
 /* Gradient text */
 .text-gradient {
   @apply bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent;
