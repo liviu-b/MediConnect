@@ -64,16 +64,10 @@ class UserLogin(BaseModel):
     password: str
 
 class ClinicRegistration(BaseModel):
-    registration_code: str
-    clinic_name: str
-    address: str
-    phone: str
-    email: str
-    description: Optional[str] = None
+    cui: str  # Romanian CUI (Cod Unic de Înregistrare) - 2-10 digits
     admin_name: str
     admin_email: str
     admin_password: str
-    admin_phone: Optional[str] = None
 
 class Clinic(BaseModel):
     model_config = ConfigDict(extra="ignore")
