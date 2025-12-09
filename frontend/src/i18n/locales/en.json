@@ -162,6 +162,7 @@
   "appointments": {
     "title": "Appointments",
     "searchPlaceholder": "Search appointments...",
+    "all": "All",
     "total": "Total",
     "scheduled": "Scheduled",
     "confirmed": "Confirmed",
