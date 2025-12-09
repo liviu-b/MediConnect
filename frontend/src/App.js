@@ -130,6 +130,7 @@ const LandingPage = () => {
             <span className="text-lg font-bold text-white">MediConnect</span>
           </div>
           <p className="text-sm">© 2025 MediConnect. {t('landing.footer')}</p>
+          <p className="text-sm mt-1">(Powered by ACL-Smart Software)</p>
         </div>
       </footer>
     </div>
