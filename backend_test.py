@@ -144,20 +144,18 @@ class MediConnectAPITester:
                 print("⚠️  Missing user or session_token in response")
         return success
 
-    def test_validate_registration_code(self):
-        """Test registration code validation"""
-        # Try different codes to find an available one
-        codes_to_try = ["CLINIC2025C", "MEDICONNECT", "HEALTHCARE"]
-        for code in codes_to_try:
-            success, response = self.run_test(f"Validate Registration Code ({code})", "POST", f"auth/validate-code?code={code}", 200, use_session=False)
-            if success and isinstance(response, dict):
-                if response.get('valid') == True:
-                    print(f"✅ Registration code validation successful for {code}")
-                    self.valid_code = code  # Store for clinic registration
-                    return True
-                else:
-                    print(f"⚠️  Code {code} validation failed: {response.get('message')}")
-        return False
+    def test_cui_validation(self):
+        """Test CUI validation"""
+        # Test with a valid CUI format
+        test_cui = "12345678"
+        success, response = self.run_test("CUI Validation", "POST", f"auth/validate-cui?cui={test_cui}", 200, use_session=False)
+        if success and isinstance(response, dict):
+            if 'valid' in response and 'available' in response:
+                print(f"✅ CUI validation successful: valid={response.get('valid')}, available={response.get('available')}")
+                return True
+            else:
+                print("⚠️  Missing valid or available fields in response")
+        return success
 
     def test_clinic_registration(self):
         """Test clinic registration"""
