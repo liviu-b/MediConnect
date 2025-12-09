@@ -569,6 +569,13 @@ async def update_clinic(clinic_id: str, data: ClinicUpdate, request: Request):
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
+    # Check if profile should be marked as complete
+    clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
+    new_name = update_data.get('name', clinic.get('name'))
+    new_address = update_data.get('address', clinic.get('address'))
+    if new_name and new_address:
+        update_data['is_profile_complete'] = True
+    
     await db.clinics.update_one({"clinic_id": clinic_id}, {"$set": update_data})
     return await get_clinic(clinic_id)
 
