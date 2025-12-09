@@ -104,9 +104,9 @@
     "passwordMinChars": "Minim 8 caractere",
     "placeholders": {
       "name": "ex. Ion Popescu",
-      "email": "ex. ion.popescu@email.com",
+      "email": "email@example.com",
       "phone": "ex. +40 712 345 678",
-      "password": "Introdu parola",
+      "enterPassword": "Introdu parola",
       "confirmPassword": "Reintrodu parola",
       "cui": "ex. 12345678",
       "adminName": "ex. Dr. Maria Ionescu"
