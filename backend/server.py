@@ -637,7 +637,15 @@ async def create_doctor(data: DoctorCreate, request: Request):
         picture=data.picture,
         consultation_duration=data.consultation_duration,
         consultation_fee=data.consultation_fee,
-        availability_schedule=data.availability_schedule or Doctor().availability_schedule
+        availability_schedule=data.availability_schedule or {
+            "monday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
+            "tuesday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
+            "wednesday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
+            "thursday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
+            "friday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
+            "saturday": [{"start": "10:00", "end": "14:00"}],
+            "sunday": []
+        }
     )
     doc = doctor.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
