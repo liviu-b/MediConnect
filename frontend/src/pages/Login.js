@@ -132,19 +132,6 @@ const Login = () => {
                 {t('auth.signUp')}
               </Link>
             </p>
-
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-              <p className="text-sm text-blue-800 font-medium flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                {t('auth.registerAsClinic')}
-              </p>
-              <Link
-                to="/register-clinic"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                {t('auth.clinicSignUpSubtitle')} →
-              </Link>
-            </div>
           </div>
         </div>
       </div>
