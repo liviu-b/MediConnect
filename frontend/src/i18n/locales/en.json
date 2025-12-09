@@ -104,9 +104,9 @@
     "passwordMinChars": "Minimum 8 characters",
     "placeholders": {
       "name": "e.g. John Smith",
-      "email": "e.g. john.smith@email.com",
+      "email": "email@example.com",
       "phone": "e.g. +40 712 345 678",
-      "password": "Enter your password",
+      "enterPassword": "Enter your password",
       "confirmPassword": "Re-enter your password",
       "cui": "e.g. 12345678",
       "adminName": "e.g. Dr. Maria Popescu"
