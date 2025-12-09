@@ -1300,10 +1300,13 @@ async def root():
 # Include the router in the main app
 app.include_router(api_router)
 
+# Add CORS middleware BEFORE including router
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    # Use a non-wildcard default if CORS_ORIGINS is not set and credentials are True
+    # The split(',') handles comma-separated origins from the environment variable
+    allow_origins=os.environ.get('CORS_ORIGINS', '').split(',') or [],
     allow_methods=["*"],
     allow_headers=["*"],
 )
