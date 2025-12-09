@@ -429,10 +429,12 @@ const RegisterClinic = () => {
                     disabled={loading || cuiStatus !== 'valid'}
                     className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                {t('auth.registerClinic')}
-              </button>
-            </form>
+                    {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                    {t('auth.registerClinic')}
+                  </button>
+                </form>
+              </>
+            )}
 
             <p className="mt-6 text-center text-sm text-gray-500">
               {t('auth.hasAccount')}{' '}
