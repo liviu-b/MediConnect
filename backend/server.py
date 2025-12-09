@@ -198,6 +198,22 @@ class UserSession(BaseModel):
     expires_at: datetime
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class PasswordResetToken(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    token: str = Field(default_factory=lambda: f"reset_{secrets.token_hex(32)}")
+    user_id: str
+    email: str
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(hours=1))
+    used: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 class NotificationLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     notification_id: str = Field(default_factory=lambda: f"notif_{uuid.uuid4().hex[:12]}")
