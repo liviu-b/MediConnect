@@ -438,13 +438,6 @@ const RegisterClinic = () => {
                 </form>
               </>
             )}
-
-            <p className="mt-6 text-center text-sm text-gray-500">
-              {t('auth.hasAccount')}{' '}
-              <Link to="/login" className="text-teal-600 hover:underline font-medium">
-                {t('common.signIn')}
-              </Link>
-            </p>
           </div>
         </div>
       </div>
