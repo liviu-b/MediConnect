@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, User, Building2, Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Building2, Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { api } from '../App';
 
@@ -17,8 +17,10 @@ const RegisterClinic = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [cuiStatus, setCuiStatus] = useState(null); // null, 'checking', 'valid', 'invalid', 'taken'
+  const [cuiStatus, setCuiStatus] = useState(null);
   const [cuiChecked, setCuiChecked] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateCUI = async (cui) => {
     if (!cui || cui.length < 2) {
@@ -45,7 +47,7 @@ const RegisterClinic = () => {
   };
 
   const handleCuiChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Only digits
+    const value = e.target.value.replace(/\D/g, '');
     setForm({ ...form, cui: value });
     setCuiChecked(false);
     setCuiStatus(null);
@@ -61,19 +63,16 @@ const RegisterClinic = () => {
     e.preventDefault();
     setError('');
 
-    // Validate password match
     if (form.admin_password !== form.confirm_password) {
       setError(t('auth.passwordMismatch'));
       return;
     }
 
-    // Validate password length
-    if (form.admin_password.length < 6) {
+    if (form.admin_password.length < 8) {
       setError(t('auth.passwordTooShort'));
       return;
     }
 
-    // Validate CUI
     if (!cuiChecked || cuiStatus !== 'valid') {
       setError(t('auth.cuiInvalid'));
       return;
@@ -88,7 +87,6 @@ const RegisterClinic = () => {
         admin_password: form.admin_password
       });
       sessionStorage.setItem('just_authenticated', 'true');
-      // Redirect to settings so admin can complete clinic profile
       navigate('/settings', { replace: true, state: { user: res.data.user, isNewClinic: true } });
     } catch (err) {
       setError(err.response?.data?.detail || t('notifications.error'));
@@ -199,12 +197,12 @@ const RegisterClinic = () => {
                     value={form.cui}
                     onChange={handleCuiChange}
                     onBlur={handleCuiBlur}
+                    placeholder={t('auth.placeholders.cui')}
                     className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                       cuiStatus === 'valid' ? 'border-green-300' :
                       cuiStatus === 'taken' || cuiStatus === 'invalid' ? 'border-red-300' :
                       'border-gray-200'
                     }`}
-                    placeholder="12345678"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     {getCuiIcon()}
@@ -227,6 +225,7 @@ const RegisterClinic = () => {
                     required
                     value={form.admin_name}
                     onChange={(e) => setForm({ ...form, admin_name: e.target.value })}
+                    placeholder={t('auth.placeholders.adminName')}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
@@ -244,6 +243,7 @@ const RegisterClinic = () => {
                     required
                     value={form.admin_email}
                     onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                    placeholder={t('auth.placeholders.email')}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
@@ -254,17 +254,25 @@ const RegisterClinic = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('auth.adminPassword')} <span className="text-red-500">*</span>
                 </label>
+                <p className="text-xs text-gray-500 mb-1">{t('auth.passwordMinChars')}</p>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
                     value={form.admin_password}
                     onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="••••••••"
+                    placeholder={t('auth.placeholders.password')}
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
@@ -276,14 +284,21 @@ const RegisterClinic = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
                     value={form.confirm_password}
                     onChange={(e) => setForm({ ...form, confirm_password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="••••••••"
+                    placeholder={t('auth.placeholders.confirmPassword')}
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
