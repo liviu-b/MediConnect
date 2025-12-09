@@ -398,6 +398,13 @@ async def register_clinic(data: ClinicRegistration, response: Response):
             detail="CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre. / Invalid CUI. CUI must contain 2-10 digits."
         )
     
+    # Validate password length
+    if len(data.admin_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Parola trebuie să aibă minim 8 caractere. / Password must be at least 8 characters."
+        )
+    
     # Check if CUI already registered
     existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
     if existing_clinic:
