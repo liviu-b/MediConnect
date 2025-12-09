@@ -3,6 +3,8 @@
 import requests
 import sys
 import json
+import time
+import threading
 from datetime import datetime, timezone, timedelta
 
 class MediConnectAPITester:
@@ -12,10 +14,13 @@ class MediConnectAPITester:
         self.session_token = None  # Will be set after login
         self.user_id = None  # Will be set after login
         self.clinic_admin_token = None  # For clinic admin tests
+        self.clinic_id = None  # Will be set after clinic admin login
+        self.doctor_id = None  # Will be set after creating doctor
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
         self.session = requests.Session()  # Use session for cookies
+        self.admin_session = requests.Session()  # Separate session for admin
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, use_session=True):
         """Run a single API test"""
