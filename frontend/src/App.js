@@ -400,7 +400,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <div className="p-4">
+        <div className="p-4 page-transition">
           {children}
         </div>
       </main>
