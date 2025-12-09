@@ -187,6 +187,14 @@
     "bookingAdvanceDays": "Booking Advance (days)",
     "cancellationHours": "Cancellation Notice (hours)"
   },
+  "settings": {
+    "welcomeTitle": "Welcome to MediConnect!",
+    "welcomeMessage": "Please complete your clinic profile by filling in the required fields below.",
+    "verified": "Verified",
+    "enterClinicName": "Enter your clinic name",
+    "enterAddress": "Enter your clinic address",
+    "allowBookingHelp": "Allow patients to book appointments online"
+  },
   "doctors": {
     "title": "Doctors",
     "subtitle": "Manage doctors",
