@@ -122,8 +122,10 @@
     "invalidResetLink": "Link Invalid",
     "invalidResetLinkDesc": "Acest link de resetare a parolei este invalid sau a expirat.",
     "requestNewLink": "Solicită Link Nou",
-    "passwordResetSuccess": "Parolă Resetată!",
-    "passwordResetSuccessDesc": "Parola ta a fost resetată cu succes. Te poți autentifica acum cu noua parolă.",
+    "passwordResetSuccess": "Parolă Schimbată!",
+    "passwordResetSuccessDesc": "Parola ta a fost schimbată cu succes. Te poți autentifica acum cu noua parolă.",
+    "redirectingIn": "Redirecționare către autentificare în",
+    "seconds": "secunde",
     "placeholders": {
       "name": "ex. Ion Popescu",
       "email": "email@example.com",
