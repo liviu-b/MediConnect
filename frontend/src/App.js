@@ -420,6 +420,8 @@ import SettingsPage from "./pages/Settings";
 import Login from "./pages/Login";
 import RegisterUser from "./pages/RegisterUser";
 import RegisterClinic from "./pages/RegisterClinic";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // App Router
 function AppRouter() {
