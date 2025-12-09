@@ -162,6 +162,7 @@
   "appointments": {
     "title": "Programări",
     "searchPlaceholder": "Caută programări...",
+    "all": "Toate",
     "total": "Total",
     "scheduled": "Programate",
     "confirmed": "Confirmate",
