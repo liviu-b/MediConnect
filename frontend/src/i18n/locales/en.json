@@ -76,7 +76,7 @@
     "registerAsUser": "Register as Patient",
     "registerAsClinic": "Register as Clinic",
     "registerClinic": "Register Clinic",
-    "cui": "CUI (Cod Unic de Înregistrare)",
+    "cui": "CUI (Unique Registration Code)",
     "cuiHelp": "Enter your clinic's unique Romanian registration code (2-10 digits)",
     "cuiAvailable": "CUI available for registration",
     "cuiTaken": "This CUI is already registered",
