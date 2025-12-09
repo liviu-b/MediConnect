@@ -100,7 +100,17 @@
     "accessDenied": "Access Denied",
     "noPermission": "You don't have permission to view this page.",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters"
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordMinChars": "Minimum 8 characters",
+    "placeholders": {
+      "name": "e.g. John Smith",
+      "email": "e.g. john.smith@email.com",
+      "phone": "e.g. +40 712 345 678",
+      "password": "Enter your password",
+      "confirmPassword": "Re-enter your password",
+      "cui": "e.g. 12345678",
+      "adminName": "e.g. Dr. Maria Popescu"
+    }
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {{name}}!",
