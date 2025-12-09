@@ -124,9 +124,12 @@ const ResetPassword = () => {
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('auth.passwordResetSuccess')}</h2>
-                <p className="text-gray-600 mb-6">{t('auth.passwordResetSuccessDesc')}</p>
+                <p className="text-gray-600 mb-4">{t('auth.passwordResetSuccessDesc')}</p>
+                <p className="text-sm text-gray-500 mb-6">
+                  {t('auth.redirectingIn')} {countdown} {t('auth.seconds')}...
+                </p>
                 <Link
-                  to="/register-clinic"
+                  to="/login"
                   className="inline-block px-6 py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
                   {t('auth.backToLogin')}
