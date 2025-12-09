@@ -340,6 +340,10 @@ async def send_notification_email(user_id: str, appointment_id: str, notificatio
 @api_router.post("/auth/register")
 async def register_user(data: UserRegister, response: Response):
     """Register a new user with email/password"""
+    # Validate password length
+    if len(data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
     existing = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
