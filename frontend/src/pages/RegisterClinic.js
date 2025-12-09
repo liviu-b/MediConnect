@@ -101,6 +101,21 @@ const RegisterClinic = () => {
     }
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/auth/login', loginForm);
+      sessionStorage.setItem('just_authenticated', 'true');
+      navigate('/dashboard', { replace: true, state: { user: res.data.user } });
+    } catch (err) {
+      setError(err.response?.data?.detail || t('notifications.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getCuiIcon = () => {
     switch (cuiStatus) {
       case 'checking':
