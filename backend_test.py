@@ -503,17 +503,39 @@ def main():
     
     # Test sequence based on review request
     tests = [
+        # Authentication Tests
         ("User Registration", tester.test_user_registration),
         ("User Login", tester.test_user_login),
-        ("Validate Registration Code", tester.test_validate_registration_code),
+        ("CUI Validation", tester.test_cui_validation),
         ("Clinic Registration", tester.test_clinic_registration),
         ("Get Current User", tester.test_auth_me),
+        
+        # Clinic Tests
         ("Get All Clinics", tester.test_get_clinics),
-        ("Get All Doctors", tester.test_get_doctors),
-        ("Get Appointments", tester.test_get_appointments),
-        ("Get Dashboard Stats", tester.test_get_stats),
         ("Clinic Admin Login", tester.test_clinic_admin_login),
+        ("Update Clinic", tester.test_update_clinic),
+        
+        # Doctor Management
+        ("Create Doctor", tester.test_create_doctor),
+        ("Get All Doctors", tester.test_get_doctors),
+        
+        # Staff Management
+        ("Create Staff", tester.test_create_staff),
+        ("Get All Staff", tester.test_get_staff),
+        
+        # Services Management
+        ("Create Service", tester.test_create_service),
+        ("Get All Services", tester.test_get_services),
+        
+        # Appointment Tests
         ("Create Appointment", tester.test_create_appointment),
+        ("Get Appointments", tester.test_get_appointments),
+        
+        # Stats
+        ("Get Dashboard Stats", tester.test_get_stats),
+        
+        # Load Testing
+        ("Load Testing", tester.test_load_testing),
     ]
     
     print(f"\nRunning {len(tests)} test categories...")
