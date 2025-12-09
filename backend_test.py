@@ -130,13 +130,17 @@ class MediConnectAPITester:
             "email": "jane.doe@healthcareplus.com",
             "password": "securepass123"
         }
-        success, response = self.run_test("Clinic Admin Login", "POST", "auth/login", 200, data)
+        # Use admin session for clinic admin operations
+        success, response = self.run_test("Clinic Admin Login", "POST", "auth/login", 200, data, use_session=False)
         if success and isinstance(response, dict):
             if 'user' in response and 'session_token' in response:
                 user = response.get('user', {})
                 if user.get('role') == 'CLINIC_ADMIN':
                     print("✅ Clinic admin login successful")
                     self.clinic_admin_token = response.get('session_token')
+                    self.clinic_id = user.get('clinic_id')
+                    # Set cookie in admin session
+                    self.admin_session.cookies.set('session_token', self.clinic_admin_token)
                     return True
                 else:
                     print(f"⚠️  Expected CLINIC_ADMIN role, got {user.get('role')}")
