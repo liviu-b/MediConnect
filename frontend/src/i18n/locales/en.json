@@ -302,7 +302,8 @@
     "deleteSuccess": "Deleted",
     "error": "An error occurred.",
     "loginSuccess": "Welcome!",
-    "registerSuccess": "Account created!"
+    "registerSuccess": "Account created!",
+    "invalidCredentials": "Incorrect email or password"
   },
   "days": {
     "mon": "Mon",

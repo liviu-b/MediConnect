@@ -302,7 +302,8 @@
     "deleteSuccess": "Șters",
     "error": "A apărut o eroare.",
     "loginSuccess": "Bine ai venit!",
-    "registerSuccess": "Cont creat!"
+    "registerSuccess": "Cont creat!",
+    "invalidCredentials": "Email sau parolă incorectă"
   },
   "days": {
     "mon": "Lun",

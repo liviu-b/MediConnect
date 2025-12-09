@@ -268,7 +268,7 @@ class RegistrationCode(BaseModel):
     code: str
     is_used: bool = False
     used_by_clinic_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) 
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # ==================== AUTH HELPERS ====================
 

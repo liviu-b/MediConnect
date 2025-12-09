@@ -22,7 +22,12 @@ const Login = () => {
       sessionStorage.setItem('just_authenticated', 'true');
       navigate('/dashboard', { replace: true, state: { user: res.data.user } });
     } catch (err) {
-      setError(err.response?.data?.detail || t('notifications.error'));
+       // Check for 401 (unauthorized) - wrong email/password
+      if (err.response?.status === 401) {
+        setError(t('notifications.invalidCredentials'));
+      } else {
+        setError(err.response?.data?.detail || t('notifications.error'));
+      }
     } finally {
       setLoading(false);
     }
