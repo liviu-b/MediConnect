@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Response, Request, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Response, Request, Depends, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,6 +12,7 @@ from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
 import secrets
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +24,10 @@ db = client[os.environ.get('DB_NAME', 'mediconnect_db')]
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Resend email configuration
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@mediconnect.com')
 
 # Create the main app without a prefix
 app = FastAPI(title="MediConnect API", version="2.0.0")
