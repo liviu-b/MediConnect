@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { useAuth, api } from '../App';
 import {
   Building2,
@@ -10,12 +11,15 @@ import {
   Settings as SettingsIcon,
   Loader2,
   Save,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const Settings = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const isNewClinic = location.state?.isNewClinic;
   const [clinic, setClinic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,7 +71,8 @@ const Settings = () => {
     setSaving(true);
     setSaved(false);
     try {
-      await api.put(`/clinics/${user.clinic_id}`, form);
+      const res = await api.put(`/clinics/${user.clinic_id}`, form);
+      setClinic(res.data);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -76,6 +81,8 @@ const Settings = () => {
       setSaving(false);
     }
   };
+
+  const isProfileIncomplete = !clinic?.name || !clinic?.address;
 
   if (user?.role !== 'CLINIC_ADMIN') {
     return (
@@ -95,6 +102,34 @@ const Settings = () => {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {/* Welcome Banner for New Clinics */}
+      {(isNewClinic || isProfileIncomplete) && (
+        <div className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl p-4 text-white">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-bold text-lg">{t('settings.welcomeTitle')}</h2>
+              <p className="text-white/90 text-sm mt-1">{t('settings.welcomeMessage')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUI Display */}
+      {clinic?.cui && (
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">{t('auth.cui')}</p>
+              <p className="text-lg font-mono font-bold text-gray-900">{clinic.cui}</p>
+            </div>
+            <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+              {t('settings.verified')}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900">{t('clinics.clinicSettings')}</h1>
@@ -109,23 +144,35 @@ const Settings = () => {
             <span>{t('clinics.title')}</span>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.clinicName')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('clinics.clinicName')} <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
+              required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                !form.name && isProfileIncomplete ? 'border-orange-300 bg-orange-50' : 'border-gray-200'
+              }`}
+              placeholder={t('settings.enterClinicName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('clinics.address')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('clinics.address')} <span className="text-red-500">*</span>
+            </label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
+                required
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  !form.address && isProfileIncomplete ? 'border-orange-300 bg-orange-50' : 'border-gray-200'
+                }`}
+                placeholder={t('settings.enterAddress')}
               />
             </div>
           </div>
@@ -175,7 +222,7 @@ const Settings = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-gray-900">{t('clinics.allowOnlineBooking')}</p>
-              <p className="text-xs text-gray-500">Allow patients to book online</p>
+              <p className="text-xs text-gray-500">{t('settings.allowBookingHelp')}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
