@@ -159,28 +159,14 @@ class MediConnectAPITester:
 
     def test_clinic_registration(self):
         """Test clinic registration"""
-        # Check if we have a valid code from validation test
-        if not hasattr(self, 'valid_code'):
-            print("⚠️  No valid registration codes available - skipping clinic registration test")
-            print("✅ Clinic registration endpoint structure is correct (codes are consumed as expected)")
-            self.tests_passed += 1  # Count as passed since the endpoint works correctly
-            return True
-            
-        import time
         unique_email = f"admin{int(time.time())}@testclinic.com"
-        clinic_email = f"clinic{int(time.time())}@test.com"
+        unique_cui = f"1234567{int(time.time()) % 10}"  # Generate unique CUI
         
         data = {
-            "registration_code": self.valid_code,
-            "clinic_name": "Test Clinic",
-            "address": "123 Test St",
-            "phone": "+1234567890",
-            "email": clinic_email,
-            "description": "Test clinic description",
-            "admin_name": "Admin User",
+            "cui": unique_cui,
+            "admin_name": "Dr. Admin Test",
             "admin_email": unique_email,
-            "admin_password": "admin123",
-            "admin_phone": "+1234567891"
+            "admin_password": "password123"
         }
         success, response = self.run_test("Clinic Registration", "POST", "auth/register-clinic", 200, data, use_session=False)
         if success and isinstance(response, dict):
