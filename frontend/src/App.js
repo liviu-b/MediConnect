@@ -438,6 +438,8 @@ function AppRouter() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterUser />} />
       <Route path="/register-clinic" element={<RegisterClinic />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/dashboard"
         element={
