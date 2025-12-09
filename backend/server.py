@@ -72,14 +72,15 @@ class ClinicRegistration(BaseModel):
 class Clinic(BaseModel):
     model_config = ConfigDict(extra="ignore")
     clinic_id: str = Field(default_factory=lambda: f"clinic_{uuid.uuid4().hex[:12]}")
-    name: str
-    address: str
-    phone: str
-    email: str
+    cui: str  # Romanian CUI (Cod Unic de Înregistrare)
+    name: Optional[str] = None  # To be filled in Settings
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[str] = None
-    registration_code: str  # Unique code used to register
-    is_verified: bool = False
+    is_verified: bool = True  # Auto-verified on registration
+    is_profile_complete: bool = False  # True when name and address are filled
     working_hours: dict = Field(default_factory=lambda: {
         "monday": {"start": "09:00", "end": "17:00"},
         "tuesday": {"start": "09:00", "end": "17:00"},
