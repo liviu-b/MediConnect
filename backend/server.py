@@ -529,26 +529,22 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/", secure=True, samesite="none")
     return {"message": "Logged out successfully"}
 
-@api_router.post("/auth/validate-code")
-async def validate_registration_code(code: str):
-    """Validate a registration code before clinic registration"""
-    code_doc = await db.registration_codes.find_one(
-        {"code": code, "is_used": False},
-        {"_id": 0}
-    )
-    if not code_doc:
-        return {"valid": False, "message": "Invalid registration code"}
+@api_router.post("/auth/validate-cui")
+async def validate_cui(cui: str):
+    """Check if a CUI is already registered"""
+    import re
+    cui_clean = cui.strip()
     
-    expires_at = code_doc.get('expires_at')
-    if expires_at:
-        if isinstance(expires_at, str):
-            expires_at = datetime.fromisoformat(expires_at)
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            return {"valid": False, "message": "Registration code has expired"}
+    # Validate format
+    if not re.match(r'^\d{2,10}$', cui_clean):
+        return {"valid": False, "available": False, "message": "CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre."}
     
-    return {"valid": True, "message": "Valid registration code"}
+    # Check if already registered
+    existing = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
+    if existing:
+        return {"valid": True, "available": False, "message": "Acest CUI este deja înregistrat."}
+    
+    return {"valid": True, "available": True, "message": "CUI disponibil pentru înregistrare."}
 
 # ==================== CLINIC MANAGEMENT ROUTES ====================
 
