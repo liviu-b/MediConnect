@@ -225,27 +225,226 @@ class MediConnectAPITester:
             return True
         return success
 
+    def test_update_clinic(self):
+        """Test updating clinic information (as admin)"""
+        if not self.clinic_id:
+            print("⚠️  No clinic_id available - skipping clinic update test")
+            return False
+            
+        data = {
+            "name": "Test Medical Clinic",
+            "address": "123 Health St",
+            "phone": "+40712345678",
+            "email": "info@clinic.com"
+        }
+        
+        # Use admin session for this request
+        url = f"{self.api_url}/clinics/{self.clinic_id}"
+        try:
+            response = self.admin_session.put(url, json=data, headers={'Content-Type': 'application/json'}, timeout=10)
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Clinic update successful - Status: {response.status_code}")
+                return True
+            else:
+                self.failed_tests.append({
+                    'name': 'Update Clinic',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                print(f"❌ Clinic update failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+        except Exception as e:
+            self.failed_tests.append({'name': 'Update Clinic', 'error': str(e)})
+            print(f"❌ Clinic update failed - Error: {str(e)}")
+        
+        self.tests_run += 1
+        return False
+
+    def test_create_doctor(self):
+        """Test creating a doctor (as clinic admin)"""
+        if not self.clinic_id:
+            print("⚠️  No clinic_id available - skipping doctor creation test")
+            return False
+            
+        data = {
+            "name": "Dr. John Smith",
+            "email": "john.smith@clinic.com",
+            "phone": "+40712345679",
+            "specialty": "Cardiology",
+            "consultation_duration": 30,
+            "consultation_fee": 100
+        }
+        
+        # Use admin session for this request
+        url = f"{self.api_url}/doctors"
+        try:
+            response = self.admin_session.post(url, json=data, headers={'Content-Type': 'application/json'}, timeout=10)
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Doctor creation successful - Status: {response.status_code}")
+                try:
+                    response_data = response.json()
+                    self.doctor_id = response_data.get('doctor_id')
+                    print(f"   Doctor ID: {self.doctor_id}")
+                except:
+                    pass
+                return True
+            else:
+                self.failed_tests.append({
+                    'name': 'Create Doctor',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                print(f"❌ Doctor creation failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+        except Exception as e:
+            self.failed_tests.append({'name': 'Create Doctor', 'error': str(e)})
+            print(f"❌ Doctor creation failed - Error: {str(e)}")
+        
+        self.tests_run += 1
+        return False
+
+    def test_create_staff(self):
+        """Test creating staff (as clinic admin)"""
+        if not self.clinic_id:
+            print("⚠️  No clinic_id available - skipping staff creation test")
+            return False
+            
+        data = {
+            "name": "Jane Nurse",
+            "email": "jane@clinic.com",
+            "phone": "+40712345680",
+            "role": "NURSE"
+        }
+        
+        # Use admin session for this request
+        url = f"{self.api_url}/staff"
+        try:
+            response = self.admin_session.post(url, json=data, headers={'Content-Type': 'application/json'}, timeout=10)
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Staff creation successful - Status: {response.status_code}")
+                return True
+            else:
+                self.failed_tests.append({
+                    'name': 'Create Staff',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                print(f"❌ Staff creation failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+        except Exception as e:
+            self.failed_tests.append({'name': 'Create Staff', 'error': str(e)})
+            print(f"❌ Staff creation failed - Error: {str(e)}")
+        
+        self.tests_run += 1
+        return False
+
+    def test_get_staff(self):
+        """Test getting all staff (as clinic admin)"""
+        if not self.clinic_id:
+            print("⚠️  No clinic_id available - skipping get staff test")
+            return False
+            
+        # Use admin session for this request
+        url = f"{self.api_url}/staff"
+        try:
+            response = self.admin_session.get(url, headers={'Content-Type': 'application/json'}, timeout=10)
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Get staff successful - Status: {response.status_code}")
+                try:
+                    staff_list = response.json()
+                    print(f"   Found {len(staff_list)} staff members")
+                except:
+                    pass
+                return True
+            else:
+                self.failed_tests.append({
+                    'name': 'Get Staff',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                print(f"❌ Get staff failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+        except Exception as e:
+            self.failed_tests.append({'name': 'Get Staff', 'error': str(e)})
+            print(f"❌ Get staff failed - Error: {str(e)}")
+        
+        self.tests_run += 1
+        return False
+
+    def test_create_service(self):
+        """Test creating a service (as clinic admin)"""
+        if not self.clinic_id:
+            print("⚠️  No clinic_id available - skipping service creation test")
+            return False
+            
+        data = {
+            "name": "General Consultation",
+            "description": "Basic health checkup",
+            "duration": 30,
+            "price": 50
+        }
+        
+        # Use admin session for this request
+        url = f"{self.api_url}/services"
+        try:
+            response = self.admin_session.post(url, json=data, headers={'Content-Type': 'application/json'}, timeout=10)
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Service creation successful - Status: {response.status_code}")
+                return True
+            else:
+                self.failed_tests.append({
+                    'name': 'Create Service',
+                    'expected': 200,
+                    'actual': response.status_code,
+                    'response': response.text[:200]
+                })
+                print(f"❌ Service creation failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+        except Exception as e:
+            self.failed_tests.append({'name': 'Create Service', 'error': str(e)})
+            print(f"❌ Service creation failed - Error: {str(e)}")
+        
+        self.tests_run += 1
+        return False
+
+    def test_get_services(self):
+        """Test getting all services"""
+        success, response = self.run_test("Get All Services", "GET", "services", 200, use_session=False)
+        if success and isinstance(response, list):
+            print(f"✅ Found {len(response)} services")
+            return True
+        return success
+
     def test_create_appointment(self):
-        """Test creating an appointment (requires doctors)"""
-        # First check if there are any doctors available
-        success, doctors = self.run_test("Get Doctors for Appointment", "GET", "doctors", 200)
-        if not success or not isinstance(doctors, list) or len(doctors) == 0:
-            print("⚠️  No doctors available - skipping appointment creation test")
+        """Test creating an appointment (as patient)"""
+        if not self.doctor_id or not self.clinic_id:
+            print("⚠️  No doctor_id or clinic_id available - skipping appointment creation test")
             print("✅ Appointment endpoint requires doctors to be set up first")
             self.tests_passed += 1  # Count as passed since this is expected
             return True
             
-        # If doctors exist, try to create an appointment
-        doctor = doctors[0]
-        from datetime import datetime, timedelta
         future_date = datetime.now() + timedelta(days=1)
+        future_date = future_date.replace(hour=10, minute=0, second=0, microsecond=0)
         
         data = {
-            "doctor_id": doctor["doctor_id"],
-            "clinic_id": doctor["clinic_id"],
+            "doctor_id": self.doctor_id,
+            "clinic_id": self.clinic_id,
             "date_time": future_date.isoformat(),
-            "duration": 30,
-            "notes": "Test appointment"
+            "notes": "Regular checkup"
         }
         
         success, response = self.run_test("Create Appointment", "POST", "appointments", 200, data)
@@ -256,6 +455,45 @@ class MediConnectAPITester:
             else:
                 print("⚠️  Missing appointment_id in response")
         return success
+
+    def test_load_testing(self):
+        """Test concurrent requests to key endpoints"""
+        print("🔄 Running load testing with 5 concurrent requests...")
+        
+        def make_request():
+            try:
+                response = requests.get(f"{self.api_url}/clinics", timeout=10)
+                return response.status_code == 200
+            except:
+                return False
+        
+        # Run 5 concurrent requests
+        threads = []
+        results = []
+        
+        for i in range(5):
+            thread = threading.Thread(target=lambda: results.append(make_request()))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        success_count = sum(results)
+        self.tests_run += 1
+        
+        if success_count >= 4:  # Allow 1 failure out of 5
+            self.tests_passed += 1
+            print(f"✅ Load testing successful - {success_count}/5 requests succeeded")
+            return True
+        else:
+            self.failed_tests.append({
+                'name': 'Load Testing',
+                'error': f'Only {success_count}/5 requests succeeded'
+            })
+            print(f"❌ Load testing failed - Only {success_count}/5 requests succeeded")
+            return False
 
 def main():
     print("🏥 MediConnect API Testing Suite")
