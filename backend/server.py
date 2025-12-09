@@ -108,14 +108,6 @@ class ClinicUpdate(BaseModel):
     working_hours: Optional[dict] = None
     settings: Optional[dict] = None
 
-class RegistrationCode(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    code: str
-    is_used: bool = False
-    used_by_clinic_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=30))
-
 class Doctor(BaseModel):
     model_config = ConfigDict(extra="ignore")
     doctor_id: str = Field(default_factory=lambda: f"doctor_{uuid.uuid4().hex[:12]}")
