@@ -100,7 +100,17 @@
     "accessDenied": "Acces Refuzat",
     "noPermission": "Nu ai permisiunea să vezi această pagină.",
     "passwordMismatch": "Parolele nu coincid",
-    "passwordTooShort": "Parola trebuie să aibă minim 6 caractere"
+    "passwordTooShort": "Parola trebuie să aibă minim 8 caractere",
+    "passwordMinChars": "Minim 8 caractere",
+    "placeholders": {
+      "name": "ex. Ion Popescu",
+      "email": "ex. ion.popescu@email.com",
+      "phone": "ex. +40 712 345 678",
+      "password": "Introdu parola",
+      "confirmPassword": "Reintrodu parola",
+      "cui": "ex. 12345678",
+      "adminName": "ex. Dr. Maria Ionescu"
+    }
   },
   "dashboard": {
     "welcomeBack": "Bine ai revenit, {{name}}!",
