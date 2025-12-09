@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, User, Building2, Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Building2, Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, LogIn } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { api } from '../App';
 
 const RegisterClinic = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'login'
   const [form, setForm] = useState({
     cui: '',
     admin_name: '',
@@ -15,12 +16,17 @@ const RegisterClinic = () => {
     admin_password: '',
     confirm_password: ''
   });
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cuiStatus, setCuiStatus] = useState(null);
   const [cuiChecked, setCuiChecked] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const validateCUI = async (cui) => {
     if (!cui || cui.length < 2) {
