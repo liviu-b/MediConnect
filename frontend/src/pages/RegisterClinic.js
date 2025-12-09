@@ -243,7 +243,7 @@ const RegisterClinic = () => {
                     required
                     value={form.admin_email}
                     onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
-                    placeholder={t('auth.placeholders.email')}
+                    placeholder="email@example.com"
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
@@ -263,7 +263,7 @@ const RegisterClinic = () => {
                     minLength={8}
                     value={form.admin_password}
                     onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
-                    placeholder={t('auth.placeholders.password')}
+                    placeholder={t('auth.placeholders.enterPassword')}
                     className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                   <button
