@@ -189,11 +189,34 @@ const RegisterClinic = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
           <div className="w-full max-w-md">
-            <div className="flex items-center gap-2 mb-6">
-              <Building2 className="w-6 h-6 text-teal-600" />
-              <h2 className="text-2xl font-bold text-gray-900">{t('auth.registerAsClinic')}</h2>
+            {/* Tabs */}
+            <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('register'); setError(''); }}
+                className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+                  activeTab === 'register'
+                    ? 'bg-white text-teal-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Building2 className="w-4 h-4 inline mr-2" />
+                {t('auth.newClinic')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('login'); setError(''); }}
+                className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+                  activeTab === 'login'
+                    ? 'bg-white text-teal-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <LogIn className="w-4 h-4 inline mr-2" />
+                {t('auth.alreadyRegistered')}
+              </button>
             </div>
 
             {error && (
@@ -202,132 +225,210 @@ const RegisterClinic = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* CUI Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('auth.cui')} <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-gray-500 mb-2">{t('auth.cuiHelp')}</p>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    maxLength={10}
-                    value={form.cui}
-                    onChange={handleCuiChange}
-                    onBlur={handleCuiBlur}
-                    placeholder={t('auth.placeholders.cui')}
-                    className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                      cuiStatus === 'valid' ? 'border-green-300' :
-                      cuiStatus === 'taken' || cuiStatus === 'invalid' ? 'border-red-300' :
-                      'border-gray-200'
-                    }`}
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    {getCuiIcon()}
+            {activeTab === 'login' ? (
+              /* Login Form for Already Registered Clinics */
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <LogIn className="w-6 h-6 text-teal-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">{t('auth.clinicLogin')}</h2>
+                </div>
+                <p className="text-gray-500 mb-6">{t('auth.clinicLoginSubtitle')}</p>
+
+                <form onSubmit={handleLogin} className="space-y-4">
+                  {/* Admin Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.adminEmail')} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        required
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                        placeholder="email@example.com"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                    </div>
                   </div>
-                </div>
-                {cuiStatus && (
-                  <p className="mt-1 text-xs">{getCuiMessage()}</p>
-                )}
-              </div>
 
-              {/* Admin Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('auth.adminName')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={form.admin_name}
-                    onChange={(e) => setForm({ ...form, admin_name: e.target.value })}
-                    placeholder={t('auth.placeholders.adminName')}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.password')} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showLoginPassword ? 'text' : 'password'}
+                        required
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                        placeholder={t('auth.placeholders.enterPassword')}
+                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Admin Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('auth.adminEmail')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    value={form.admin_email}
-                    onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
-                    placeholder="email@example.com"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+                  {/* Forgot Password Link */}
+                  <div className="text-right">
+                    <Link to="/forgot-password" className="text-sm text-teal-600 hover:underline">
+                      {t('auth.forgotPassword')}
+                    </Link>
+                  </div>
 
-              {/* Admin Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('auth.adminPassword')} <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-gray-500 mb-1">{t('auth.passwordMinChars')}</p>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={8}
-                    value={form.admin_password}
-                    onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
-                    placeholder={t('auth.placeholders.enterPassword')}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                    {t('common.signIn')}
                   </button>
+                </form>
+              </>
+            ) : (
+              /* Registration Form for New Clinics */
+              <>
+                <div className="flex items-center gap-2 mb-6">
+                  <Building2 className="w-6 h-6 text-teal-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">{t('auth.registerAsClinic')}</h2>
                 </div>
-              </div>
 
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('auth.confirmPassword')} <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    minLength={8}
-                    value={form.confirm_password}
-                    onChange={(e) => setForm({ ...form, confirm_password: e.target.value })}
-                    placeholder={t('auth.placeholders.confirmPassword')}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* CUI Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.cui')} <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">{t('auth.cuiHelp')}</p>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        required
+                        maxLength={10}
+                        value={form.cui}
+                        onChange={handleCuiChange}
+                        onBlur={handleCuiBlur}
+                        placeholder={t('auth.placeholders.cui')}
+                        className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                          cuiStatus === 'valid' ? 'border-green-300' :
+                          cuiStatus === 'taken' || cuiStatus === 'invalid' ? 'border-red-300' :
+                          'border-gray-200'
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {getCuiIcon()}
+                      </div>
+                    </div>
+                    {cuiStatus && (
+                      <p className="mt-1 text-xs">{getCuiMessage()}</p>
+                    )}
+                  </div>
+
+                  {/* Admin Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.adminName')} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        required
+                        value={form.admin_name}
+                        onChange={(e) => setForm({ ...form, admin_name: e.target.value })}
+                        placeholder={t('auth.placeholders.adminName')}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Admin Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.adminEmail')} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        required
+                        value={form.admin_email}
+                        onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                        placeholder="email@example.com"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Admin Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.adminPassword')} <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">{t('auth.passwordMinChars')}</p>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={form.admin_password}
+                        onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
+                        placeholder={t('auth.placeholders.enterPassword')}
+                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.confirmPassword')} <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={form.confirm_password}
+                        onChange={(e) => setForm({ ...form, confirm_password: e.target.value })}
+                        placeholder={t('auth.placeholders.confirmPassword')}
+                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    type="submit"
+                    disabled={loading || cuiStatus !== 'valid'}
+                    className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || cuiStatus !== 'valid'}
-                className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
                 {loading && <Loader2 className="w-5 h-5 animate-spin" />}
                 {t('auth.registerClinic')}
               </button>
