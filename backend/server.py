@@ -263,6 +263,13 @@ class ServiceCreate(BaseModel):
     duration: int = 30
     price: float = 0.0
 
+class RegistrationCode(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    code: str
+    is_used: bool = False
+    used_by_clinic_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) 
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
@@ -1316,7 +1323,6 @@ async def startup_event():
         for code in codes:
             doc = code.model_dump()
             doc['created_at'] = doc['created_at'].isoformat()
-            doc['expires_at'] = doc['expires_at'].isoformat()
             await db.registration_codes.insert_one(doc)
         logger.info("Created default registration codes")
 
