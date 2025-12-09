@@ -391,40 +391,40 @@ async def login_user(data: UserLogin, response: Response):
 
 @api_router.post("/auth/register-clinic")
 async def register_clinic(data: ClinicRegistration, response: Response):
-    """Register a new clinic with unique registration code"""
-    # Validate registration code
-    code_doc = await db.registration_codes.find_one(
-        {"code": data.registration_code, "is_used": False},
-        {"_id": 0}
-    )
-    if not code_doc:
-        raise HTTPException(status_code=400, detail="Invalid or expired registration code")
+    """Register a new clinic with Romanian CUI (Cod Unic de Înregistrare)"""
+    import re
     
-    expires_at = code_doc.get('expires_at')
-    if expires_at:
-        if isinstance(expires_at, str):
-            expires_at = datetime.fromisoformat(expires_at)
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=400, detail="Registration code has expired")
+    # Validate CUI format (Romanian: 2-10 digits)
+    cui_clean = data.cui.strip()
+    if not re.match(r'^\d{2,10}$', cui_clean):
+        raise HTTPException(
+            status_code=400, 
+            detail="CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre. / Invalid CUI. CUI must contain 2-10 digits."
+        )
+    
+    # Check if CUI already registered
+    existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
+    if existing_clinic:
+        raise HTTPException(
+            status_code=400, 
+            detail="Acest CUI este deja înregistrat. / This CUI is already registered."
+        )
     
     # Check if admin email exists
     existing_user = await db.users.find_one({"email": data.admin_email.lower()}, {"_id": 0})
     if existing_user:
-        raise HTTPException(status_code=400, detail="Admin email already registered")
+        raise HTTPException(
+            status_code=400, 
+            detail="Această adresă de email este deja înregistrată. / This email is already registered."
+        )
     
-    # Create clinic
+    # Create clinic with minimal info (admin will complete in Settings)
     clinic_id = f"clinic_{uuid.uuid4().hex[:12]}"
     clinic = Clinic(
         clinic_id=clinic_id,
-        name=data.clinic_name,
-        address=data.address,
-        phone=data.phone,
-        email=data.email.lower(),
-        description=data.description,
-        registration_code=data.registration_code,
-        is_verified=True
+        cui=cui_clean,
+        is_verified=True,
+        is_profile_complete=False
     )
     clinic_doc = clinic.model_dump()
     clinic_doc['created_at'] = clinic_doc['created_at'].isoformat()
@@ -436,7 +436,6 @@ async def register_clinic(data: ClinicRegistration, response: Response):
         user_id=user_id,
         email=data.admin_email.lower(),
         name=data.admin_name,
-        phone=data.admin_phone,
         password_hash=hash_password(data.admin_password),
         auth_provider="email",
         role="CLINIC_ADMIN",
@@ -445,12 +444,6 @@ async def register_clinic(data: ClinicRegistration, response: Response):
     user_doc = admin_user.model_dump()
     user_doc['created_at'] = user_doc['created_at'].isoformat()
     await db.users.insert_one(user_doc)
-    
-    # Mark registration code as used
-    await db.registration_codes.update_one(
-        {"code": data.registration_code},
-        {"$set": {"is_used": True, "used_by_clinic_id": clinic_id}}
-    )
     
     session_token = await create_session(user_id, response)
     
