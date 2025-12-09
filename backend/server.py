@@ -548,6 +548,81 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token", path="/", secure=True, samesite="none")
     return {"message": "Logged out successfully"}
 
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Request a password reset link"""
+    user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+    
+    # Always return success to prevent email enumeration
+    if not user_doc:
+        logger.info(f"[MOCK EMAIL] Password reset requested for non-existent email: {data.email}")
+        return {"message": "If an account exists with this email, a password reset link has been sent."}
+    
+    # Check if user uses Google OAuth
+    if user_doc.get('auth_provider') == 'google':
+        logger.info(f"[MOCK EMAIL] Password reset requested for Google OAuth user: {data.email}")
+        return {"message": "If an account exists with this email, a password reset link has been sent."}
+    
+    # Delete any existing reset tokens for this user
+    await db.password_reset_tokens.delete_many({"user_id": user_doc['user_id']})
+    
+    # Create new reset token
+    reset_token = PasswordResetToken(
+        user_id=user_doc['user_id'],
+        email=data.email.lower()
+    )
+    
+    token_doc = reset_token.model_dump()
+    token_doc['expires_at'] = token_doc['expires_at'].isoformat()
+    token_doc['created_at'] = token_doc['created_at'].isoformat()
+    await db.password_reset_tokens.insert_one(token_doc)
+    
+    # Mock email - in production this would send an actual email
+    reset_link = f"https://your-domain.com/reset-password?token={reset_token.token}"
+    logger.info(f"[MOCK EMAIL] Password reset link for {data.email}: {reset_link}")
+    logger.info(f"[MOCK EMAIL] Reset token: {reset_token.token}")
+    
+    return {"message": "If an account exists with this email, a password reset link has been sent."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password using reset token"""
+    # Validate password length
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    # Find the reset token
+    token_doc = await db.password_reset_tokens.find_one({"token": data.token, "used": False}, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check expiration
+    expires_at = token_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    
+    # Update user password
+    new_password_hash = hash_password(data.new_password)
+    await db.users.update_one(
+        {"user_id": token_doc["user_id"]},
+        {"$set": {"password_hash": new_password_hash}}
+    )
+    
+    # Mark token as used
+    await db.password_reset_tokens.update_one(
+        {"token": data.token},
+        {"$set": {"used": True}}
+    )
+    
+    logger.info(f"Password reset successful for user: {token_doc['user_id']}")
+    return {"message": "Password has been reset successfully"}
+
 @api_router.post("/auth/validate-cui")
 async def validate_cui(cui: str):
     """Check if a CUI is already registered"""
