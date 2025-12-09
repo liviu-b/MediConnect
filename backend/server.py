@@ -554,18 +554,18 @@ async def logout(request: Request, response: Response):
     return {"message": "Logged out successfully"}
 
 @api_router.post("/auth/forgot-password")
-async def forgot_password(data: ForgotPasswordRequest):
+async def forgot_password(data: ForgotPasswordRequest, background_tasks: BackgroundTasks):
     """Request a password reset link"""
     user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     
     # Always return success to prevent email enumeration
     if not user_doc:
-        logger.info(f"[MOCK EMAIL] Password reset requested for non-existent email: {data.email}")
+        logger.info(f"Password reset requested for non-existent email: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
     # Check if user uses Google OAuth
     if user_doc.get('auth_provider') == 'google':
-        logger.info(f"[MOCK EMAIL] Password reset requested for Google OAuth user: {data.email}")
+        logger.info(f"Password reset requested for Google OAuth user: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
     # Delete any existing reset tokens for this user
@@ -582,12 +582,144 @@ async def forgot_password(data: ForgotPasswordRequest):
     token_doc['created_at'] = token_doc['created_at'].isoformat()
     await db.password_reset_tokens.insert_one(token_doc)
     
-    # Mock email - in production this would send an actual email
-    reset_link = f"https://your-domain.com/reset-password?token={reset_token.token}"
-    logger.info(f"[MOCK EMAIL] Password reset link for {data.email}: {reset_link}")
-    logger.info(f"[MOCK EMAIL] Reset token: {reset_token.token}")
+    # Get medical center info for branding (if user is clinic admin)
+    medical_center = None
+    if user_doc.get('clinic_id'):
+        medical_center = await db.clinics.find_one({"clinic_id": user_doc['clinic_id']}, {"_id": 0})
     
+    # Get frontend URL from environment or use default
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://clinic-admin-12.preview.emergentagent.com')
+    reset_link = f"{frontend_url}/reset-password?token={reset_token.token}"
+    
+    # Send email in background task
+    background_tasks.add_task(
+        send_password_reset_email,
+        recipient_email=data.email.lower(),
+        recipient_name=user_doc.get('name', 'User'),
+        reset_link=reset_link,
+        medical_center=medical_center
+    )
+    
+    logger.info(f"Password reset email queued for: {data.email}")
     return {"message": "If an account exists with this email, a password reset link has been sent."}
+
+
+def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, medical_center: dict = None):
+    """Send password reset email using Resend"""
+    try:
+        # Determine sender based on medical center
+        if medical_center and medical_center.get('email'):
+            sender_name = medical_center.get('name', 'MediConnect')
+            # Note: For custom domains, you need to verify the domain in Resend
+            # For now, we use onboarding@resend.dev which is Resend's test sender
+            from_email = "MediConnect <onboarding@resend.dev>"
+        else:
+            from_email = "MediConnect <onboarding@resend.dev>"
+            sender_name = "MediConnect"
+        
+        center_name = medical_center.get('name', 'MediConnect') if medical_center else 'MediConnect'
+        center_address = medical_center.get('address', '') if medical_center else ''
+        center_phone = medical_center.get('phone', '') if medical_center else ''
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">{center_name}</h1>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                    <h2 style="color: #1f2937; margin-top: 0; margin-bottom: 20px;">Password Reset Request</h2>
+                    
+                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                        Hello {recipient_name},
+                    </p>
+                    
+                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
+                        We received a request to reset your password. Click the button below to create a new password. 
+                        If you didn't make this request, you can safely ignore this email.
+                    </p>
+                    
+                    <!-- Button -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                            Reset Your Password
+                        </a>
+                    </div>
+                    
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                        Or copy and paste this link into your browser:
+                    </p>
+                    <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">
+                        {reset_link}
+                    </p>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                            ⏰ This link expires in 1 hour for security purposes.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                        {center_name}
+                    </p>
+                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">{center_address}</p>' if center_address else ''}
+                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">📞 {center_phone}</p>' if center_phone else ''}
+                    <p style="color: #9ca3af; font-size: 11px; margin-top: 15px;">
+                        © 2025 MediConnect. All rights reserved.<br>
+                        (Powered by ACL-Smart Software)
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+Password Reset Request
+
+Hello {recipient_name},
+
+We received a request to reset your password. Click the link below to create a new password.
+If you didn't make this request, you can safely ignore this email.
+
+Reset your password: {reset_link}
+
+This link expires in 1 hour for security purposes.
+
+{center_name}
+{center_address}
+{center_phone}
+
+© 2025 MediConnect. All rights reserved.
+(Powered by ACL-Smart Software)
+        """
+        
+        response = resend.Emails.send({
+            "from": from_email,
+            "to": recipient_email,
+            "subject": f"Reset Your Password - {center_name}",
+            "html": html_content,
+            "text": text_content
+        })
+        
+        logger.info(f"Password reset email sent successfully to {recipient_email}. Email ID: {response.get('id', 'unknown')}")
+        return {"success": True, "email_id": response.get('id')}
+        
+    except Exception as e:
+        logger.error(f"Failed to send password reset email to {recipient_email}: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(data: ResetPasswordRequest):
