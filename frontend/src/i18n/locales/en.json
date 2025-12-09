@@ -122,8 +122,10 @@
     "invalidResetLink": "Invalid Reset Link",
     "invalidResetLinkDesc": "This password reset link is invalid or has expired.",
     "requestNewLink": "Request New Link",
-    "passwordResetSuccess": "Password Reset!",
-    "passwordResetSuccessDesc": "Your password has been successfully reset. You can now sign in with your new password.",
+    "passwordResetSuccess": "Password Changed!",
+    "passwordResetSuccessDesc": "Your password has been successfully changed. You can now sign in with your new password.",
+    "redirectingIn": "Redirecting to login in",
+    "seconds": "seconds",
     "placeholders": {
       "name": "e.g. John Smith",
       "email": "email@example.com",
