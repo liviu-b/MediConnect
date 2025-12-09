@@ -326,7 +326,7 @@ const Layout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-3 border-b border-gray-200">
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
@@ -335,7 +335,7 @@ const Layout = ({ children }) => {
                   MediConnect
                 </span>
               )}
-            </div>
+            </Link>
           </div>
 
           {/* Nav */}
