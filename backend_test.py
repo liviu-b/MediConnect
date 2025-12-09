@@ -8,7 +8,7 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 class MediConnectAPITester:
-    def __init__(self, base_url="https://healthsync-33.preview.emergentagent.com"):
+    def __init__(self, base_url="https://clinic-admin-12.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_token = None  # Will be set after login

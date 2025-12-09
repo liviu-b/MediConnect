@@ -1,0 +1,5 @@
+<analysis>
+ I want to add/modify something. Once a clinic is already registered, that clinic only need to add Administrator Email * and Password *
+
+can you add this option?
+</analysis>
