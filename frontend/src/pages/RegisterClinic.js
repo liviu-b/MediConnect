@@ -148,12 +148,12 @@ const RegisterClinic = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 to-blue-500 p-8 flex-col justify-between">
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-white">MediConnect</span>
-        </div>
+        </Link>
         <div className="text-white">
           <h1 className="text-4xl font-bold mb-4">{t('auth.clinicSignUpTitle')}</h1>
           <p className="text-lg text-white/80 mb-6">{t('auth.clinicSignUpSubtitle')}</p>
@@ -174,7 +174,10 @@ const RegisterClinic = () => {
             </div>
           </div>
         </div>
-        <p className="text-white/60 text-sm">© 2025 MediConnect</p>
+        <div className="text-white/60 text-sm">
+          <p>© 2025 MediConnect. {t('landing.footer')}</p>
+          <p className="mt-1">(Powered by ACL-Smart Software)</p>
+        </div>
       </div>
 
       {/* Right Panel */}
