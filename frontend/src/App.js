@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 // Configure axios defaults
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://clinic-dashboard-fix.preview.emergentagent.com';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL
 const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;
