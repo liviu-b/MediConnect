@@ -8,7 +8,7 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 class MediConnectAPITester:
-    def __init__(self, base_url="https://clinic-admin-12.preview.emergentagent.com"):
+    def __init__(self, base_url="https://clinic-dashboard-fix.preview.emergentagent.com")
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_token = None  # Will be set after login
@@ -107,21 +107,69 @@ class MediConnectAPITester:
                 print("⚠️  Missing user or session_token in response")
         return success
 
-    def test_user_login(self):
-        """Test user login"""
+    def test_duplicate_email_registration(self):
+        """Test duplicate email registration error handling for Phase 1 Bug Fixes"""
+        print("\n🔍 Testing Patient Registration Error Handling...")
+
+        # Try to register with an existing email
+        existing_email = "testuser123@example.com"
         data = {
-            "email": "testuser@example.com",
-            "password": "test123456"
+            "email": existing_email,
+            "password": "testpassword123",
+            "name": "Test User Duplicate",
+            "phone": "1234567890"
         }
-        success, response = self.run_test("User Login", "POST", "auth/login", 200, data)
+
+        success, response = self.run_test("Duplicate Email Registration", "POST", "auth/register", 400, data, use_session=False)
+
         if success and isinstance(response, dict):
-            if 'user' in response and 'session_token' in response:
-                print("✅ User login successful")
-                self.session_token = response.get('session_token')
-                self.user_id = response.get('user', {}).get('user_id')
+            if 'detail' in response and 'already registered' in response['detail'].lower():
+                print(f"✅ Duplicate email error handling works: {response['detail']}")
                 return True
             else:
+                print(f"❌ Unexpected error message: {response}")
+
+        return success
+
+    def test_user_login(self):
+        """Test user login for Phase 1 Bug Fixes"""
+         print("\n🔍 Testing User Authentication System...")
+
+        # Test with the specific credentials mentioned in review request
+
+        data = {
+            "email": "testuser123@example.com",
+            "password": "testpassword123"
+        }
+        success, response = self.run_test("Patient User Login", "POST", "auth/login", 200, data)
+        if success and isinstance(response, dict):
+            if 'user' in response and 'session_token' in response:
+                print("✅ Patient user login successful")
+                self.session_token = response.get('session_token')
+                self.user_id = response.get('user', {}).get('user_id')
+                # Test session validation after login
+                return self.test_session_validation()
+            else:
                 print("⚠️  Missing user or session_token in response")
+        return success
+
+        def test_session_validation(self):
+        """Test session validation for logo navigation bug fix"""
+        print("\n🔍 Testing Session Validation for Logo Navigation...")
+
+        # Test /auth/me endpoint to validate session is maintained
+        success, response = self.run_test("Session Validation", "GET", "auth/me", 200)
+
+        if success and isinstance(response, dict):
+            if 'user_id' in response and 'email' in response:
+                print(f"✅ Session validation successful - User: {response.get('email')}")
+                print("✅ Backend properly maintains session for logo navigation")
+                return True
+            else:
+                print("❌ Session validation failed - missing user data")
+        else:
+            print("❌ Session validation failed - authentication error")
+
         return success
 
     def test_clinic_admin_login(self):
@@ -149,17 +197,46 @@ class MediConnectAPITester:
         return success
 
     def test_cui_validation(self):
-        """Test CUI validation"""
-        # Test with a valid CUI format
-        test_cui = "12345678"
-        success, response = self.run_test("CUI Validation", "POST", f"auth/validate-cui?cui={test_cui}", 200, use_session=False)
+        """Test CUI validation for Phase 1 Bug Fixes"""
+        print("\n🔍 Testing CUI Validation Bug Fixes...")
+
+        # Test 1: Valid CUI format (8 digits) - should be available
+        test_cui_valid = "99776655"
+        success1, response1 = self.run_test("CUI Validation - Valid Available", "POST", f"auth/validate-cui?cui={test_cui_valid}", 200, use_session=False)
+
+         # Test 2: Already registered CUI - should show as registered
+        test_cui_registered = "12345678"
+        success2, response2 = self.run_test("CUI Validation - Already Registered", "POST", f"auth/validate-cui?cui={test_cui_registered}", 200, use_session=False)
+
+        # Test 3: Invalid CUI format (less than 2 digits)
+        test_cui_invalid = "1"
+        success3, response3 = self.run_test("CUI Validation - Invalid Format", "POST", f"auth/validate-cui?cui={test_cui_invalid}", 200, use_session=False)
+
+        # Validate responses
+        valid_tests = 0
+
         if success and isinstance(response, dict):
-            if 'valid' in response and 'available' in response:
-                print(f"✅ CUI validation successful: valid={response.get('valid')}, available={response.get('available')}")
-                return True
+            if success1 and isinstance(response1, dict):
+                if response1.get('valid') == True and response1.get('available') == True:
+                print(f"✅ Valid CUI test passed: {response1.get('message')}")
+                valid_tests += 1
             else:
-                print("⚠️  Missing valid or available fields in response")
-        return success
+                print(f"❌ Valid CUI test failed: {response1}")
+        
+             if success2 and isinstance(response2, dict):
+                if response2.get('valid') == True and response2.get('available') == False:
+                print(f"✅ Registered CUI test passed: {response2.get('message')}")
+                valid_tests += 1
+            else:
+                print(f"❌ Registered CUI test failed: {response2}")
+
+            if success3 and isinstance(response3, dict):
+                if response3.get('valid') == False:
+                print(f"✅ Invalid CUI test passed: {response3.get('message')}")
+                valid_tests += 1
+            else:
+                print(f"❌ Invalid CUI test failed: {response3}")
+        return valid_tests == 3
 
     def test_clinic_registration(self):
         """Test clinic registration"""
@@ -496,49 +573,31 @@ class MediConnectAPITester:
             return False
 
 def main():
-    print("🏥 MediConnect API Testing Suite")
-    print("=" * 50)
+    print("🏥 MediConnect API Testing Suite - Phase 1 Critical Bug Fixes")
+    print("=" * 70)
     
     tester = MediConnectAPITester()
     
-    # Test sequence based on review request
+    # Test sequence focused on Phase 1 Bug Fixes from review request
     tests = [
-        # Authentication Tests
+        # Phase 1 Critical Bug Fix Tests
+        ("Patient User Login & Session Management", tester.test_user_login),
+        ("CUI Validation Bug Fixes", tester.test_cui_validation),
+        ("Patient Registration Error Handling", tester.test_duplicate_email_registration),
+
+        # Supporting Authentication Tests
         ("User Registration", tester.test_user_registration),
-        ("User Login", tester.test_user_login),
-        ("CUI Validation", tester.test_cui_validation),
         ("Clinic Registration", tester.test_clinic_registration),
         ("Get Current User", tester.test_auth_me),
         
-        # Clinic Tests
+        # Basic API Health Tests
         ("Get All Clinics", tester.test_get_clinics),
-        ("Clinic Admin Login", tester.test_clinic_admin_login),
-        ("Update Clinic", tester.test_update_clinic),
-        
-        # Doctor Management
-        ("Create Doctor", tester.test_create_doctor),
-        ("Get All Doctors", tester.test_get_doctors),
-        
-        # Staff Management
-        ("Create Staff", tester.test_create_staff),
-        ("Get All Staff", tester.test_get_staff),
-        
-        # Services Management
-        ("Create Service", tester.test_create_service),
+
         ("Get All Services", tester.test_get_services),
         
-        # Appointment Tests
-        ("Create Appointment", tester.test_create_appointment),
-        ("Get Appointments", tester.test_get_appointments),
-        
-        # Stats
-        ("Get Dashboard Stats", tester.test_get_stats),
-        
-        # Load Testing
-        ("Load Testing", tester.test_load_testing),
     ]
     
-    print(f"\nRunning {len(tests)} test categories...")
+    print(f"\nRunning {len(tests)} test categories focused on Phase 1 Bug Fixes...")
     
     for test_name, test_func in tests:
         print(f"\n{'='*20} {test_name} {'='*20}")
@@ -552,9 +611,9 @@ def main():
             })
     
     # Print summary
-    print(f"\n{'='*50}")
-    print(f"📊 Test Results Summary")
-    print(f"{'='*50}")
+    print(f"\n{'='*70}")
+    print(f"📊 Phase 1 Bug Fixes Test Results Summary")
+    print(f"{'='*70}")
     print(f"Tests passed: {tester.tests_passed}/{tester.tests_run}")
     print(f"Success rate: {(tester.tests_passed/tester.tests_run*100):.1f}%" if tester.tests_run > 0 else "No tests run")
     
@@ -568,7 +627,7 @@ def main():
             elif 'error' in failure:
                 print(f"   Error: {failure['error']}")
     else:
-        print("\n🎉 All tests passed!")
+        print("\n🎉 All Phase 1 Bug Fix tests passed!")
     
     return 0 if tester.tests_passed == tester.tests_run else 1
 

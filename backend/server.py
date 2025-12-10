@@ -595,7 +595,7 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
         medical_center = await db.clinics.find_one({"clinic_id": user_doc['clinic_id']}, {"_id": 0})
     
     # Get frontend URL from environment or use default
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://clinic-admin-12.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://clinic-dashboard-fix.preview.emergentagent.com')
     reset_link = f"{frontend_url}/reset-password?token={reset_token.token}"
     
     # Send email in background task
@@ -1297,19 +1297,18 @@ async def get_revenue_stats(request: Request, period: str = "month"):
 async def root():
     return {"message": "MediConnect API v2.0", "status": "healthy"}
 
-# Include the router in the main app
-app.include_router(api_router)
-
 # Add CORS middleware BEFORE including router
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    # Use a non-wildcard default if CORS_ORIGINS is not set and credentials are True
-    # The split(',') handles comma-separated origins from the environment variable
-    allow_origins=os.environ.get('CORS_ORIGINS', '').split(',') or [],
-    allow_methods=["*"],
+    allow_origins=["*"],  # Allow all origins for development
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Include the router in the main app
+app.include_router(api_router)
 
 @app.on_event("startup")
 async def startup_event():

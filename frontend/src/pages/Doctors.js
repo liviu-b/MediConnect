@@ -14,21 +14,42 @@ import {
   X
 } from 'lucide-react';
 
-const specialties = [
-  'General Practice',
-  'Cardiology',
-  'Dermatology',
-  'Neurology',
-  'Pediatrics',
-  'Orthopedics',
-  'Ophthalmology',
-  'Psychiatry',
-  'Gynecology',
-  'Dentistry'
+// Specialty keys for translation
+const specialtyKeys = [
+'anesthesiology',
+'cardiology',
+'dentistry',
+'dermatology',
+'emergencyMedicine',
+'endocrinology',
+'gastroenterology',
+'generalPractice',
+'generalSurgery',
+'geriatrics',
+'gynecology',
+'hematology',
+'immunology',
+'medicalTests',
+'infectiousDisease',
+'nephrology',
+'neurology',
+'obstetrics',
+'oncology',
+'ophthalmology',
+'orthopedics',
+'otolaryngology',
+'pediatrics',
+'plasticSurgery',
+'psychiatry',
+'pulmonology',
+'radiology',
+'rheumatology',
+'sportsMedicine',
+'urology',
 ];
 
 const Doctors = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -165,7 +186,7 @@ const Doctors = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Dr. {doctor.name}</h3>
-                    <p className="text-sm text-blue-600">{doctor.specialty}</p>
+                    <p className="text-sm text-blue-600">{t(`specialties.${doctor.specialty}`, doctor.specialty)}</p>
                   </div>
                 </div>
                 {isClinicAdmin && (
@@ -263,8 +284,8 @@ const Doctors = () => {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">{t('doctors.selectSpecialty')}</option>
-                  {specialties.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  {specialtyKeys.map((key) => (
+                    <option key={key} value={key}>{t(`specialties.${key}`)}</option>
                   ))}
                 </select>
               </div>

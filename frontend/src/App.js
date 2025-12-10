@@ -72,9 +72,9 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
             {t('landing.title')}
-            <span className="block bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent pb-2 leading-normal">
               {t('landing.subtitle')}
             </span>
           </h1>
@@ -267,6 +267,15 @@ const Layout = ({ children }) => {
     }
   };
 
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    // Navigate to dashboard without triggering unnecessary re-renders
+    if (location.pathname !== '/dashboard') {
+      navigate('/dashboard');
+    }
+    setSidebarOpen(false);
+  };
+
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
 
   const navItems = [
@@ -326,7 +335,7 @@ const Layout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-3 border-b border-gray-200">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <a href="#" onClick={handleLogoClick} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
@@ -335,7 +344,7 @@ const Layout = ({ children }) => {
                   MediConnect
                 </span>
               )}
-            </Link>
+            </a>
           </div>
 
           {/* Nav */}

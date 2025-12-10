@@ -1,5 +1,14 @@
 <analysis>
- I want to add/modify something. Once a clinic is already registered, that clinic only need to add Administrator Email * and Password *
+1. I noticed a bug: Once I am logged in as a user or clinic administrator and I click on the logo on the top left, it automatically takes me to the start page, that is, it logs me out. Correct this so it doesn't happen again.
+2. In Patiend dashboard, make some changes in UI, because i saw many white spaces. Make that Dashboard a bit more practical, intuitive, with more options
+3. In Patient page, when i go to Menu (left) Add Settings for Patient above Sign Out
+4. in the Patient page, when going to the Menu (left) when the patient user clicks on Medical Centers, to be able to open the tab of each medical center, description, details.
+5. Create records for each past appointment, eventually with details about patient, issues, treatment, etc.
+6. In Patient Calendar, make appoiment more visibile in calendar. Also, in Calendar section when i change in RO, calendar still remain in EN, fix this.
+7. I saw when i try to register as new patient, its a bug somewhere because when i press Sign Up, it tells me An occured error but the user is already added in db, and 2nd time when i press Sign Up it work. FIX IT. 
 
-can you add this option?
+7. In Register as Medical Center, it is a bug when i introduce CUI although it is correct, it tells me that CUI must contain 2-10 digits only. I think its a bug and please fix this!
+8. In Register as Medical Center also in Already Registered, when i press Back button, it take me in Sign in page for patient. I want to fix this. When i press Back just to send me in Start Page
+9. Once an administrator is loged in Dashbord of medical center, i saw some bugs about language switch. For example when i add a doctor, if i change in RO, those medical specialties remain in EN. Fix.
+
 </analysis>

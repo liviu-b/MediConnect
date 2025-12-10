@@ -4,6 +4,8 @@ import { useAuth, api } from '../App';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import roLocale from '@fullcalendar/core/locales/ro';
+import enLocale from '@fullcalendar/core/locales/en-gb';
 import {
   Building2,
   Stethoscope,
@@ -14,7 +16,7 @@ import {
 } from 'lucide-react';
 
 const CalendarPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const calendarRef = useRef(null);
   const [clinics, setClinics] = useState([]);
@@ -213,6 +215,7 @@ const CalendarPage = () => {
           initialView="dayGridMonth"
           events={calendarEvents}
           dateClick={handleDateClick}
+          locale={i18n.language === 'ro' ? roLocale : enLocale}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',

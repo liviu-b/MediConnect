@@ -188,7 +188,7 @@ const RegisterClinic = () => {
       {/* Right Panel */}
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4">
-          <Link to="/login" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">{t('common.back')}</span>
           </Link>

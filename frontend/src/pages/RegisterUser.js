@@ -44,7 +44,21 @@ const RegisterUser = () => {
       sessionStorage.setItem('just_authenticated', 'true');
       navigate('/dashboard', { replace: true, state: { user: res.data.user } });
     } catch (err) {
-      setError(err.response?.data?.detail || t('notifications.error'));
+      // Check for specific error codes
+      if (err.response?.status === 400) {
+        // Check if email already exists
+        const detail = err.response?.data?.detail || '';
+        if (detail.includes('already registered') || detail.includes('deja înregistrat')) {
+          setError(t('auth.emailAlreadyRegistered'));
+        } else {
+          setError(detail || t('notifications.error'));
+        }
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
+        // Network error - registration might have succeeded
+        setError(t('auth.registrationNetworkError'));
+      } else {
+        setError(err.response?.data?.detail || t('notifications.error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -73,7 +87,7 @@ const RegisterUser = () => {
       {/* Right Panel */}
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center p-4">
-          <Link to="/login" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">{t('common.back')}</span>
           </Link>
