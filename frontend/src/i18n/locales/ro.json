@@ -82,6 +82,7 @@
     "cuiTaken": "Acest CUI este deja înregistrat",
     "cuiInvalidFormat": "CUI trebuie să conțină doar 2-10 cifre",
     "cuiInvalid": "Te rugăm să introduci un CUI valid",
+    "cuiCheckError": "Nu s-a putut verifica CUI. Verifică conexiunea și încearcă din nou.",
     "howItWorks": "Cum funcționează",
     "step1Cui": "Te rugăm să introduci Codul Unic de Înregistrare (CUI)",
     "step2Admin": "Creează contul de administrator",

@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copiază fișierul de cerințe
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Portul pe care rulează backend-ul
+EXPOSE 8001
+
+# FastAPI: CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

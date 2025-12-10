@@ -81,6 +81,11 @@ Ensure you have **Docker** and **Docker Compose** installed.
     docker-compose up --build
     ```
 
+    **Stop with Docker Compose**
+    ```bash
+    docker-compose stop
+    ```
+
 The app will be available at:
 
   * **Frontend:** `http://localhost:3000`

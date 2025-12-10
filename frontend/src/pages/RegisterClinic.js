@@ -34,6 +34,13 @@ const RegisterClinic = () => {
       setCuiChecked(false);
       return;
     }
+
+    // Check if CUI has valid format (2-10 digits) before making API call
+    if (!/^\d{2,10}$/.test(cui)) {
+      setCuiStatus('invalid');
+      setCuiChecked(true);
+      return;
+    }
     
     setCuiStatus('checking');
     try {
@@ -47,8 +54,9 @@ const RegisterClinic = () => {
       }
       setCuiChecked(true);
     } catch (err) {
-      setCuiStatus('invalid');
-      setCuiChecked(true);
+      // Network error - show error status instead of invalid format
+      setCuiStatus('error');
+      setCuiChecked(false);
     }
   };
 
@@ -131,6 +139,8 @@ const RegisterClinic = () => {
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'invalid':
         return <AlertCircle className="w-5 h-5 text-orange-500" />;
+      case 'error':
+        return <AlertCircle className="w-5 h-5 text-red-500" />;
       default:
         return null;
     }
@@ -144,6 +154,8 @@ const RegisterClinic = () => {
         return <span className="text-red-600">{t('auth.cuiTaken')}</span>;
       case 'invalid':
         return <span className="text-orange-600">{t('auth.cuiInvalidFormat')}</span>;
+      case 'error':
+        return <span className="text-red-600">{t('auth.cuiCheckError')}</span>;
       default:
         return null;
     }

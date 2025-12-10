@@ -82,6 +82,7 @@
     "cuiTaken": "This CUI is already registered",
     "cuiInvalidFormat": "CUI must contain 2-10 digits only",
     "cuiInvalid": "Please enter a valid CUI",
+    "cuiCheckError": "Unable to verify CUI. Please check your connection and try again.",
     "howItWorks": "How it works",
     "step1Cui": "Please enter the Unique Registration Code (CUI)",
     "step2Admin": "Create your admin account",
