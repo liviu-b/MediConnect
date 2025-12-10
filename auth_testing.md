@@ -1,5 +1,3 @@
-# Auth-Gated App Testing Playbook
-
 ## Step 1: Create Test User & Session
 ```bash
 mongosh --eval "

@@ -32,4 +32,4 @@ services:
 volumes:
   mongo_data:
 
-  
+# Note: The backend service is configured to connect to the MongoDB service using the hostname 'mongo', which is the name of the MongoDB service defined in this docker-compose file.
