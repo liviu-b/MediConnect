@@ -4,7 +4,7 @@ services:
   backend:
     build: ./backend
     env_file:
-      - ./.env  # Asta îi spune să încarce variabilele din .env
+      - ./.env
     ports:
       - "8001:8001"
     environment:
