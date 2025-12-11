@@ -17,9 +17,16 @@ import resend
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB connection with optimized settings for Atlas
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=5000,  # 5 second timeout for server selection
+    connectTimeoutMS=10000,  # 10 second connection timeout
+    socketTimeoutMS=20000,  # 20 second socket timeout
+    maxPoolSize=10,  # Connection pool size
+    retryWrites=True
+)
 db = client[os.environ.get('DB_NAME', 'mediconnect_db')]
 
 # Password hashing
@@ -1312,6 +1319,14 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 async def startup_event():
+    # Initialize MongoDB connection (warm up for Atlas cold start)
+    try:
+        # Ping the database to establish connection
+        await client.admin.command('ping')
+        logger.info("MongoDB connection established successfully")
+    except Exception as e:
+        logger.error(f\"MongoDB connection error: {e}")
+
     # Create some registration codes on startup if none exist
     codes_count = await db.registration_codes.count_documents({})
     if codes_count == 0:
