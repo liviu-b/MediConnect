@@ -4,7 +4,6 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -18,22 +17,9 @@ import resend
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection with optimized settings for Atlas
-mongo_url = os.environ.get('MONGO_URL', '')
-if not mongo_url:
-    raise ValueError("MONGO_URL environment variable is required")
-
-client = AsyncIOMotorClient(
-    mongo_url,
-    serverSelectionTimeoutMS=30000,
-    connectTimeoutMS=30000,
-    socketTimeoutMS=30000,
-    maxPoolSize=50,
-    minPoolSize=5,
-    maxIdleTimeMS=45000,
-    retryWrites=True,
-    retryReads=True
-)
+# MongoDB connection
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'mediconnect_db')]
 
 # Password hashing
@@ -47,7 +33,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@mediconnect.c
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
 # Create a router with the /api prefix
-api_router = APIRouter(prefix="api")
+api_router = APIRouter(prefix="/api")
 
 # Configure logging
 logging.basicConfig(
@@ -65,10 +51,10 @@ class User(BaseModel):
     name: str
     phone: Optional[str] = None
     picture: Optional[str] = None
-    password_hash: Optional[str] = None
-    auth_provider: str = "email"
-    role: str = "USER"
-    clinic_id: Optional[str] = None
+    password_hash: Optional[str] = None  # None for Google OAuth users
+    auth_provider: str = "email"  # email, google
+    role: str = "USER"  # USER, CLINIC_ADMIN
+    clinic_id: Optional[str] = None  # For CLINIC_ADMIN
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -83,7 +69,7 @@ class UserLogin(BaseModel):
     password: str
 
 class ClinicRegistration(BaseModel):
-    cui: str
+    cui: str  # Romanian CUI (Cod Unic de Înregistrare) - 2-10 digits
     admin_name: str
     admin_email: str
     admin_password: str
@@ -91,15 +77,15 @@ class ClinicRegistration(BaseModel):
 class Clinic(BaseModel):
     model_config = ConfigDict(extra="ignore")
     clinic_id: str = Field(default_factory=lambda: f"clinic_{uuid.uuid4().hex[:12]}")
-    cui: str
-    name: Optional[str] = None
+    cui: str  # Romanian CUI (Cod Unic de Înregistrare)
+    name: Optional[str] = None  # To be filled in Settings
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[str] = None
-    is_verified: bool = True
-    is_profile_complete: bool = False
+    is_verified: bool = True  # Auto-verified on registration
+    is_profile_complete: bool = False  # True when name and address are filled
     working_hours: dict = Field(default_factory=lambda: {
         "monday": {"start": "09:00", "end": "17:00"},
         "tuesday": {"start": "09:00", "end": "17:00"},
@@ -250,7 +236,7 @@ class StaffMember(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    role: str = "RECEPTIONIST"
+    role: str = "RECEPTIONIST"  # RECEPTIONIST, NURSE, ADMIN
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -382,130 +368,120 @@ async def send_notification_email(user_id: str, appointment_id: str, notificatio
 @api_router.post("/auth/register")
 async def register_user(data: UserRegister, response: Response):
     """Register a new user with email/password"""
-    try:
-        if len(data.password) < 8:
-            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-        
-        existing = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
-        if existing:
-            raise HTTPException(status_code=400, detail="Email already registered")
-        
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user = User(
-            user_id=user_id,
-            email=data.email.lower(),
-            name=data.name,
-            phone=data.phone,
-            password_hash=hash_password(data.password),
-            auth_provider="email",
-            role="USER"
-        )
-        doc = user.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        await db.users.insert_one(doc)
-        
-        session_token = await create_session(user_id, response)
-        
-        user_data = {k: v for k, v in doc.items() if k != 'password_hash' and k != '_id'}
-        return {"user": user_data, "session_token": session_token}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Registration error: {e}")
-        raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
+    # Validate password length
+    if len(data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    existing = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    user = User(
+        user_id=user_id,
+        email=data.email.lower(),
+        name=data.name,
+        phone=data.phone,
+        password_hash=hash_password(data.password),
+        auth_provider="email",
+        role="USER"
+    )
+    doc = user.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.users.insert_one(doc)
+    
+    session_token = await create_session(user_id, response)
+    
+    user_data = {k: v for k, v in doc.items() if k != 'password_hash' and k != '_id'}
+    return {"user": user_data, "session_token": session_token}
 
 @api_router.post("/auth/login")
 async def login_user(data: UserLogin, response: Response):
     """Login with email/password"""
-    try:
-        user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
-        if not user_doc:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        
-        if not user_doc.get('password_hash'):
-            raise HTTPException(status_code=401, detail="Please use Google login for this account")
-        
-        if not verify_password(data.password, user_doc['password_hash']):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-        
-        session_token = await create_session(user_doc['user_id'], response)
-        
-        user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
-        return {"user": user_data, "session_token": session_token}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail="Login failed. Please try again.")
+    user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user_doc.get('password_hash'):
+        raise HTTPException(status_code=401, detail="Please use Google login for this account")
+    
+    if not verify_password(data.password, user_doc['password_hash']):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    session_token = await create_session(user_doc['user_id'], response)
+    
+    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
+    return {"user": user_data, "session_token": session_token}
 
 @api_router.post("/auth/register-clinic")
 async def register_clinic(data: ClinicRegistration, response: Response):
-    """Register a new clinic with Romanian CUI"""
+    """Register a new clinic with Romanian CUI (Cod Unic de Înregistrare)"""
     import re
     
-    try:
-        cui_clean = data.cui.strip()
-        if not re.match(r'^d{2,10}$', cui_clean):
-            raise HTTPException(
-                status_code=400, 
-                detail="CUI invalid. CUI-ul trebuie sa contina intre 2 si 10 cifre."
-            )
-        
-        if len(data.admin_password) < 8:
-            raise HTTPException(
-                status_code=400,
-                detail="Parola trebuie sa aiba minim 8 caractere."
-            )
-        
-        existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
-        if existing_clinic:
-            raise HTTPException(
-                status_code=400, 
-                detail="Acest CUI este deja inregistrat."
-            )
-        
-        existing_user = await db.users.find_one({"email": data.admin_email.lower()}, {"_id": 0})
-        if existing_user:
-            raise HTTPException(
-                status_code=400, 
-                detail="Aceasta adresa de email este deja inregistrata."
-            )
-        
-        clinic_id = f"clinic_{uuid.uuid4().hex[:12]}"
-        clinic = Clinic(
-            clinic_id=clinic_id,
-            cui=cui_clean,
-            is_verified=True,
-            is_profile_complete=False
+    # Validate CUI format (Romanian: 2-10 digits)
+    cui_clean = data.cui.strip()
+    if not re.match(r'^\d{2,10}$', cui_clean):
+        raise HTTPException(
+            status_code=400, 
+            detail="CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre. / Invalid CUI. CUI must contain 2-10 digits."
         )
-        clinic_doc = clinic.model_dump()
-        clinic_doc['created_at'] = clinic_doc['created_at'].isoformat()
-        await db.clinics.insert_one(clinic_doc)
-        
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        admin_user = User(
-            user_id=user_id,
-            email=data.admin_email.lower(),
-            name=data.admin_name,
-            password_hash=hash_password(data.admin_password),
-            auth_provider="email",
-            role="CLINIC_ADMIN",
-            clinic_id=clinic_id
+    
+    # Validate password length
+    if len(data.admin_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Parola trebuie să aibă minim 8 caractere. / Password must be at least 8 characters."
         )
-        user_doc = admin_user.model_dump()
-        user_doc['created_at'] = user_doc['created_at'].isoformat()
-        await db.users.insert_one(user_doc)
-        
-        session_token = await create_session(user_id, response)
-        
-        user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
-        clinic_data = {k: v for k, v in clinic_doc.items() if k != '_id'}
-        return {"user": user_data, "clinic": clinic_data, "session_token": session_token}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Clinic registration error: {e}")
-        raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
+    
+    # Check if CUI already registered
+    existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
+    if existing_clinic:
+        raise HTTPException(
+            status_code=400, 
+            detail="Acest CUI este deja înregistrat. / This CUI is already registered."
+        )
+    
+    # Check if admin email exists
+    existing_user = await db.users.find_one({"email": data.admin_email.lower()}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(
+            status_code=400, 
+            detail="Această adresă de email este deja înregistrată. / This email is already registered."
+        )
+    
+    # Create clinic with minimal info (admin will complete in Settings)
+    clinic_id = f"clinic_{uuid.uuid4().hex[:12]}"
+    clinic = Clinic(
+        clinic_id=clinic_id,
+        cui=cui_clean,
+        is_verified=True,
+        is_profile_complete=False
+    )
+    clinic_doc = clinic.model_dump()
+    clinic_doc['created_at'] = clinic_doc['created_at'].isoformat()
+    await db.clinics.insert_one(clinic_doc)
+    
+    # Create clinic admin user
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    admin_user = User(
+        user_id=user_id,
+        email=data.admin_email.lower(),
+        name=data.admin_name,
+        password_hash=hash_password(data.admin_password),
+        auth_provider="email",
+        role="CLINIC_ADMIN",
+        clinic_id=clinic_id
+    )
+    user_doc = admin_user.model_dump()
+    user_doc['created_at'] = user_doc['created_at'].isoformat()
+    await db.users.insert_one(user_doc)
+    
+    session_token = await create_session(user_id, response)
+    
+    # Remove _id fields that MongoDB adds
+    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
+    clinic_data = {k: v for k, v in clinic_doc.items() if k != '_id'}
+    return {"user": user_data, "clinic": clinic_data, "session_token": session_token}
 
 @api_router.post("/auth/session")
 async def create_oauth_session(request: Request, response: Response):
@@ -568,6 +544,7 @@ async def get_me(request: Request):
     user_dict = user.model_dump()
     user_dict.pop('password_hash', None)
     
+    # If clinic admin, include clinic info
     if user.role == "CLINIC_ADMIN" and user.clinic_id:
         clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
         user_dict['clinic'] = clinic
@@ -588,16 +565,20 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
     """Request a password reset link"""
     user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     
+    # Always return success to prevent email enumeration
     if not user_doc:
         logger.info(f"Password reset requested for non-existent email: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
+    # Check if user uses Google OAuth
     if user_doc.get('auth_provider') == 'google':
         logger.info(f"Password reset requested for Google OAuth user: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
+    # Delete any existing reset tokens for this user
     await db.password_reset_tokens.delete_many({"user_id": user_doc['user_id']})
     
+    # Create new reset token
     reset_token = PasswordResetToken(
         user_id=user_doc['user_id'],
         email=data.email.lower()
@@ -608,13 +589,16 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
     token_doc['created_at'] = token_doc['created_at'].isoformat()
     await db.password_reset_tokens.insert_one(token_doc)
     
+    # Get medical center info for branding (if user is clinic admin)
     medical_center = None
     if user_doc.get('clinic_id'):
         medical_center = await db.clinics.find_one({"clinic_id": user_doc['clinic_id']}, {"_id": 0})
     
-    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    # Get frontend URL from environment or use default
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://clinic-dashboard-fix.preview.emergentagent.com')
     reset_link = f"{frontend_url}/reset-password?token={reset_token.token}"
     
+    # Send email in background task
     background_tasks.add_task(
         send_password_reset_email,
         recipient_email=data.email.lower(),
@@ -630,8 +614,11 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
 def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, medical_center: dict = None):
     """Send password reset email using Resend"""
     try:
+        # Determine sender based on medical center
         if medical_center and medical_center.get('email'):
             sender_name = medical_center.get('name', 'MediConnect')
+            # Note: For custom domains, you need to verify the domain in Resend
+            # For now, we use onboarding@resend.dev which is Resend's test sender
             from_email = "MediConnect <onboarding@resend.dev>"
         else:
             from_email = "MediConnect <onboarding@resend.dev>"
@@ -650,35 +637,81 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
         </head>
         <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
                 <div style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); padding: 30px; text-align: center;">
                     <h1 style="color: white; margin: 0; font-size: 24px;">{center_name}</h1>
                 </div>
+                
+                <!-- Content -->
                 <div style="padding: 40px 30px;">
                     <h2 style="color: #1f2937; margin-top: 0; margin-bottom: 20px;">Password Reset Request</h2>
-                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">Hello {recipient_name},</p>
-                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
-                        We received a request to reset your password. Click the button below to create a new password.
+                    
+                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                        Hello {recipient_name},
                     </p>
+                    
+                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
+                        We received a request to reset your password. Click the button below to create a new password. 
+                        If you didn't make this request, you can safely ignore this email.
+                    </p>
+                    
+                    <!-- Button -->
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="{reset_link}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                             Reset Your Password
                         </a>
                     </div>
-                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">Or copy and paste this link:</p>
-                    <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">{reset_link}</p>
+                    
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                        Or copy and paste this link into your browser:
+                    </p>
+                    <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">
+                        {reset_link}
+                    </p>
+                    
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">This link expires in 1 hour.</p>
+                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                            ⏰ This link expires in 1 hour for security purposes.
+                        </p>
                     </div>
                 </div>
+                
+                <!-- Footer -->
                 <div style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #6b7280; font-size: 12px; margin: 0;">{center_name}</p>
+                    <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                        {center_name}
+                    </p>
+                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">{center_address}</p>' if center_address else ''}
+                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">📞 {center_phone}</p>' if center_phone else ''}
+                    <p style="color: #9ca3af; font-size: 11px; margin-top: 15px;">
+                        © 2025 MediConnect. All rights reserved.<br>
+                        (Powered by ACL-Smart Software)
+                    </p>
                 </div>
             </div>
         </body>
         </html>
         """
         
-        text_content = f"Password Reset RequestnnHello {recipient_name},nnReset your password: {reset_link}nnThis link expires in 1 hour."
+        text_content = f"""
+Password Reset Request
+
+Hello {recipient_name},
+
+We received a request to reset your password. Click the link below to create a new password.
+If you didn't make this request, you can safely ignore this email.
+
+Reset your password: {reset_link}
+
+This link expires in 1 hour for security purposes.
+
+{center_name}
+{center_address}
+{center_phone}
+
+© 2025 MediConnect. All rights reserved.
+(Powered by ACL-Smart Software)
+        """
         
         response = resend.Emails.send({
             "from": from_email,
@@ -688,24 +721,27 @@ def send_password_reset_email(recipient_email: str, recipient_name: str, reset_l
             "text": text_content
         })
         
-        logger.info(f"Password reset email sent to {recipient_email}")
-        return {"success": True}
+        logger.info(f"Password reset email sent successfully to {recipient_email}. Email ID: {response.get('id', 'unknown')}")
+        return {"success": True, "email_id": response.get('id')}
         
     except Exception as e:
-        logger.error(f"Failed to send password reset email: {str(e)}")
+        logger.error(f"Failed to send password reset email to {recipient_email}: {str(e)}")
         return {"success": False, "error": str(e)}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(data: ResetPasswordRequest):
     """Reset password using reset token"""
+    # Validate password length
     if len(data.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     
+    # Find the reset token
     token_doc = await db.password_reset_tokens.find_one({"token": data.token, "used": False}, {"_id": 0})
     
     if not token_doc:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
+    # Check expiration
     expires_at = token_doc["expires_at"]
     if isinstance(expires_at, str):
         expires_at = datetime.fromisoformat(expires_at)
@@ -715,12 +751,14 @@ async def reset_password(data: ResetPasswordRequest):
     if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Reset token has expired")
     
+    # Update user password
     new_password_hash = hash_password(data.new_password)
     await db.users.update_one(
         {"user_id": token_doc["user_id"]},
         {"$set": {"password_hash": new_password_hash}}
     )
     
+    # Mark token as used
     await db.password_reset_tokens.update_one(
         {"token": data.token},
         {"$set": {"used": True}}
@@ -735,14 +773,16 @@ async def validate_cui(cui: str):
     import re
     cui_clean = cui.strip()
     
-    if not re.match(r'^d{2,10}$', cui_clean):
-        return {"valid": False, "available": False, "message": "CUI invalid. CUI-ul trebuie sa contina intre 2 si 10 cifre."}
+    # Validate format
+    if not re.match(r'^\d{2,10}$', cui_clean):
+        return {"valid": False, "available": False, "message": "CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre."}
     
+    # Check if already registered
     existing = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
     if existing:
-        return {"valid": True, "available": False, "message": "Acest CUI este deja inregistrat."}
+        return {"valid": True, "available": False, "message": "Acest CUI este deja înregistrat."}
     
-    return {"valid": True, "available": True, "message": "CUI disponibil pentru inregistrare."}
+    return {"valid": True, "available": True, "message": "CUI disponibil pentru înregistrare."}
 
 # ==================== CLINIC MANAGEMENT ROUTES ====================
 
@@ -750,9 +790,11 @@ async def validate_cui(cui: str):
 async def get_clinics(request: Request):
     user = await get_current_user(request)
     if user and user.role == "CLINIC_ADMIN" and user.clinic_id:
+        # Clinic admin sees only their clinic
         clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
         return [clinic] if clinic else []
     
+    # Public - see all verified clinics
     clinics = await db.clinics.find({"is_verified": True}, {"_id": 0}).to_list(100)
     return clinics
 
@@ -773,6 +815,7 @@ async def update_clinic(clinic_id: str, data: ClinicUpdate, request: Request):
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
+    # Check if profile should be marked as complete
     clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
     new_name = update_data.get('name', clinic.get('name'))
     new_address = update_data.get('address', clinic.get('address'))
@@ -797,6 +840,7 @@ async def get_doctors(request: Request, clinic_id: Optional[str] = None):
     
     doctors = await db.doctors.find(query, {"_id": 0}).to_list(100)
     
+    # Enrich with clinic name
     for doc in doctors:
         clinic = await db.clinics.find_one({"clinic_id": doc["clinic_id"]}, {"_id": 0})
         doc["clinic_name"] = clinic.get("name") if clinic else "Unknown"
@@ -1042,6 +1086,7 @@ async def get_appointments(
     
     appointments = await db.appointments.find(query, {"_id": 0}).to_list(500)
     
+    # Enrich with doctor and patient info
     for apt in appointments:
         doctor = await db.doctors.find_one({"doctor_id": apt["doctor_id"]}, {"_id": 0})
         apt["doctor_name"] = doctor.get("name") if doctor else "Unknown"
@@ -1117,6 +1162,7 @@ async def update_appointment(appointment_id: str, data: AppointmentUpdate, reque
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
     
+    # Check access
     if user.role == "USER" and appointment["patient_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
     if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
@@ -1153,6 +1199,7 @@ async def cancel_appointment(appointment_id: str, request: Request):
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
     
+    # Check access
     if user.role == "USER" and appointment["patient_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
     if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
@@ -1200,6 +1247,7 @@ async def get_stats(request: Request):
             "status": {"$ne": "CANCELLED"}
         })
         
+        # Unique patients
         pipeline = [
             {"$match": {"clinic_id": clinic_id}},
             {"$group": {"_id": "$patient_id"}},
@@ -1235,6 +1283,7 @@ async def get_stats(request: Request):
 async def get_revenue_stats(request: Request, period: str = "month"):
     user = await require_clinic_admin(request)
     
+    # Mock revenue data for now
     return {
         "period": period,
         "total_revenue": 15000.00,
@@ -1252,7 +1301,7 @@ async def root():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -1261,51 +1310,24 @@ app.add_middleware(
 # Include the router in the main app
 app.include_router(api_router)
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    try:
-        await client.admin.command('ping')
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "database": str(e)}
-
 @app.on_event("startup")
 async def startup_event():
-    # Initialize MongoDB connection (warm up for Atlas cold start)
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            await client.admin.command('ping')
-            logger.info("MongoDB connection established successfully")
-            break
-        except Exception as e:
-            logger.error(f"MongoDB connection attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(2)
-            else:
-                logger.error("Failed to connect to MongoDB after all retries")
-    
-    # Create registration codes on startup if none exist
-    try:
-        codes_count = await db.registration_codes.count_documents({})
-        if codes_count == 0:
-            codes = [
-                RegistrationCode(code="CLINIC2025A"),
-                RegistrationCode(code="CLINIC2025B"),
-                RegistrationCode(code="CLINIC2025C"),
-                RegistrationCode(code="MEDICONNECT"),
-                RegistrationCode(code="HEALTHCARE"),
-            ]
-            for code in codes:
-                doc = code.model_dump()
-                doc['created_at'] = doc['created_at'].isoformat()
-                await db.registration_codes.insert_one(doc)
-            logger.info("Created default registration codes")
-    except Exception as e:
-        logger.error(f"Error creating registration codes: {e}")
+    # Create some registration codes on startup if none exist
+    codes_count = await db.registration_codes.count_documents({})
+    if codes_count == 0:
+        codes = [
+            RegistrationCode(code="CLINIC2025A"),
+            RegistrationCode(code="CLINIC2025B"),
+            RegistrationCode(code="CLINIC2025C"),
+            RegistrationCode(code="MEDICONNECT"),
+            RegistrationCode(code="HEALTHCARE"),
+        ]
+        for code in codes:
+            doc = code.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.registration_codes.insert_one(doc)
+        logger.info("Created default registration codes")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
-"
