@@ -1301,7 +1301,12 @@ async def root():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:3000",  # Frontend-ul tău local
+        "http://127.0.0.1:3000",
+        # Adaugă aici și domeniul de producție dacă ai unul, ex:
+        # "https://site-ul-tau.com"
+        ],
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
