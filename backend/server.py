@@ -1325,7 +1325,7 @@ async def startup_event():
         await client.admin.command('ping')
         logger.info("MongoDB connection established successfully")
     except Exception as e:
-        logger.error(f\"MongoDB connection error: {e}")
+        logger.error(f"MongoDB connection error: {e}")
 
     # Create some registration codes on startup if none exist
     codes_count = await db.registration_codes.count_documents({})
