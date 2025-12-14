@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Mail, Lock, User, Building2, Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, LogIn } from 'lucide-react';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -8,7 +8,12 @@ import { api } from '../App';
 const RegisterClinic = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('register'); // 'register' or 'login'
+  const [searchParams] = useSearchParams();
+  
+  // Check URL parameter for tab (e.g., ?tab=login for logout redirect)
+  const initialTab = searchParams.get('tab') === 'login' ? 'login' : 'register';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
   const [form, setForm] = useState({
     cui: '',
     admin_name: '',
@@ -34,7 +39,7 @@ const RegisterClinic = () => {
       setCuiChecked(false);
       return;
     }
-
+    
     // Check if CUI has valid format (2-10 digits) before making API call
     if (!/^\d{2,10}$/.test(cui)) {
       setCuiStatus('invalid');
@@ -103,12 +108,7 @@ const RegisterClinic = () => {
       sessionStorage.setItem('just_authenticated', 'true');
       navigate('/settings', { replace: true, state: { user: res.data.user, isNewClinic: true } });
     } catch (err) {
-       // Check for 401 (unauthorized) - wrong email/password
-      if (err.response?.status === 401) {
-        setError(t('notifications.invalidCredentials'));
-      } else {
-        setError(err.response?.data?.detail || t('notifications.error'));
-      }
+      setError(err.response?.data?.detail || t('notifications.error'));
     } finally {
       setLoading(false);
     }
@@ -121,9 +121,17 @@ const RegisterClinic = () => {
     try {
       const res = await api.post('/auth/login', loginForm);
       sessionStorage.setItem('just_authenticated', 'true');
-      navigate('/dashboard', { replace: true, state: { user: res.data.user } });
+      
+      // Role-based routing: Admin → /dashboard, Doctor/Assistant → /staff-dashboard
+      const redirectTo = res.data.user.redirect_to || '/dashboard';
+      navigate(redirectTo, { replace: true, state: { user: res.data.user } });
     } catch (err) {
-      setError(err.response?.data?.detail || t('notifications.error'));
+      // Check for 401 (unauthorized) - wrong email/password
+      if (err.response?.status === 401) {
+        setError(t('notifications.invalidCredentials'));
+      } else {
+        setError(err.response?.data?.detail || t('notifications.error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -255,10 +263,10 @@ const RegisterClinic = () => {
                 <p className="text-gray-500 mb-6">{t('auth.clinicLoginSubtitle')}</p>
 
                 <form onSubmit={handleLogin} className="space-y-4">
-                  {/* Admin Email */}
+                  {/* Account Email - Generalized for Admin/Doctor/Assistant */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('auth.adminEmail')} <span className="text-red-500">*</span>
+                      {t('auth.accountEmail')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

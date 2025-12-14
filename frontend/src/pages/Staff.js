@@ -4,11 +4,17 @@ import { useAuth, api } from '../App';
 import {
   Plus,
   Trash2,
+  Edit2,
   UserCog,
   Mail,
   Phone,
   Loader2,
-  X
+  X,
+  Clock,
+  CheckCircle,
+  RefreshCw,
+  Send,
+  Save
 } from 'lucide-react';
 
 const Staff = () => {
@@ -17,8 +23,11 @@ const Staff = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'RECEPTIONIST' });
   const [saving, setSaving] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchStaff();
@@ -35,18 +44,65 @@ const Staff = () => {
     }
   };
 
+  const handleOpenModal = (staffMember = null) => {
+    if (staffMember) {
+      setEditingStaff(staffMember);
+      setForm({
+        name: staffMember.name,
+        email: staffMember.email,
+        phone: staffMember.phone || '',
+        role: staffMember.role
+      });
+    } else {
+      setEditingStaff(null);
+      setForm({ name: '', email: '', phone: '', role: 'RECEPTIONIST' });
+    }
+    setShowModal(true);
+    setError('');
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingStaff(null);
+    setForm({ name: '', email: '', phone: '', role: 'RECEPTIONIST' });
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setError('');
     try {
-      await api.post('/staff', form);
-      setShowModal(false);
-      setForm({ name: '', email: '', phone: '', role: 'RECEPTIONIST' });
+      if (editingStaff) {
+        // Update existing staff
+        await api.put(`/staff/${editingStaff.staff_id}`, {
+          name: form.name,
+          phone: form.phone,
+          role: form.role
+        });
+      } else {
+        // Create new staff (invite)
+        await api.post('/staff', form);
+      }
+      handleCloseModal();
       fetchStaff();
     } catch (err) {
-      console.error('Error creating staff:', err);
+      console.error('Error saving staff:', err);
+      setError(err.response?.data?.detail || t('notifications.error'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResendInvitation = async (staffId) => {
+    setResendingId(staffId);
+    try {
+      await api.post(`/staff/${staffId}/resend-invitation`);
+      fetchStaff();
+    } catch (err) {
+      console.error('Error resending invitation:', err);
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -65,8 +121,27 @@ const Staff = () => {
       case 'RECEPTIONIST': return t('staff.receptionist');
       case 'NURSE': return t('staff.nurse');
       case 'ADMIN': return t('staff.admin');
+      case 'DOCTOR': return t('staff.doctor');
+      case 'ASSISTANT': return t('staff.assistant');
       default: return role;
     }
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === 'ACCEPTED') {
+      return (
+        <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+          <CheckCircle className="w-3 h-3" />
+          {t('staff.statusAccepted')}
+        </span>
+      );
+    }
+    return (
+      <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">
+        <Clock className="w-3 h-3" />
+        {t('staff.statusPending')}
+      </span>
+    );
   };
 
   if (user?.role !== 'CLINIC_ADMIN') {
@@ -86,11 +161,11 @@ const Staff = () => {
           <p className="text-sm text-gray-500">{t('staff.subtitle')}</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => handleOpenModal()}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
         >
           <Plus className="w-4 h-4" />
-          {t('staff.addStaff')}
+          {t('staff.inviteStaff')}
         </button>
       </div>
 
@@ -104,7 +179,7 @@ const Staff = () => {
           <UserCog className="w-12 h-12 mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500">{t('staff.noStaff')}</p>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => handleOpenModal()}
             className="mt-3 text-blue-600 hover:underline text-sm"
           >
             {t('staff.addFirst')}
@@ -121,17 +196,43 @@ const Staff = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                      {getRoleLabel(member.role)}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                        {getRoleLabel(member.role)}
+                      </span>
+                      {getStatusBadge(member.invitation_status)}
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(member.staff_id)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenModal(member)}
+                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                    title={t('staff.editStaff')}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  {member.invitation_status === 'PENDING' && (
+                    <button
+                      onClick={() => handleResendInvitation(member.staff_id)}
+                      disabled={resendingId === member.staff_id}
+                      className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      title={t('staff.resendInvitation')}
+                    >
+                      {resendingId === member.staff_id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(member.staff_id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <div className="mt-3 space-y-1 text-sm text-gray-500">
                 <p className="flex items-center gap-2">
@@ -150,16 +251,30 @@ const Staff = () => {
         </div>
       )}
 
-      {/* Add Staff Modal */}
+      {/* Add/Edit Staff Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="font-semibold text-gray-900">{t('staff.addStaff')}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+              <div>
+                <h2 className="font-semibold text-gray-900">
+                  {editingStaff ? t('staff.editStaff') : t('staff.inviteStaff')}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {editingStaff ? t('staff.editSubtitle') : t('staff.inviteSubtitle')}
+                </p>
+              </div>
+              <button onClick={handleCloseModal} className="p-1 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
+            
+            {error && (
+              <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="p-4 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('staff.staffName')}</label>
@@ -176,10 +291,19 @@ const Staff = () => {
                 <input
                   type="email"
                   required
+                  disabled={editingStaff !== null}
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    editingStaff ? 'bg-gray-50 cursor-not-allowed' : ''
+                  }`}
                 />
+                {!editingStaff && (
+                  <p className="text-xs text-gray-500 mt-1">{t('staff.emailHelp')}</p>
+                )}
+                {editingStaff && (
+                  <p className="text-xs text-gray-400 mt-1">{t('staff.emailCannotChange')}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('staff.staffPhone')}</label>
@@ -200,12 +324,14 @@ const Staff = () => {
                   <option value="RECEPTIONIST">{t('staff.receptionist')}</option>
                   <option value="NURSE">{t('staff.nurse')}</option>
                   <option value="ADMIN">{t('staff.admin')}</option>
+                  <option value="DOCTOR">{t('staff.doctor')}</option>
+                  <option value="ASSISTANT">{t('staff.assistant')}</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
                 >
                   {t('common.cancel')}
@@ -215,8 +341,14 @@ const Staff = () => {
                   disabled={saving}
                   className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t('common.save')}
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : editingStaff ? (
+                    <Save className="w-4 h-4" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {editingStaff ? t('common.save') : t('staff.sendInvitation')}
                 </button>
               </div>
             </form>

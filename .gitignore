@@ -18,6 +18,7 @@ node_modules/
 /coverage
 test_reports/
 test_result.md
+test_specific_scenarios.py
 
 # --- Specific Project Junk (Added based on your image) ---
 .emergent/

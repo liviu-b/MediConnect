@@ -144,13 +144,24 @@ const CalendarPage = () => {
 
   const calendarEvents = appointments
     .filter(apt => apt.status !== 'CANCELLED')
-    .map(apt => ({
-      id: apt.appointment_id,
-      title: isClinicAdmin ? apt.patient_name : `Dr. ${apt.doctor_name}`,
-      start: apt.date_time,
-      backgroundColor: apt.status === 'COMPLETED' ? '#9CA3AF' : '#3B82F6',
-      borderColor: 'transparent'
-    }));
+    .map(apt => {
+      // Color coding: Light green for CONFIRMED/ACCEPTED appointments
+      let bgColor = '#3B82F6'; // Default blue
+      if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
+        bgColor = '#86EFAC'; // Light green for confirmed
+      } else if (apt.status === 'COMPLETED') {
+        bgColor = '#9CA3AF'; // Gray for completed
+      }
+      
+      return {
+        id: apt.appointment_id,
+        title: isClinicAdmin ? apt.patient_name : `Dr. ${apt.doctor_name}`,
+        start: apt.date_time,
+        backgroundColor: bgColor,
+        borderColor: 'transparent',
+        textColor: apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED' ? '#166534' : 'white'
+      };
+    });
 
   if (loading) {
     return (

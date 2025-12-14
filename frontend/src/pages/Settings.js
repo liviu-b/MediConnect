@@ -15,6 +15,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
 const Settings = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -30,6 +32,15 @@ const Settings = () => {
     phone: '',
     email: '',
     description: '',
+    working_hours: {
+      monday: { start: '09:00', end: '17:00', closed: false },
+      tuesday: { start: '09:00', end: '17:00', closed: false },
+      wednesday: { start: '09:00', end: '17:00', closed: false },
+      thursday: { start: '09:00', end: '17:00', closed: false },
+      friday: { start: '09:00', end: '17:00', closed: false },
+      saturday: { start: '10:00', end: '14:00', closed: false },
+      sunday: { start: '10:00', end: '14:00', closed: true }
+    },
     settings: {
       allow_online_booking: true,
       booking_advance_days: 30,
@@ -47,12 +58,29 @@ const Settings = () => {
     try {
       const res = await api.get(`/clinics/${user.clinic_id}`);
       setClinic(res.data);
+      
+      // Parse working hours from backend format
+      const workingHours = {};
+      DAYS_OF_WEEK.forEach(day => {
+        const dayData = res.data.working_hours?.[day];
+        if (dayData === null || dayData === undefined) {
+          workingHours[day] = { start: '09:00', end: '17:00', closed: true };
+        } else {
+          workingHours[day] = {
+            start: dayData.start || '09:00',
+            end: dayData.end || '17:00',
+            closed: false
+          };
+        }
+      });
+      
       setForm({
         name: res.data.name || '',
         address: res.data.address || '',
         phone: res.data.phone || '',
         email: res.data.email || '',
         description: res.data.description || '',
+        working_hours: workingHours,
         settings: res.data.settings || {
           allow_online_booking: true,
           booking_advance_days: 30,
@@ -71,7 +99,25 @@ const Settings = () => {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await api.put(`/clinics/${user.clinic_id}`, form);
+      // Convert working hours to backend format (null for closed days)
+      const workingHoursForBackend = {};
+      DAYS_OF_WEEK.forEach(day => {
+        if (form.working_hours[day].closed) {
+          workingHoursForBackend[day] = null;
+        } else {
+          workingHoursForBackend[day] = {
+            start: form.working_hours[day].start,
+            end: form.working_hours[day].end
+          };
+        }
+      });
+      
+      const payload = {
+        ...form,
+        working_hours: workingHoursForBackend
+      };
+      
+      const res = await api.put(`/clinics/${user.clinic_id}`, payload);
       setClinic(res.data);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -80,6 +126,19 @@ const Settings = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateWorkingHours = (day, field, value) => {
+    setForm(prev => ({
+      ...prev,
+      working_hours: {
+        ...prev.working_hours,
+        [day]: {
+          ...prev.working_hours[day],
+          [field]: value
+        }
+      }
+    }));
   };
 
   const isProfileIncomplete = !clinic?.name || !clinic?.address;
@@ -210,6 +269,56 @@ const Settings = () => {
               rows={2}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
+          </div>
+        </div>
+
+        {/* Operating Hours */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-gray-700 font-medium mb-2">
+            <Clock className="w-5 h-5" />
+            <span>{t('settings.operatingHours')}</span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">{t('settings.operatingHoursHelp')}</p>
+          
+          <div className="space-y-2">
+            {DAYS_OF_WEEK.map((day) => (
+              <div key={day} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                <div className="w-24 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-700 capitalize">{t(`days.${day}`)}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.working_hours[day].closed}
+                      onChange={(e) => updateWorkingHours(day, 'closed', e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500">{t('settings.closed')}</span>
+                  </label>
+                </div>
+                {!form.working_hours[day].closed && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={form.working_hours[day].start}
+                      onChange={(e) => updateWorkingHours(day, 'start', e.target.value)}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <span className="text-gray-400">-</span>
+                    <input
+                      type="time"
+                      value={form.working_hours[day].end}
+                      onChange={(e) => updateWorkingHours(day, 'end', e.target.value)}
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+                {form.working_hours[day].closed && (
+                  <span className="text-sm text-gray-400 italic">{t('settings.closedDay')}</span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

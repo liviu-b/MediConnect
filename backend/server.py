@@ -4,6 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -17,9 +18,22 @@ import resend
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+# MongoDB connection with optimized settings for Atlas
+mongo_url = os.environ.get('MONGO_URL', '')
+if not mongo_url:
+    raise ValueError("MONGO_URL environment variable is required")
+
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=30000,
+    connectTimeoutMS=30000,
+    socketTimeoutMS=30000,
+    maxPoolSize=50,
+    minPoolSize=5,
+    maxIdleTimeMS=45000,
+    retryWrites=True,
+    retryReads=True
+)
 db = client[os.environ.get('DB_NAME', 'mediconnect_db')]
 
 # Password hashing
@@ -50,13 +64,21 @@ class User(BaseModel):
     email: str
     name: str
     phone: Optional[str] = None
+    address: Optional[str] = None
+    date_of_birth: Optional[str] = None
     picture: Optional[str] = None
-    password_hash: Optional[str] = None  # None for Google OAuth users
-    auth_provider: str = "email"  # email, google
-    role: str = "USER"  # USER, CLINIC_ADMIN
-    clinic_id: Optional[str] = None  # For CLINIC_ADMIN
+    password_hash: Optional[str] = None
+    auth_provider: str = "email"
+    role: str = "USER"
+    clinic_id: Optional[str] = None
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    date_of_birth: Optional[str] = None
 
 class UserRegister(BaseModel):
     email: str
@@ -69,7 +91,7 @@ class UserLogin(BaseModel):
     password: str
 
 class ClinicRegistration(BaseModel):
-    cui: str  # Romanian CUI (Cod Unic de Înregistrare) - 2-10 digits
+    cui: str
     admin_name: str
     admin_email: str
     admin_password: str
@@ -77,15 +99,15 @@ class ClinicRegistration(BaseModel):
 class Clinic(BaseModel):
     model_config = ConfigDict(extra="ignore")
     clinic_id: str = Field(default_factory=lambda: f"clinic_{uuid.uuid4().hex[:12]}")
-    cui: str  # Romanian CUI (Cod Unic de Înregistrare)
-    name: Optional[str] = None  # To be filled in Settings
+    cui: str
+    name: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[str] = None
-    is_verified: bool = True  # Auto-verified on registration
-    is_profile_complete: bool = False  # True when name and address are filled
+    is_verified: bool = True
+    is_profile_complete: bool = False
     working_hours: dict = Field(default_factory=lambda: {
         "monday": {"start": "09:00", "end": "17:00"},
         "tuesday": {"start": "09:00", "end": "17:00"},
@@ -179,6 +201,9 @@ class Appointment(BaseModel):
     duration: int = 30
     status: str = "SCHEDULED"
     notes: Optional[str] = None
+    cancellation_reason: Optional[str] = None
+    cancelled_by: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
     recurrence: Optional[RecurrencePattern] = None
     parent_appointment_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -195,6 +220,43 @@ class AppointmentUpdate(BaseModel):
     date_time: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+
+class AppointmentCancel(BaseModel):
+    reason: str  # Required cancellation reason
+
+class Prescription(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    prescription_id: str = Field(default_factory=lambda: f"presc_{uuid.uuid4().hex[:12]}")
+    appointment_id: str
+    patient_id: str
+    doctor_id: str
+    clinic_id: str
+    medications: List[dict] = []  # [{name, dosage, frequency, duration}]
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PrescriptionCreate(BaseModel):
+    appointment_id: str
+    medications: List[dict] = []
+    notes: Optional[str] = None
+
+class MedicalRecord(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    record_id: str = Field(default_factory=lambda: f"rec_{uuid.uuid4().hex[:12]}")
+    appointment_id: str
+    patient_id: str
+    doctor_id: str
+    clinic_id: str
+    record_type: str = "RECOMMENDATION"  # RECOMMENDATION, LETTER, NOTE
+    title: str
+    content: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MedicalRecordCreate(BaseModel):
+    appointment_id: str
+    record_type: str = "RECOMMENDATION"
+    title: str
+    content: str
 
 class UserSession(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -236,8 +298,12 @@ class StaffMember(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    role: str = "RECEPTIONIST"  # RECEPTIONIST, NURSE, ADMIN
+    role: str = "RECEPTIONIST"  # RECEPTIONIST, NURSE, ADMIN, DOCTOR, ASSISTANT
     is_active: bool = True
+    invitation_status: str = "PENDING"  # PENDING, ACCEPTED
+    invitation_token: Optional[str] = None
+    invitation_expires_at: Optional[datetime] = None
+    user_id: Optional[str] = None  # Link to User account once invitation is accepted
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class StaffCreate(BaseModel):
@@ -245,6 +311,43 @@ class StaffCreate(BaseModel):
     email: str
     phone: Optional[str] = None
     role: str = "RECEPTIONIST"
+
+class StaffUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+
+class StaffInvitation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    invitation_id: str = Field(default_factory=lambda: f"inv_{uuid.uuid4().hex[:12]}")
+    staff_id: str
+    clinic_id: str
+    email: str
+    name: str
+    role: str
+    token: str = Field(default_factory=lambda: f"invite_{secrets.token_hex(32)}")
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=7))
+    used: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AcceptInvitationRequest(BaseModel):
+    token: str
+    password: str
+
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    review_id: str = Field(default_factory=lambda: f"rev_{uuid.uuid4().hex[:12]}")
+    clinic_id: str
+    user_id: str
+    user_name: str
+    rating: int  # 1-5 stars
+    comment: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReviewCreate(BaseModel):
+    clinic_id: str
+    rating: int  # 1-5 stars
+    comment: Optional[str] = None
 
 class Service(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -254,6 +357,7 @@ class Service(BaseModel):
     description: Optional[str] = None
     duration: int = 30
     price: float = 0.0
+    currency: str = "LEI"  # LEI or EURO
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -262,6 +366,7 @@ class ServiceCreate(BaseModel):
     description: Optional[str] = None
     duration: int = 30
     price: float = 0.0
+    currency: str = "LEI"  # LEI or EURO
 
 class RegistrationCode(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -319,6 +424,13 @@ async def require_clinic_admin(request: Request) -> User:
         raise HTTPException(status_code=403, detail="Clinic admin access required")
     return user
 
+async def require_staff_or_admin(request: Request) -> User:
+    """Require user to be staff (Doctor/Assistant) or admin of a clinic"""
+    user = await require_auth(request)
+    if user.role not in ["CLINIC_ADMIN", "DOCTOR", "ASSISTANT"]:
+        raise HTTPException(status_code=403, detail="Staff or admin access required")
+    return user
+
 async def create_session(user_id: str, response: Response) -> str:
     session_token = f"session_{secrets.token_hex(32)}"
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
@@ -368,120 +480,144 @@ async def send_notification_email(user_id: str, appointment_id: str, notificatio
 @api_router.post("/auth/register")
 async def register_user(data: UserRegister, response: Response):
     """Register a new user with email/password"""
-    # Validate password length
-    if len(data.password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-    
-    existing = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
-    user = User(
-        user_id=user_id,
-        email=data.email.lower(),
-        name=data.name,
-        phone=data.phone,
-        password_hash=hash_password(data.password),
-        auth_provider="email",
-        role="USER"
-    )
-    doc = user.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.users.insert_one(doc)
-    
-    session_token = await create_session(user_id, response)
-    
-    user_data = {k: v for k, v in doc.items() if k != 'password_hash' and k != '_id'}
-    return {"user": user_data, "session_token": session_token}
+    try:
+        if len(data.password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        
+        existing = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        user = User(
+            user_id=user_id,
+            email=data.email.lower(),
+            name=data.name,
+            phone=data.phone,
+            password_hash=hash_password(data.password),
+            auth_provider="email",
+            role="USER"
+        )
+        doc = user.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.users.insert_one(doc)
+        
+        session_token = await create_session(user_id, response)
+        
+        user_data = {k: v for k, v in doc.items() if k != 'password_hash' and k != '_id'}
+        return {"user": user_data, "session_token": session_token}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
 
 @api_router.post("/auth/login")
 async def login_user(data: UserLogin, response: Response):
-    """Login with email/password"""
-    user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
-    if not user_doc:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    
-    if not user_doc.get('password_hash'):
-        raise HTTPException(status_code=401, detail="Please use Google login for this account")
-    
-    if not verify_password(data.password, user_doc['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    
-    session_token = await create_session(user_doc['user_id'], response)
-    
-    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
-    return {"user": user_data, "session_token": session_token}
+    """Login with email/password - supports Admin, Doctor, and Assistant roles"""
+    try:
+        user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+        if not user_doc:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        if not user_doc.get('password_hash'):
+            raise HTTPException(status_code=401, detail="Please use Google login for this account")
+        
+        if not verify_password(data.password, user_doc['password_hash']):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Check if user is active
+        if not user_doc.get('is_active', True):
+            raise HTTPException(status_code=401, detail="Account is disabled")
+        
+        session_token = await create_session(user_doc['user_id'], response)
+        
+        user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
+        
+        # Determine redirect target based on role
+        role = user_doc.get('role', 'USER')
+        if role == 'CLINIC_ADMIN':
+            user_data['redirect_to'] = '/dashboard'
+        elif role in ['DOCTOR', 'ASSISTANT']:
+            user_data['redirect_to'] = '/staff-dashboard'
+        else:
+            user_data['redirect_to'] = '/dashboard'
+        
+        return {"user": user_data, "session_token": session_token}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail="Login failed. Please try again.")
 
 @api_router.post("/auth/register-clinic")
 async def register_clinic(data: ClinicRegistration, response: Response):
-    """Register a new clinic with Romanian CUI (Cod Unic de Înregistrare)"""
+    """Register a new clinic with Romanian CUI"""
     import re
     
-    # Validate CUI format (Romanian: 2-10 digits)
-    cui_clean = data.cui.strip()
-    if not re.match(r'^\d{2,10}$', cui_clean):
-        raise HTTPException(
-            status_code=400, 
-            detail="CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre. / Invalid CUI. CUI must contain 2-10 digits."
+    try:
+        cui_clean = data.cui.strip()
+        if not re.match(r'^\d{2,10}$', cui_clean):
+            raise HTTPException(
+                status_code=400, 
+                detail="CUI invalid. CUI-ul trebuie sa contina intre 2 si 10 cifre."
+            )
+        
+        if len(data.admin_password) < 8:
+            raise HTTPException(
+                status_code=400,
+                detail="Parola trebuie sa aiba minim 8 caractere."
+            )
+        
+        existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
+        if existing_clinic:
+            raise HTTPException(
+                status_code=400, 
+                detail="Acest CUI este deja inregistrat."
+            )
+        
+        existing_user = await db.users.find_one({"email": data.admin_email.lower()}, {"_id": 0})
+        if existing_user:
+            raise HTTPException(
+                status_code=400, 
+                detail="Aceasta adresa de email este deja inregistrata."
+            )
+        
+        clinic_id = f"clinic_{uuid.uuid4().hex[:12]}"
+        clinic = Clinic(
+            clinic_id=clinic_id,
+            cui=cui_clean,
+            is_verified=True,
+            is_profile_complete=False
         )
-    
-    # Validate password length
-    if len(data.admin_password) < 8:
-        raise HTTPException(
-            status_code=400,
-            detail="Parola trebuie să aibă minim 8 caractere. / Password must be at least 8 characters."
+        clinic_doc = clinic.model_dump()
+        clinic_doc['created_at'] = clinic_doc['created_at'].isoformat()
+        await db.clinics.insert_one(clinic_doc)
+        
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        admin_user = User(
+            user_id=user_id,
+            email=data.admin_email.lower(),
+            name=data.admin_name,
+            password_hash=hash_password(data.admin_password),
+            auth_provider="email",
+            role="CLINIC_ADMIN",
+            clinic_id=clinic_id
         )
-    
-    # Check if CUI already registered
-    existing_clinic = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
-    if existing_clinic:
-        raise HTTPException(
-            status_code=400, 
-            detail="Acest CUI este deja înregistrat. / This CUI is already registered."
-        )
-    
-    # Check if admin email exists
-    existing_user = await db.users.find_one({"email": data.admin_email.lower()}, {"_id": 0})
-    if existing_user:
-        raise HTTPException(
-            status_code=400, 
-            detail="Această adresă de email este deja înregistrată. / This email is already registered."
-        )
-    
-    # Create clinic with minimal info (admin will complete in Settings)
-    clinic_id = f"clinic_{uuid.uuid4().hex[:12]}"
-    clinic = Clinic(
-        clinic_id=clinic_id,
-        cui=cui_clean,
-        is_verified=True,
-        is_profile_complete=False
-    )
-    clinic_doc = clinic.model_dump()
-    clinic_doc['created_at'] = clinic_doc['created_at'].isoformat()
-    await db.clinics.insert_one(clinic_doc)
-    
-    # Create clinic admin user
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
-    admin_user = User(
-        user_id=user_id,
-        email=data.admin_email.lower(),
-        name=data.admin_name,
-        password_hash=hash_password(data.admin_password),
-        auth_provider="email",
-        role="CLINIC_ADMIN",
-        clinic_id=clinic_id
-    )
-    user_doc = admin_user.model_dump()
-    user_doc['created_at'] = user_doc['created_at'].isoformat()
-    await db.users.insert_one(user_doc)
-    
-    session_token = await create_session(user_id, response)
-    
-    # Remove _id fields that MongoDB adds
-    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
-    clinic_data = {k: v for k, v in clinic_doc.items() if k != '_id'}
-    return {"user": user_data, "clinic": clinic_data, "session_token": session_token}
+        user_doc = admin_user.model_dump()
+        user_doc['created_at'] = user_doc['created_at'].isoformat()
+        await db.users.insert_one(user_doc)
+        
+        session_token = await create_session(user_id, response)
+        
+        user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
+        clinic_data = {k: v for k, v in clinic_doc.items() if k != '_id'}
+        return {"user": user_data, "clinic": clinic_data, "session_token": session_token}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Clinic registration error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed. Please try again.")
 
 @api_router.post("/auth/session")
 async def create_oauth_session(request: Request, response: Response):
@@ -544,12 +680,35 @@ async def get_me(request: Request):
     user_dict = user.model_dump()
     user_dict.pop('password_hash', None)
     
-    # If clinic admin, include clinic info
     if user.role == "CLINIC_ADMIN" and user.clinic_id:
         clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
         user_dict['clinic'] = clinic
     
     return user_dict
+
+@api_router.put("/auth/profile")
+async def update_profile(data: UserUpdate, request: Request):
+    """Update user profile settings"""
+    user = await require_auth(request)
+    
+    update_data = {}
+    if data.name is not None:
+        update_data["name"] = data.name
+    if data.phone is not None:
+        update_data["phone"] = data.phone
+    if data.address is not None:
+        update_data["address"] = data.address
+    if data.date_of_birth is not None:
+        update_data["date_of_birth"] = data.date_of_birth
+    
+    if update_data:
+        await db.users.update_one(
+            {"user_id": user.user_id},
+            {"$set": update_data}
+        )
+    
+    updated_user = await db.users.find_one({"user_id": user.user_id}, {"_id": 0, "password_hash": 0})
+    return updated_user
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
@@ -565,20 +724,16 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
     """Request a password reset link"""
     user_doc = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
     
-    # Always return success to prevent email enumeration
     if not user_doc:
         logger.info(f"Password reset requested for non-existent email: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
-    # Check if user uses Google OAuth
     if user_doc.get('auth_provider') == 'google':
         logger.info(f"Password reset requested for Google OAuth user: {data.email}")
         return {"message": "If an account exists with this email, a password reset link has been sent."}
     
-    # Delete any existing reset tokens for this user
     await db.password_reset_tokens.delete_many({"user_id": user_doc['user_id']})
     
-    # Create new reset token
     reset_token = PasswordResetToken(
         user_id=user_doc['user_id'],
         email=data.email.lower()
@@ -589,16 +744,13 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
     token_doc['created_at'] = token_doc['created_at'].isoformat()
     await db.password_reset_tokens.insert_one(token_doc)
     
-    # Get medical center info for branding (if user is clinic admin)
     medical_center = None
     if user_doc.get('clinic_id'):
         medical_center = await db.clinics.find_one({"clinic_id": user_doc['clinic_id']}, {"_id": 0})
     
-    # Get frontend URL from environment or use default
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://clinic-dashboard-fix.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
     reset_link = f"{frontend_url}/reset-password?token={reset_token.token}"
     
-    # Send email in background task
     background_tasks.add_task(
         send_password_reset_email,
         recipient_email=data.email.lower(),
@@ -614,104 +766,32 @@ async def forgot_password(data: ForgotPasswordRequest, background_tasks: Backgro
 def send_password_reset_email(recipient_email: str, recipient_name: str, reset_link: str, medical_center: dict = None):
     """Send password reset email using Resend"""
     try:
-        # Determine sender based on medical center
-        if medical_center and medical_center.get('email'):
-            sender_name = medical_center.get('name', 'MediConnect')
-            # Note: For custom domains, you need to verify the domain in Resend
-            # For now, we use onboarding@resend.dev which is Resend's test sender
-            from_email = "MediConnect <onboarding@resend.dev>"
-        else:
-            from_email = "MediConnect <onboarding@resend.dev>"
-            sender_name = "MediConnect"
-        
+        from_email = "MediConnect <onboarding@resend.dev>"
         center_name = medical_center.get('name', 'MediConnect') if medical_center else 'MediConnect'
-        center_address = medical_center.get('address', '') if medical_center else ''
-        center_phone = medical_center.get('phone', '') if medical_center else ''
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); padding: 30px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 24px;">{center_name}</h1>
-                </div>
-                
-                <!-- Content -->
-                <div style="padding: 40px 30px;">
-                    <h2 style="color: #1f2937; margin-top: 0; margin-bottom: 20px;">Password Reset Request</h2>
-                    
-                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
-                        Hello {recipient_name},
-                    </p>
-                    
-                    <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
-                        We received a request to reset your password. Click the button below to create a new password. 
-                        If you didn't make this request, you can safely ignore this email.
-                    </p>
-                    
-                    <!-- Button -->
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{reset_link}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                            Reset Your Password
-                        </a>
-                    </div>
-                    
-                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                        Or copy and paste this link into your browser:
-                    </p>
-                    <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px;">
-                        {reset_link}
-                    </p>
-                    
-                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                            ⏰ This link expires in 1 hour for security purposes.
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Footer -->
-                <div style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                        {center_name}
-                    </p>
-                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">{center_address}</p>' if center_address else ''}
-                    {f'<p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0 0;">📞 {center_phone}</p>' if center_phone else ''}
-                    <p style="color: #9ca3af; font-size: 11px; margin-top: 15px;">
-                        © 2025 MediConnect. All rights reserved.<br>
-                        (Powered by ACL-Smart Software)
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
+<div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden;">
+<div style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+<h1 style="color: white; margin: 0;">{center_name}</h1>
+</div>
+<div style="padding: 40px 30px;">
+<h2 style="color: #1f2937;">Password Reset Request</h2>
+<p style="color: #4b5563;">Hello {recipient_name},</p>
+<p style="color: #4b5563;">Click the button below to reset your password.</p>
+<div style="text-align: center; margin: 30px 0;">
+<a href="{reset_link}" style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600;">Reset Your Password</a>
+</div>
+<p style="color: #6b7280; font-size: 14px;">Or copy this link: {reset_link}</p>
+<p style="color: #9ca3af; font-size: 12px;">This link expires in 1 hour.</p>
+</div>
+</div>
+</body>
+</html>"""
         
-        text_content = f"""
-Password Reset Request
-
-Hello {recipient_name},
-
-We received a request to reset your password. Click the link below to create a new password.
-If you didn't make this request, you can safely ignore this email.
-
-Reset your password: {reset_link}
-
-This link expires in 1 hour for security purposes.
-
-{center_name}
-{center_address}
-{center_phone}
-
-© 2025 MediConnect. All rights reserved.
-(Powered by ACL-Smart Software)
-        """
+        text_content = f"Password Reset\n\nHello {recipient_name},\n\nReset your password: {reset_link}\n\nThis link expires in 1 hour."
         
         response = resend.Emails.send({
             "from": from_email,
@@ -721,27 +801,24 @@ This link expires in 1 hour for security purposes.
             "text": text_content
         })
         
-        logger.info(f"Password reset email sent successfully to {recipient_email}. Email ID: {response.get('id', 'unknown')}")
-        return {"success": True, "email_id": response.get('id')}
+        logger.info(f"Password reset email sent to {recipient_email}")
+        return {"success": True}
         
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {recipient_email}: {str(e)}")
+        logger.error(f"Failed to send password reset email: {str(e)}")
         return {"success": False, "error": str(e)}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(data: ResetPasswordRequest):
     """Reset password using reset token"""
-    # Validate password length
     if len(data.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     
-    # Find the reset token
     token_doc = await db.password_reset_tokens.find_one({"token": data.token, "used": False}, {"_id": 0})
     
     if not token_doc:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
-    # Check expiration
     expires_at = token_doc["expires_at"]
     if isinstance(expires_at, str):
         expires_at = datetime.fromisoformat(expires_at)
@@ -751,14 +828,12 @@ async def reset_password(data: ResetPasswordRequest):
     if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Reset token has expired")
     
-    # Update user password
     new_password_hash = hash_password(data.new_password)
     await db.users.update_one(
         {"user_id": token_doc["user_id"]},
         {"$set": {"password_hash": new_password_hash}}
     )
     
-    # Mark token as used
     await db.password_reset_tokens.update_one(
         {"token": data.token},
         {"$set": {"used": True}}
@@ -773,16 +848,14 @@ async def validate_cui(cui: str):
     import re
     cui_clean = cui.strip()
     
-    # Validate format
     if not re.match(r'^\d{2,10}$', cui_clean):
-        return {"valid": False, "available": False, "message": "CUI invalid. CUI-ul trebuie să conțină între 2 și 10 cifre."}
+        return {"valid": False, "available": False, "message": "CUI invalid. CUI-ul trebuie sa contina intre 2 si 10 cifre."}
     
-    # Check if already registered
     existing = await db.clinics.find_one({"cui": cui_clean}, {"_id": 0})
     if existing:
-        return {"valid": True, "available": False, "message": "Acest CUI este deja înregistrat."}
+        return {"valid": True, "available": False, "message": "Acest CUI este deja inregistrat."}
     
-    return {"valid": True, "available": True, "message": "CUI disponibil pentru înregistrare."}
+    return {"valid": True, "available": True, "message": "CUI disponibil pentru inregistrare."}
 
 # ==================== CLINIC MANAGEMENT ROUTES ====================
 
@@ -790,11 +863,9 @@ async def validate_cui(cui: str):
 async def get_clinics(request: Request):
     user = await get_current_user(request)
     if user and user.role == "CLINIC_ADMIN" and user.clinic_id:
-        # Clinic admin sees only their clinic
         clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
         return [clinic] if clinic else []
     
-    # Public - see all verified clinics
     clinics = await db.clinics.find({"is_verified": True}, {"_id": 0}).to_list(100)
     return clinics
 
@@ -815,7 +886,6 @@ async def update_clinic(clinic_id: str, data: ClinicUpdate, request: Request):
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
-    # Check if profile should be marked as complete
     clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
     new_name = update_data.get('name', clinic.get('name'))
     new_address = update_data.get('address', clinic.get('address'))
@@ -824,6 +894,76 @@ async def update_clinic(clinic_id: str, data: ClinicUpdate, request: Request):
     
     await db.clinics.update_one({"clinic_id": clinic_id}, {"$set": update_data})
     return await get_clinic(clinic_id)
+
+# ==================== REVIEW ROUTES ====================
+
+@api_router.get("/clinics/{clinic_id}/reviews")
+async def get_clinic_reviews(clinic_id: str):
+    """Get all reviews for a clinic"""
+    reviews = await db.reviews.find(
+        {"clinic_id": clinic_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return reviews
+
+@api_router.post("/clinics/{clinic_id}/reviews")
+async def create_review(clinic_id: str, data: ReviewCreate, request: Request):
+    """Create a review for a clinic"""
+    user = await require_auth(request)
+    
+    # Verify clinic exists
+    clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
+    if not clinic:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+    
+    # Validate rating
+    if data.rating < 1 or data.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    
+    # Check if user already reviewed this clinic
+    existing_review = await db.reviews.find_one({
+        "clinic_id": clinic_id,
+        "user_id": user.user_id
+    }, {"_id": 0})
+    
+    if existing_review:
+        raise HTTPException(status_code=400, detail="You have already reviewed this clinic")
+    
+    review = Review(
+        clinic_id=clinic_id,
+        user_id=user.user_id,
+        user_name=user.name,
+        rating=data.rating,
+        comment=data.comment
+    )
+    
+    doc = review.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.reviews.insert_one(doc)
+    
+    return review
+
+@api_router.get("/clinics/{clinic_id}/stats")
+async def get_clinic_stats(clinic_id: str):
+    """Get clinic statistics including average rating"""
+    # Get average rating
+    pipeline = [
+        {"$match": {"clinic_id": clinic_id}},
+        {"$group": {
+            "_id": None,
+            "average_rating": {"$avg": "$rating"},
+            "review_count": {"$sum": 1}
+        }}
+    ]
+    result = await db.reviews.aggregate(pipeline).to_list(1)
+    
+    if result:
+        return {
+            "average_rating": round(result[0]["average_rating"], 1),
+            "review_count": result[0]["review_count"]
+        }
+    
+    return {"average_rating": 0, "review_count": 0}
 
 # ==================== DOCTOR MANAGEMENT ROUTES ====================
 
@@ -840,7 +980,6 @@ async def get_doctors(request: Request, clinic_id: Optional[str] = None):
     
     doctors = await db.doctors.find(query, {"_id": 0}).to_list(100)
     
-    # Enrich with clinic name
     for doc in doctors:
         clinic = await db.clinics.find_one({"clinic_id": doc["clinic_id"]}, {"_id": 0})
         doc["clinic_name"] = clinic.get("name") if clinic else "Unknown"
@@ -972,6 +1111,68 @@ async def get_doctor_availability(doctor_id: str, date: str):
     
     return {"date": date, "available_slots": available_slots, "duration": duration}
 
+@api_router.put("/doctors/{doctor_id}/availability")
+async def update_doctor_availability(doctor_id: str, data: dict, request: Request):
+    """Allow doctor to update their own availability schedule (within clinic hours)"""
+    user = await require_auth(request)
+    
+    doctor = await db.doctors.find_one({"doctor_id": doctor_id, "is_active": True}, {"_id": 0})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Check if user is the doctor or clinic admin
+    is_own_profile = user.email.lower() == doctor.get('email', '').lower()
+    is_admin = user.role == 'CLINIC_ADMIN' and user.clinic_id == doctor['clinic_id']
+    
+    if not is_own_profile and not is_admin:
+        raise HTTPException(status_code=403, detail="You can only update your own availability")
+    
+    # Get clinic working hours
+    clinic = await db.clinics.find_one({"clinic_id": doctor['clinic_id']}, {"_id": 0})
+    clinic_hours = clinic.get('working_hours', {}) if clinic else {}
+    
+    # Validate availability is within clinic hours
+    availability_schedule = data.get('availability_schedule', {})
+    validated_schedule = {}
+    
+    for day, periods in availability_schedule.items():
+        clinic_day_hours = clinic_hours.get(day)
+        
+        # If clinic is closed on this day, doctor cannot work
+        if clinic_day_hours is None:
+            validated_schedule[day] = []
+            continue
+        
+        # Validate each period is within clinic hours
+        valid_periods = []
+        for period in periods:
+            start = period.get('start', '09:00')
+            end = period.get('end', '17:00')
+            
+            # Ensure doctor hours are within clinic hours
+            if clinic_day_hours:
+                clinic_start = clinic_day_hours.get('start', '00:00')
+                clinic_end = clinic_day_hours.get('end', '23:59')
+                
+                if start < clinic_start:
+                    start = clinic_start
+                if end > clinic_end:
+                    end = clinic_end
+            
+            if start < end:
+                valid_periods.append({'start': start, 'end': end})
+        
+        validated_schedule[day] = valid_periods
+    
+    # Update doctor availability
+    await db.doctors.update_one(
+        {"doctor_id": doctor_id},
+        {"$set": {"availability_schedule": validated_schedule}}
+    )
+    
+    updated_doctor = await db.doctors.find_one({"doctor_id": doctor_id}, {"_id": 0})
+    return updated_doctor
+
 # ==================== STAFF MANAGEMENT ROUTES ====================
 
 @api_router.get("/staff")
@@ -981,21 +1182,239 @@ async def get_staff(request: Request):
     return staff
 
 @api_router.post("/staff")
-async def create_staff(data: StaffCreate, request: Request):
+async def create_staff(data: StaffCreate, request: Request, background_tasks: BackgroundTasks):
+    """Create staff member and send invitation email"""
     user = await require_clinic_admin(request)
+    
+    # Check if email is already used
+    existing_user = await db.users.find_one({"email": data.email.lower()}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="This email is already registered in the system")
+    
+    existing_staff = await db.staff.find_one({"email": data.email.lower(), "clinic_id": user.clinic_id, "is_active": True}, {"_id": 0})
+    if existing_staff:
+        raise HTTPException(status_code=400, detail="A staff member with this email already exists")
+    
+    # Generate invitation token
+    invitation_token = f"invite_{secrets.token_hex(32)}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
     staff = StaffMember(
         clinic_id=user.clinic_id,
         name=data.name,
         email=data.email.lower(),
         phone=data.phone,
-        role=data.role
+        role=data.role,
+        invitation_status="PENDING",
+        invitation_token=invitation_token,
+        invitation_expires_at=expires_at
     )
     doc = staff.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc['invitation_expires_at'] = doc['invitation_expires_at'].isoformat() if doc['invitation_expires_at'] else None
     await db.staff.insert_one(doc)
     
+    # Get clinic info for email
+    clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
+    
+    # Send invitation email
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    invitation_link = f"{frontend_url}/accept-invitation?token={invitation_token}"
+    
+    background_tasks.add_task(
+        send_staff_invitation_email,
+        recipient_email=data.email.lower(),
+        recipient_name=data.name,
+        role=data.role,
+        invitation_link=invitation_link,
+        clinic_name=clinic.get('name', 'Medical Center') if clinic else 'Medical Center',
+        inviter_name=user.name
+    )
+    
+    logger.info(f"Staff invitation sent to {data.email} for clinic {user.clinic_id}")
+    
     return staff
+
+@api_router.post("/staff/{staff_id}/resend-invitation")
+async def resend_staff_invitation(staff_id: str, request: Request, background_tasks: BackgroundTasks):
+    """Resend invitation email to staff member"""
+    user = await require_clinic_admin(request)
+    
+    staff = await db.staff.find_one({"staff_id": staff_id, "clinic_id": user.clinic_id}, {"_id": 0})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    
+    if staff.get('invitation_status') == 'ACCEPTED':
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+    
+    # Generate new invitation token
+    new_token = f"invite_{secrets.token_hex(32)}"
+    new_expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.staff.update_one(
+        {"staff_id": staff_id},
+        {"$set": {
+            "invitation_token": new_token,
+            "invitation_expires_at": new_expires_at.isoformat()
+        }}
+    )
+    
+    # Get clinic info
+    clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
+    
+    # Send invitation email
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    invitation_link = f"{frontend_url}/accept-invitation?token={new_token}"
+    
+    background_tasks.add_task(
+        send_staff_invitation_email,
+        recipient_email=staff['email'],
+        recipient_name=staff['name'],
+        role=staff['role'],
+        invitation_link=invitation_link,
+        clinic_name=clinic.get('name', 'Medical Center') if clinic else 'Medical Center',
+        inviter_name=user.name
+    )
+    
+    return {"message": "Invitation resent successfully"}
+
+@api_router.get("/staff/invitation/{token}")
+async def get_invitation_details(token: str):
+    """Get invitation details by token"""
+    staff = await db.staff.find_one({"invitation_token": token}, {"_id": 0})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Invalid invitation link")
+    
+    if staff.get('invitation_status') == 'ACCEPTED':
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+    
+    # Check expiry
+    expires_at = staff.get('invitation_expires_at')
+    if expires_at:
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="Invitation has expired")
+    
+    # Get clinic info
+    clinic = await db.clinics.find_one({"clinic_id": staff['clinic_id']}, {"_id": 0})
+    
+    return {
+        "name": staff['name'],
+        "email": staff['email'],
+        "role": staff['role'],
+        "clinic_name": clinic.get('name', 'Medical Center') if clinic else 'Medical Center'
+    }
+
+@api_router.post("/staff/accept-invitation")
+async def accept_staff_invitation(data: AcceptInvitationRequest, response: Response):
+    """Accept invitation and create user account"""
+    if len(data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    staff = await db.staff.find_one({"invitation_token": data.token}, {"_id": 0})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Invalid invitation link")
+    
+    if staff.get('invitation_status') == 'ACCEPTED':
+        raise HTTPException(status_code=400, detail="Invitation already accepted")
+    
+    # Check expiry
+    expires_at = staff.get('invitation_expires_at')
+    if expires_at:
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="Invitation has expired")
+    
+    # Check if email is already registered as a user
+    existing_user = await db.users.find_one({"email": staff['email']}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="This email is already registered")
+    
+    # Map staff role to user role
+    user_role = "ASSISTANT"  # Default
+    if staff['role'] == 'DOCTOR':
+        user_role = "DOCTOR"
+    elif staff['role'] in ['ADMIN', 'RECEPTIONIST', 'NURSE']:
+        user_role = "ASSISTANT"
+    
+    # Create user account
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    new_user = User(
+        user_id=user_id,
+        email=staff['email'],
+        name=staff['name'],
+        phone=staff.get('phone'),
+        password_hash=hash_password(data.password),
+        auth_provider="email",
+        role=user_role,
+        clinic_id=staff['clinic_id']
+    )
+    user_doc = new_user.model_dump()
+    user_doc['created_at'] = user_doc['created_at'].isoformat()
+    await db.users.insert_one(user_doc)
+    
+    # Update staff record
+    await db.staff.update_one(
+        {"staff_id": staff['staff_id']},
+        {"$set": {
+            "invitation_status": "ACCEPTED",
+            "invitation_token": None,
+            "invitation_expires_at": None,
+            "user_id": user_id
+        }}
+    )
+    
+    # Create session
+    session_token = await create_session(user_id, response)
+    
+    user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
+    user_data['redirect_to'] = '/staff-dashboard'
+    
+    logger.info(f"Staff invitation accepted for {staff['email']}, user {user_id} created")
+    
+    return {"user": user_data, "session_token": session_token}
+
+@api_router.put("/staff/{staff_id}")
+async def update_staff(staff_id: str, data: StaffUpdate, request: Request):
+    """Update staff member details"""
+    user = await require_clinic_admin(request)
+    
+    staff = await db.staff.find_one({"staff_id": staff_id, "clinic_id": user.clinic_id}, {"_id": 0})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    
+    # Build update data
+    update_data = {}
+    if data.name is not None:
+        update_data["name"] = data.name
+    if data.phone is not None:
+        update_data["phone"] = data.phone
+    if data.role is not None:
+        update_data["role"] = data.role
+        # Also update the linked user's role if exists
+        if staff.get('user_id'):
+            user_role = "ASSISTANT"
+            if data.role == 'DOCTOR':
+                user_role = "DOCTOR"
+            await db.users.update_one(
+                {"user_id": staff['user_id']},
+                {"$set": {"role": user_role}}
+            )
+    
+    if update_data:
+        await db.staff.update_one(
+            {"staff_id": staff_id},
+            {"$set": update_data}
+        )
+    
+    updated_staff = await db.staff.find_one({"staff_id": staff_id}, {"_id": 0})
+    return updated_staff
 
 @api_router.delete("/staff/{staff_id}")
 async def delete_staff(staff_id: str, request: Request):
@@ -1005,8 +1424,68 @@ async def delete_staff(staff_id: str, request: Request):
     if not staff or staff["clinic_id"] != user.clinic_id:
         raise HTTPException(status_code=404, detail="Staff not found")
     
+    # Deactivate staff record
     await db.staff.update_one({"staff_id": staff_id}, {"$set": {"is_active": False}})
+    
+    # If staff has an associated user, deactivate that too
+    if staff.get('user_id'):
+        await db.users.update_one({"user_id": staff['user_id']}, {"$set": {"is_active": False}})
+    
     return {"message": "Staff removed successfully"}
+
+
+def send_staff_invitation_email(recipient_email: str, recipient_name: str, role: str, invitation_link: str, clinic_name: str, inviter_name: str):
+    """Send staff invitation email using Resend"""
+    try:
+        from_email = "MediConnect <onboarding@resend.dev>"
+        
+        role_display = {
+            'DOCTOR': 'Doctor',
+            'ASSISTANT': 'Assistant',
+            'RECEPTIONIST': 'Receptionist',
+            'NURSE': 'Nurse',
+            'ADMIN': 'Administrator'
+        }.get(role, role)
+        
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
+<div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden;">
+<div style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+<h1 style="color: white; margin: 0;">{clinic_name}</h1>
+</div>
+<div style="padding: 40px 30px;">
+<h2 style="color: #1f2937;">You're Invited to Join {clinic_name}</h2>
+<p style="color: #4b5563;">Hello {recipient_name},</p>
+<p style="color: #4b5563;">{inviter_name} has invited you to join <strong>{clinic_name}</strong> as a <strong>{role_display}</strong> on MediConnect.</p>
+<p style="color: #4b5563;">Click the button below to accept your invitation and set up your account:</p>
+<div style="text-align: center; margin: 30px 0;">
+<a href="{invitation_link}" style="background: linear-gradient(135deg, #0d9488 0%, #3b82f6 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: 600;">Accept Invitation</a>
+</div>
+<p style="color: #6b7280; font-size: 14px;">Or copy this link: {invitation_link}</p>
+<p style="color: #9ca3af; font-size: 12px;">This invitation expires in 7 days.</p>
+</div>
+</div>
+</body>
+</html>"""
+        
+        text_content = f"Staff Invitation\n\nHello {recipient_name},\n\n{inviter_name} has invited you to join {clinic_name} as a {role_display}.\n\nAccept your invitation: {invitation_link}\n\nThis invitation expires in 7 days."
+        
+        response = resend.Emails.send({
+            "from": from_email,
+            "to": recipient_email,
+            "subject": f"You're Invited to Join {clinic_name} - MediConnect",
+            "html": html_content,
+            "text": text_content
+        })
+        
+        logger.info(f"Staff invitation email sent to {recipient_email}")
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Failed to send staff invitation email: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 # ==================== SERVICES MANAGEMENT ROUTES ====================
 
@@ -1033,13 +1512,38 @@ async def create_service(data: ServiceCreate, request: Request):
         name=data.name,
         description=data.description,
         duration=data.duration,
-        price=data.price
+        price=data.price,
+        currency=data.currency
     )
     doc = service.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.services.insert_one(doc)
     
     return service
+
+@api_router.put("/services/{service_id}")
+async def update_service(service_id: str, data: ServiceCreate, request: Request):
+    user = await require_clinic_admin(request)
+    
+    service = await db.services.find_one({"service_id": service_id}, {"_id": 0})
+    if not service or service["clinic_id"] != user.clinic_id:
+        raise HTTPException(status_code=404, detail="Service not found")
+    
+    update_data = {
+        "name": data.name,
+        "description": data.description,
+        "duration": data.duration,
+        "price": data.price,
+        "currency": data.currency
+    }
+    
+    await db.services.update_one(
+        {"service_id": service_id},
+        {"$set": update_data}
+    )
+    
+    updated_service = await db.services.find_one({"service_id": service_id}, {"_id": 0})
+    return updated_service
 
 @api_router.delete("/services/{service_id}")
 async def delete_service(service_id: str, request: Request):
@@ -1067,7 +1571,16 @@ async def get_appointments(
     
     query = {}
     
+    # Determine user's doctor record if they are a DOCTOR role
+    user_doctor_id = None
+    if user.role == "DOCTOR" and user.clinic_id:
+        user_doctor = await db.doctors.find_one({"email": user.email.lower(), "clinic_id": user.clinic_id}, {"_id": 0})
+        if user_doctor:
+            user_doctor_id = user_doctor.get("doctor_id")
+    
     if user.role == "CLINIC_ADMIN" and user.clinic_id:
+        query["clinic_id"] = user.clinic_id
+    elif user.role in ["DOCTOR", "ASSISTANT"] and user.clinic_id:
         query["clinic_id"] = user.clinic_id
     elif user.role == "USER":
         query["patient_id"] = user.user_id
@@ -1086,16 +1599,38 @@ async def get_appointments(
     
     appointments = await db.appointments.find(query, {"_id": 0}).to_list(500)
     
-    # Enrich with doctor and patient info
     for apt in appointments:
         doctor = await db.doctors.find_one({"doctor_id": apt["doctor_id"]}, {"_id": 0})
         apt["doctor_name"] = doctor.get("name") if doctor else "Unknown"
         apt["doctor_specialty"] = doctor.get("specialty") if doctor else "Unknown"
         
+        # Privacy control for doctors/assistants
         if user.role == "CLINIC_ADMIN":
+            # Admin sees full details
             patient = await db.users.find_one({"user_id": apt["patient_id"]}, {"_id": 0})
             apt["patient_name"] = apt.get("patient_name") or (patient.get("name") if patient else "Unknown")
             apt["patient_email"] = apt.get("patient_email") or (patient.get("email") if patient else "Unknown")
+            apt["is_own_patient"] = True
+        elif user.role == "DOCTOR":
+            # Doctor sees full details only for their own patients
+            is_own_patient = user_doctor_id and apt["doctor_id"] == user_doctor_id
+            apt["is_own_patient"] = is_own_patient
+            
+            if is_own_patient:
+                patient = await db.users.find_one({"user_id": apt["patient_id"]}, {"_id": 0})
+                apt["patient_name"] = apt.get("patient_name") or (patient.get("name") if patient else "Unknown")
+                apt["patient_email"] = apt.get("patient_email") or (patient.get("email") if patient else "Unknown")
+            else:
+                # For colleagues' patients: only show name and time (no sensitive data)
+                apt["patient_name"] = apt.get("patient_name", "Patient")
+                apt["patient_email"] = None
+                apt["notes"] = None  # Hide notes for privacy
+        elif user.role == "ASSISTANT":
+            # Assistant sees limited info similar to colleague view
+            patient = await db.users.find_one({"user_id": apt["patient_id"]}, {"_id": 0})
+            apt["patient_name"] = apt.get("patient_name") or (patient.get("name") if patient else "Unknown")
+            apt["patient_email"] = None  # Hide email for privacy
+            apt["is_own_patient"] = False
     
     return appointments
 
@@ -1162,7 +1697,6 @@ async def update_appointment(appointment_id: str, data: AppointmentUpdate, reque
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
     
-    # Check access
     if user.role == "USER" and appointment["patient_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
     if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
@@ -1193,13 +1727,13 @@ async def update_appointment(appointment_id: str, data: AppointmentUpdate, reque
 
 @api_router.delete("/appointments/{appointment_id}")
 async def cancel_appointment(appointment_id: str, request: Request):
+    """Cancel appointment (patients can cancel without reason)"""
     user = await require_auth(request)
     
     appointment = await db.appointments.find_one({"appointment_id": appointment_id}, {"_id": 0})
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
     
-    # Check access
     if user.role == "USER" and appointment["patient_id"] != user.user_id:
         raise HTTPException(status_code=403, detail="Access denied")
     if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
@@ -1218,6 +1752,294 @@ async def cancel_appointment(appointment_id: str, request: Request):
     )
     
     return {"message": "Appointment cancelled successfully"}
+
+@api_router.post("/appointments/{appointment_id}/cancel")
+async def cancel_appointment_with_reason(appointment_id: str, data: AppointmentCancel, request: Request, background_tasks: BackgroundTasks):
+    """Cancel appointment with required reason (for Doctors/Admins)"""
+    user = await require_auth(request)
+    
+    if user.role not in ["CLINIC_ADMIN", "DOCTOR", "ASSISTANT"]:
+        raise HTTPException(status_code=403, detail="Only clinic staff can use this cancellation method")
+    
+    appointment = await db.appointments.find_one({"appointment_id": appointment_id}, {"_id": 0})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Verify access
+    if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower(), "clinic_id": user.clinic_id}, {"_id": 0})
+        if not doctor or doctor["doctor_id"] != appointment["doctor_id"]:
+            raise HTTPException(status_code=403, detail="You can only cancel your own appointments")
+    
+    if not data.reason or len(data.reason.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Cancellation reason is required (minimum 3 characters)")
+    
+    # Update appointment with cancellation details
+    await db.appointments.update_one(
+        {"appointment_id": appointment_id},
+        {"$set": {
+            "status": "CANCELLED",
+            "cancellation_reason": data.reason.strip(),
+            "cancelled_by": user.user_id,
+            "cancelled_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Get patient and doctor info for email
+    patient = await db.users.find_one({"user_id": appointment["patient_id"]}, {"_id": 0})
+    doctor = await db.doctors.find_one({"doctor_id": appointment["doctor_id"]}, {"_id": 0})
+    clinic = await db.clinics.find_one({"clinic_id": appointment["clinic_id"]}, {"_id": 0})
+    
+    # Send cancellation notification email to patient
+    if patient and patient.get("email"):
+        background_tasks.add_task(
+            send_cancellation_notification_email,
+            patient_email=patient["email"],
+            patient_name=patient.get("name", "Patient"),
+            doctor_name=doctor.get("name", "Doctor") if doctor else "Doctor",
+            clinic_name=clinic.get("name", "Clinic") if clinic else "Clinic",
+            appointment_date=appointment["date_time"],
+            cancellation_reason=data.reason.strip()
+        )
+    
+    logger.info(f"Appointment {appointment_id} cancelled by {user.email} with reason: {data.reason}")
+    
+    return {"message": "Appointment cancelled successfully", "reason": data.reason}
+
+
+def send_cancellation_notification_email(patient_email: str, patient_name: str, doctor_name: str, clinic_name: str, appointment_date: str, cancellation_reason: str):
+    """Send cancellation notification email to patient"""
+    try:
+        from_email = "MediConnect <onboarding@resend.dev>"
+        
+        # Format date
+        try:
+            dt = datetime.fromisoformat(appointment_date.replace('Z', '+00:00'))
+            formatted_date = dt.strftime("%B %d, %Y at %H:%M")
+        except:
+            formatted_date = appointment_date
+        
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; background-color: #f5f7fa; margin: 0; padding: 20px;">
+<div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden;">
+<div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; text-align: center;">
+<h1 style="color: white; margin: 0;">Appointment Cancelled</h1>
+</div>
+<div style="padding: 40px 30px;">
+<p style="color: #4b5563;">Hello {patient_name},</p>
+<p style="color: #4b5563;">We regret to inform you that your appointment has been cancelled.</p>
+
+<div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+<p style="margin: 5px 0; color: #374151;"><strong>Doctor:</strong> Dr. {doctor_name}</p>
+<p style="margin: 5px 0; color: #374151;"><strong>Clinic:</strong> {clinic_name}</p>
+<p style="margin: 5px 0; color: #374151;"><strong>Original Date:</strong> {formatted_date}</p>
+</div>
+
+<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+<p style="margin: 0; color: #991b1b;"><strong>Reason for Cancellation:</strong></p>
+<p style="margin: 5px 0 0 0; color: #7f1d1d;">{cancellation_reason}</p>
+</div>
+
+<p style="color: #4b5563;">Please contact us or book a new appointment at your convenience.</p>
+<p style="color: #6b7280; font-size: 14px;">We apologize for any inconvenience caused.</p>
+</div>
+</div>
+</body>
+</html>"""
+        
+        text_content = f"Appointment Cancelled\n\nHello {patient_name},\n\nYour appointment with Dr. {doctor_name} at {clinic_name} on {formatted_date} has been cancelled.\n\nReason: {cancellation_reason}\n\nPlease contact us or book a new appointment at your convenience."
+        
+        response = resend.Emails.send({
+            "from": from_email,
+            "to": patient_email,
+            "subject": f"Appointment Cancelled - {clinic_name}",
+            "html": html_content,
+            "text": text_content
+        })
+        
+        logger.info(f"Cancellation email sent to {patient_email}")
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Failed to send cancellation email: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+# ==================== PATIENT HISTORY ROUTES ====================
+
+@api_router.get("/patients/{patient_id}/history")
+async def get_patient_history(patient_id: str, request: Request):
+    """Get patient history - appointments, prescriptions, medical records"""
+    user = await require_auth(request)
+    
+    # Check access - only admin, doctor with completed appointment, or the patient themselves
+    if user.role == "USER" and user.user_id != patient_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if user.role == "DOCTOR":
+        # Doctor can only see history if they have a completed appointment with this patient
+        doctor = await db.doctors.find_one({"email": user.email.lower(), "clinic_id": user.clinic_id}, {"_id": 0})
+        if not doctor:
+            raise HTTPException(status_code=403, detail="Doctor record not found")
+        
+        has_appointment = await db.appointments.find_one({
+            "patient_id": patient_id,
+            "doctor_id": doctor["doctor_id"],
+            "status": "COMPLETED"
+        }, {"_id": 0})
+        
+        if not has_appointment:
+            raise HTTPException(status_code=403, detail="You can only view history for patients you have treated")
+    
+    if user.role == "CLINIC_ADMIN":
+        # Admin can see patients from their clinic
+        patient_in_clinic = await db.appointments.find_one({
+            "patient_id": patient_id,
+            "clinic_id": user.clinic_id
+        }, {"_id": 0})
+        if not patient_in_clinic:
+            raise HTTPException(status_code=403, detail="Patient not found in your clinic")
+    
+    # Get patient info
+    patient = await db.users.find_one({"user_id": patient_id}, {"_id": 0, "password_hash": 0})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Build query filter based on role
+    query_filter = {"patient_id": patient_id}
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower()}, {"_id": 0})
+        query_filter["doctor_id"] = doctor["doctor_id"]
+    elif user.role == "CLINIC_ADMIN":
+        query_filter["clinic_id"] = user.clinic_id
+    
+    # Get appointments history
+    appointments = await db.appointments.find(
+        query_filter,
+        {"_id": 0}
+    ).sort("date_time", -1).to_list(100)
+    
+    # Enrich appointments with doctor names
+    for apt in appointments:
+        doctor = await db.doctors.find_one({"doctor_id": apt["doctor_id"]}, {"_id": 0})
+        apt["doctor_name"] = doctor.get("name") if doctor else "Unknown"
+        apt["doctor_specialty"] = doctor.get("specialty") if doctor else "Unknown"
+    
+    # Get prescriptions
+    prescriptions = await db.prescriptions.find(
+        {"patient_id": patient_id} if user.role != "DOCTOR" else {"patient_id": patient_id, "doctor_id": doctor["doctor_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Get medical records (recommendations, letters)
+    medical_records = await db.medical_records.find(
+        {"patient_id": patient_id} if user.role != "DOCTOR" else {"patient_id": patient_id, "doctor_id": doctor["doctor_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return {
+        "patient": patient,
+        "appointments": appointments,
+        "prescriptions": prescriptions,
+        "medical_records": medical_records
+    }
+
+@api_router.post("/prescriptions")
+async def create_prescription(data: PrescriptionCreate, request: Request):
+    """Create a prescription for a patient after appointment"""
+    user = await require_auth(request)
+    
+    if user.role not in ["CLINIC_ADMIN", "DOCTOR"]:
+        raise HTTPException(status_code=403, detail="Only doctors or admins can create prescriptions")
+    
+    # Verify appointment exists and is completed
+    appointment = await db.appointments.find_one({"appointment_id": data.appointment_id}, {"_id": 0})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower()}, {"_id": 0})
+        if not doctor or doctor["doctor_id"] != appointment["doctor_id"]:
+            raise HTTPException(status_code=403, detail="You can only create prescriptions for your own appointments")
+    
+    prescription = Prescription(
+        appointment_id=data.appointment_id,
+        patient_id=appointment["patient_id"],
+        doctor_id=appointment["doctor_id"],
+        clinic_id=appointment["clinic_id"],
+        medications=data.medications,
+        notes=data.notes
+    )
+    
+    doc = prescription.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.prescriptions.insert_one(doc)
+    
+    return prescription
+
+@api_router.post("/medical-records")
+async def create_medical_record(data: MedicalRecordCreate, request: Request):
+    """Create a medical record (recommendation, letter) for a patient"""
+    user = await require_auth(request)
+    
+    if user.role not in ["CLINIC_ADMIN", "DOCTOR"]:
+        raise HTTPException(status_code=403, detail="Only doctors or admins can create medical records")
+    
+    # Verify appointment exists
+    appointment = await db.appointments.find_one({"appointment_id": data.appointment_id}, {"_id": 0})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower()}, {"_id": 0})
+        if not doctor or doctor["doctor_id"] != appointment["doctor_id"]:
+            raise HTTPException(status_code=403, detail="You can only create records for your own appointments")
+    
+    record = MedicalRecord(
+        appointment_id=data.appointment_id,
+        patient_id=appointment["patient_id"],
+        doctor_id=appointment["doctor_id"],
+        clinic_id=appointment["clinic_id"],
+        record_type=data.record_type,
+        title=data.title,
+        content=data.content
+    )
+    
+    doc = record.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.medical_records.insert_one(doc)
+    
+    return record
+
+@api_router.get("/appointments/{appointment_id}/records")
+async def get_appointment_records(appointment_id: str, request: Request):
+    """Get all records (prescriptions, medical records) for an appointment"""
+    user = await require_auth(request)
+    
+    appointment = await db.appointments.find_one({"appointment_id": appointment_id}, {"_id": 0})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Check access
+    if user.role == "USER" and appointment["patient_id"] != user.user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if user.role == "CLINIC_ADMIN" and appointment["clinic_id"] != user.clinic_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower()}, {"_id": 0})
+        if not doctor or doctor["doctor_id"] != appointment["doctor_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    prescriptions = await db.prescriptions.find({"appointment_id": appointment_id}, {"_id": 0}).to_list(100)
+    medical_records = await db.medical_records.find({"appointment_id": appointment_id}, {"_id": 0}).to_list(100)
+    
+    return {
+        "prescriptions": prescriptions,
+        "medical_records": medical_records
+    }
 
 # ==================== STATS ROUTES ====================
 
@@ -1247,7 +2069,6 @@ async def get_stats(request: Request):
             "status": {"$ne": "CANCELLED"}
         })
         
-        # Unique patients
         pipeline = [
             {"$match": {"clinic_id": clinic_id}},
             {"$group": {"_id": "$patient_id"}},
@@ -1283,12 +2104,66 @@ async def get_stats(request: Request):
 async def get_revenue_stats(request: Request, period: str = "month"):
     user = await require_clinic_admin(request)
     
-    # Mock revenue data for now
     return {
         "period": period,
         "total_revenue": 15000.00,
         "appointments_count": 120,
         "average_per_appointment": 125.00
+    }
+
+@api_router.get("/stats/staff")
+async def get_staff_stats(request: Request):
+    """Get stats for staff dashboard (Doctor/Assistant)"""
+    user = await require_staff_or_admin(request)
+    
+    if not user.clinic_id:
+        return {
+            "today_appointments": 0,
+            "upcoming_appointments": 0,
+            "total_patients": 0
+        }
+    
+    clinic_id = user.clinic_id
+    now = datetime.now(timezone.utc).isoformat()
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0).isoformat()
+    today_end = datetime.now(timezone.utc).replace(hour=23, minute=59, second=59).isoformat()
+    
+    # For doctors, filter by doctor_id if they have a linked doctor record
+    query_filter = {"clinic_id": clinic_id, "status": {"$ne": "CANCELLED"}}
+    
+    # Check if this user is a doctor with a doctor record
+    if user.role == "DOCTOR":
+        doctor = await db.doctors.find_one({"email": user.email.lower(), "clinic_id": clinic_id}, {"_id": 0})
+        if doctor:
+            query_filter["doctor_id"] = doctor["doctor_id"]
+    
+    today_appointments = await db.appointments.count_documents({
+        **query_filter,
+        "date_time": {"$gte": today_start, "$lte": today_end}
+    })
+    
+    upcoming = await db.appointments.count_documents({
+        **query_filter,
+        "date_time": {"$gte": now}
+    })
+    
+    # Get unique patients count
+    pipeline = [
+        {"$match": query_filter},
+        {"$group": {"_id": "$patient_id"}},
+        {"$count": "total"}
+    ]
+    result = await db.appointments.aggregate(pipeline).to_list(1)
+    total_patients = result[0]["total"] if result else 0
+    
+    # Get clinic info
+    clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
+    
+    return {
+        "today_appointments": today_appointments,
+        "upcoming_appointments": upcoming,
+        "total_patients": total_patients,
+        "clinic_name": clinic.get('name', 'Medical Center') if clinic else 'Medical Center'
     }
 
 # ==================== ROOT ROUTE ====================
@@ -1297,41 +2172,60 @@ async def get_revenue_stats(request: Request, period: str = "month"):
 async def root():
     return {"message": "MediConnect API v2.0", "status": "healthy"}
 
-# Add CORS middleware BEFORE including router
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=[
-        "http://localhost:3000",  # Frontend-ul tău local
-        "http://127.0.0.1:3000",
-        # Adaugă aici și domeniul de producție dacă ai unul, ex:
-        # "https://site-ul-tau.com"
-        ],
+    allow_origins=["*"],
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-# Include the router in the main app
+# Include the router
 app.include_router(api_router)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    try:
+        await client.admin.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "database": str(e)}
 
 @app.on_event("startup")
 async def startup_event():
-    # Create some registration codes on startup if none exist
-    codes_count = await db.registration_codes.count_documents({})
-    if codes_count == 0:
-        codes = [
-            RegistrationCode(code="CLINIC2025A"),
-            RegistrationCode(code="CLINIC2025B"),
-            RegistrationCode(code="CLINIC2025C"),
-            RegistrationCode(code="MEDICONNECT"),
-            RegistrationCode(code="HEALTHCARE"),
-        ]
-        for code in codes:
-            doc = code.model_dump()
-            doc['created_at'] = doc['created_at'].isoformat()
-            await db.registration_codes.insert_one(doc)
-        logger.info("Created default registration codes")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            await client.admin.command('ping')
+            logger.info("MongoDB connection established successfully")
+            break
+        except Exception as e:
+            logger.error(f"MongoDB connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2)
+            else:
+                logger.error("Failed to connect to MongoDB after all retries")
+    
+    try:
+        codes_count = await db.registration_codes.count_documents({})
+        if codes_count == 0:
+            codes = [
+                RegistrationCode(code="CLINIC2025A"),
+                RegistrationCode(code="CLINIC2025B"),
+                RegistrationCode(code="CLINIC2025C"),
+                RegistrationCode(code="MEDICONNECT"),
+                RegistrationCode(code="HEALTHCARE"),
+            ]
+            for code in codes:
+                doc = code.model_dump()
+                doc['created_at'] = doc['created_at'].isoformat()
+                await db.registration_codes.insert_one(doc)
+            logger.info("Created default registration codes")
+    except Exception as e:
+        logger.error(f"Error creating registration codes: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

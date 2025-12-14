@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 // Configure axios defaults
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;
@@ -260,18 +260,22 @@ const Layout = ({ children }) => {
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
-      navigate('/login', { replace: true });
+      // Redirect to "Already Registered" login page for clinic staff
+      navigate('/register-clinic?tab=login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      navigate('/login', { replace: true });
+      navigate('/register-clinic?tab=login', { replace: true });
     }
   };
 
   const handleLogoClick = (e) => {
     e.preventDefault();
-    // Navigate to dashboard without triggering unnecessary re-renders
-    if (location.pathname !== '/dashboard') {
-      navigate('/dashboard');
+    // Navigate to appropriate dashboard based on role
+    const dashboardPath = user?.role === 'DOCTOR' || user?.role === 'ASSISTANT' 
+      ? '/staff-dashboard' 
+      : '/dashboard';
+    if (location.pathname !== dashboardPath) {
+      navigate(dashboardPath);
     }
     setSidebarOpen(false);
   };
@@ -422,6 +426,7 @@ import Dashboard from "./pages/Dashboard";
 import CalendarPage from "./pages/Calendar";
 import Appointments from "./pages/Appointments";
 import Clinics from "./pages/Clinics";
+import ClinicDetail from "./pages/ClinicDetail";
 import Doctors from "./pages/Doctors";
 import Users from "./pages/Users";
 import Staff from "./pages/Staff";
@@ -432,6 +437,8 @@ import RegisterUser from "./pages/RegisterUser";
 import RegisterClinic from "./pages/RegisterClinic";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AcceptInvitation from "./pages/AcceptInvitation";
+import StaffDashboard from "./pages/StaffDashboard";
 
 // App Router
 function AppRouter() {
@@ -450,6 +457,15 @@ function AppRouter() {
       <Route path="/register-clinic" element={<RegisterClinic />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/accept-invitation" element={<AcceptInvitation />} />
+      <Route
+        path="/staff-dashboard"
+        element={
+          <ProtectedRoute>
+            <StaffDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
@@ -479,6 +495,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <Layout><Clinics /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clinics/:clinicId"
+        element={
+          <ProtectedRoute>
+            <Layout><ClinicDetail /></Layout>
           </ProtectedRoute>
         }
       />
