@@ -2166,7 +2166,7 @@ async def get_staff_stats(request: Request):
         "clinic_name": clinic.get('name', 'Medical Center') if clinic else 'Medical Center'
     }
 
-# ==================== ROOT ROUTE ====================
+# ==================== ROOT ROUTE ==================== 
 
 @api_router.get("/")
 async def root():
@@ -2176,7 +2176,7 @@ async def root():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
