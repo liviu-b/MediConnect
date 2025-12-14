@@ -2186,7 +2186,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
-
+ 
 # Include the router
 app.include_router(api_router)
 
