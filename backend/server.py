@@ -2172,15 +2172,20 @@ async def get_staff_stats(request: Request):
 async def root():
     return {"message": "MediConnect API v2.0", "status": "healthy"}
 
+# Definim originile pentru dezvoltare locală
+origins = [
+    "http://localhost:3000",      # React default
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=origins,        # <--- Aici am modificat
+    allow_credentials=True,       # Acum funcționează corect cu originile specifice
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
 
 # Include the router
 app.include_router(api_router)
