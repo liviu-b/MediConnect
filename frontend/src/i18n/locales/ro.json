@@ -204,7 +204,6 @@
     "cancelConfirm": "Anulezi programarea cu {{doctor}} pe {{date}} la {{time}}?",
     "keepAppointment": "Păstrează",
     "yesCancel": "Da, Anulează",
-    "colleaguePatient": "pacient coleg",
     "limitedView": "Vizualizare limitată",
     "cancellationReason": "Motivul Anulării",
     "reasonPlaceholder": "ex. Urgență Medicală, Medic Indisponibil, Conflict de Program...",

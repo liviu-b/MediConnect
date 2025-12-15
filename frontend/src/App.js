@@ -151,14 +151,14 @@ const AuthCallback = () => {
     const processAuth = async () => {
       const hash = location.hash;
       const sessionIdMatch = hash.match(/session_id=([^&]+)/);
-      
+
       if (sessionIdMatch) {
         const sessionId = sessionIdMatch[1];
         try {
           const response = await api.post('/auth/session', {}, {
             headers: { 'X-Session-ID': sessionId }
           });
-          
+
           sessionStorage.setItem('just_authenticated', 'true');
 
           // Redirect based on role
@@ -281,8 +281,8 @@ const Layout = ({ children }) => {
   const handleLogoClick = (e) => {
     e.preventDefault();
     // Navigate to appropriate dashboard based on role
-    const dashboardPath = user?.role === 'DOCTOR' || user?.role === 'ASSISTANT' 
-      ? '/staff-dashboard' 
+    const dashboardPath = user?.role === 'DOCTOR' || user?.role === 'ASSISTANT'
+      ? '/staff-dashboard'
       : '/dashboard';
     if (location.pathname !== dashboardPath) {
       navigate(dashboardPath);
@@ -318,11 +318,10 @@ const Layout = ({ children }) => {
           navigate(item.path);
           setSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-          isActive
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${isActive
             ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
             : 'text-gray-600 hover:bg-gray-100'
-        }`}
+          }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         {!sidebarCollapsed && <span className="text-sm font-medium">{t(item.labelKey)}</span>}
@@ -342,9 +341,8 @@ const Layout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
-          sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
-        } ${sidebarCollapsed ? 'w-16' : 'w-56'}`}
+        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 ${sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
+          } ${sidebarCollapsed ? 'w-16' : 'w-56'}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -403,20 +401,47 @@ const Layout = ({ children }) => {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
-              <div className="flex items-center gap-2">
-                {user?.picture ? (
-                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
-                ) : (
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                    {user?.name?.charAt(0) || 'U'}
+
+              {/* User Profile Dropdown - Always visible */}
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  {user?.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {isClinicAdmin ? t('users.clinicAdmin') : t('users.patient')}
+                    </p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {isClinicAdmin ? t('users.clinicAdmin') : t('users.patient')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      {t('common.signOut')}
+                    </button>
                   </div>
                 )}
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {isClinicAdmin ? t('users.clinicAdmin') : t('users.patient')}
-                  </p>
-                </div>
               </div>
             </div>
           </div>
@@ -483,8 +508,8 @@ function AppRouter() {
           <ProtectedRoute>
             <PatientDashboard />
           </ProtectedRoute>
-          }
-        />
+        }
+      />
       <Route
         path="/dashboard"
         element={
