@@ -8,7 +8,7 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 class MediConnectAPITester:
-    def __init__(self, base_url="https://patient-portal-fixes.preview.emergentagent.com"):
+    def __init__(self, base_url="https://patient-flow-fix-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_token = None  # Will be set after login
@@ -2713,7 +2713,7 @@ def main():
     ]
     
     print(f"\nRunning {len(tests)} test categories focused on Patient Dashboard Backend APIs...")
-    print(f"Backend URL: https://patient-portal-fixes.preview.emergentagent.com/api")
+    print(f"Backend URL: https://patient-flow-fix-1.preview.emergentagent.com/api")
     print("Testing Patient Dashboard Backend APIs:")
     print("  1. Patient History API - GET /api/patients/{patient_id}/history")
     print("  2. Profile Update API - PUT /api/auth/profile")

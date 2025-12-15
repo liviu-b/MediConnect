@@ -110,9 +110,9 @@ const CalendarPage = () => {
     const clickedDate = new Date(info.dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (clickedDate < today) return;
-    
+
     setSelectedDate(clickedDate);
     setSelectedSlot(null);
     if (selectedClinic && selectedDoctor) {
@@ -148,11 +148,11 @@ const CalendarPage = () => {
       // Color coding: Light green for CONFIRMED/ACCEPTED appointments
       let bgColor = '#3B82F6'; // Default blue
       if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
-        bgColor = '#86EFAC'; // Light green for confirmed
+        bgColor = '#59bb7dff'; // Light green for confirmed
       } else if (apt.status === 'COMPLETED') {
         bgColor = '#9CA3AF'; // Gray for completed
       }
-      
+
       return {
         id: apt.appointment_id,
         title: isClinicAdmin ? apt.patient_name : `Dr. ${apt.doctor_name}`,
@@ -269,11 +269,10 @@ const CalendarPage = () => {
                       <button
                         key={slot.time}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                          selectedSlot?.time === slot.time
+                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        }`}
+                          }`}
                       >
                         {slot.time}
                       </button>

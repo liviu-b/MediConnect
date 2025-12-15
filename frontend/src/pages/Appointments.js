@@ -25,13 +25,13 @@ const Appointments = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cancelingId, setCancelingId] = useState(null);
-  
+
   // Cancellation modal state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelAppointment, setCancelAppointment] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState('');
-  
+
   // Patient history modal state
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [patientHistory, setPatientHistory] = useState(null);
@@ -69,7 +69,7 @@ const Appointments = () => {
       setCancelError(t('appointments.cancelReasonRequired'));
       return;
     }
-    
+
     setCancelingId(cancelAppointment.appointment_id);
     try {
       await api.post(`/appointments/${cancelAppointment.appointment_id}/cancel`, {
@@ -107,13 +107,13 @@ const Appointments = () => {
     } catch (err) {
       console.error('Error accepting appointment:', err);
       alert(t('notifications.error'));
-      }
+    }
   };
   const viewPatientHistory = async (apt) => {
     setSelectedAppointmentForHistory(apt);
     setHistoryLoading(true);
     setShowHistoryModal(true);
-    
+
     try {
       const res = await api.get(`/patients/${apt.patient_id}/history`);
       setPatientHistory(res.data);
@@ -154,7 +154,7 @@ const Appointments = () => {
   };
 
   const filteredAppointments = appointments.filter(apt => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       apt.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
       apt.doctor_name?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
@@ -194,11 +194,10 @@ const Appointments = () => {
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                statusFilter === status
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${statusFilter === status
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {status === 'all' ? t('appointments.all') : t(`appointments.${status.toLowerCase()}`)} ({statusCounts[status]})
             </button>
@@ -225,9 +224,8 @@ const Appointments = () => {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    apt.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 'bg-blue-100 text-blue-600'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${apt.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 'bg-blue-100 text-blue-600'
+                    }`}>
                     <CalendarDays className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
@@ -260,7 +258,7 @@ const Appointments = () => {
                     {t(`appointments.${apt.status.toLowerCase()}`)}
                   </span>
                   <div className="flex gap-1">
-                       {/* Admin actions - Accept/Reject for SCHEDULED appointments */}
+                    {/* Admin actions - Accept/Reject for SCHEDULED appointments */}
                     {isClinicAdmin && apt.status === 'SCHEDULED' && (
                       <>
                         <button
@@ -290,7 +288,7 @@ const Appointments = () => {
                         <History className="w-4 h-4" />
                       </button>
                     )}
-                    {!isClinicAdmin && apt.status !== 'COMPLETED' && (
+                    {!isClinicAdmin && apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
                       <button
                         onClick={() => isStaff ? openCancelModal(apt) : handlePatientCancel(apt.appointment_id)}
                         disabled={cancelingId === apt.appointment_id}
@@ -338,7 +336,7 @@ const Appointments = () => {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="p-4 space-y-4">
               {/* Appointment Info */}
               <div className="bg-gray-50 rounded-lg p-3">
@@ -352,7 +350,7 @@ const Appointments = () => {
                   <span className="font-medium">{t('appointments.title')}:</span> {formatDate(cancelAppointment.date_time)}
                 </p>
               </div>
-              
+
               {/* Reason Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -367,13 +365,13 @@ const Appointments = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('appointments.reasonHelp')}</p>
               </div>
-              
+
               {cancelError && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
                   {cancelError}
                 </div>
               )}
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCancelModal(false)}
@@ -408,7 +406,7 @@ const Appointments = () => {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {historyLoading ? (
                 <div className="flex justify-center py-8">
@@ -424,7 +422,7 @@ const Appointments = () => {
                       <p className="text-sm text-blue-700">{patientHistory.patient.phone}</p>
                     )}
                   </div>
-                  
+
                   {/* Previous Appointments */}
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -452,7 +450,7 @@ const Appointments = () => {
                       <p className="text-gray-500 text-sm">{t('appointments.noHistory')}</p>
                     )}
                   </div>
-                  
+
                   {/* Prescriptions */}
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -481,7 +479,7 @@ const Appointments = () => {
                       <p className="text-gray-500 text-sm">{t('appointments.noPrescriptions')}</p>
                     )}
                   </div>
-                  
+
                   {/* Medical Records */}
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -512,7 +510,7 @@ const Appointments = () => {
                 <p className="text-gray-500 text-center py-8">{t('appointments.historyError')}</p>
               )}
             </div>
-            
+
             <div className="p-4 border-t border-gray-200">
               <button
                 onClick={closeHistoryModal}

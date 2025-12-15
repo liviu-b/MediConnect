@@ -70,7 +70,7 @@ Ensure you have **Docker** and **Docker Compose** installed.
     Create a `.env` file in the `backend/` directory (or rely on the docker-compose defaults for dev):
 
     ```env
-    MONGO_URL=mongodb://mongo:27017/mediconnect
+    MONGO_URL=...
     SECRET_KEY=your_secure_secret_key
     RESEND_API_KEY=your_resend_api_key_here
     ```
