@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
@@ -45,19 +45,6 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-
-  // Helper to capitalize first letter (for Romanian months)
-  const formatDateCapitalized = (date) => {
-    const formatted = date.toLocaleDateString(i18n.language === 'ro' ? 'ro-RO' : 'en-GB', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    // Capitalize first letter of the string
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  };
 
   // Dashboard data
   const [appointments, setAppointments] = useState([]);
@@ -93,16 +80,46 @@ const PatientDashboard = () => {
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // --- 1. Define fetchData with useCallback so it can be a stable dependency ---
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        date_of_birth: user.date_of_birth || ''
+      });
+    }
+    fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && user) {
+      fetchHistory();
+    }
+  }, [activeTab, user]);
+
+  useEffect(() => {
+    if (selectedClinic) {
+      fetchDoctors(selectedClinic);
+    } else {
+      setDoctors([]);
+      setSelectedDoctor('');
+    }
+  }, [selectedClinic]);
+
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) {
+      fetchAvailability();
+    }
+  }, [selectedDoctor, selectedDate]);
+
+  const fetchData = async () => {
     try {
       const [appointmentsRes, clinicsRes] = await Promise.all([
         api.get('/appointments'),
         api.get('/clinics')
       ]);
-      // Filter to show ONLY patient's own appointments
-      const myAppointments = appointmentsRes.data.filter(apt => apt.patient_id === user?.user_id);
-      setAppointments(myAppointments);
+      setAppointments(appointmentsRes.data);
       setClinics(clinicsRes.data);
 
       // Fetch stats for each clinic
@@ -121,92 +138,44 @@ const PatientDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.user_id]);
+  };
 
-  // --- 2. Effect for Initial Data Fetching ---
-  useEffect(() => {
-    if (user?.user_id) {
-      fetchData();
+  const fetchHistory = async () => {
+    if (!user?.user_id) return;
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`/patients/${user.user_id}/history`);
+      setPrescriptions(res.data.prescriptions || []);
+      setMedicalRecords(res.data.medical_records || []);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setHistoryLoading(false);
     }
-  }, [user?.user_id, fetchData]);
+  };
 
-  // --- 3. Effect for Syncing Profile Form (Separated to avoid overwriting input) ---
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        name: user.name || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        date_of_birth: user.date_of_birth || ''
-      });
+  const fetchDoctors = async (clinicId) => {
+    try {
+      const res = await api.get(`/doctors?clinic_id=${clinicId}`);
+      setDoctors(res.data);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
     }
-  }, [user?.name, user?.phone, user?.address, user?.date_of_birth]);
+  };
 
-  // --- 4. Effect for History (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!user?.user_id) return;
-      setHistoryLoading(true);
-      try {
-        const res = await api.get(`/patients/${user.user_id}/history`);
-        setPrescriptions(res.data.prescriptions || []);
-        setMedicalRecords(res.data.medical_records || []);
-      } catch (err) {
-        console.error('Error fetching history:', err);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    if (activeTab === 'history' && user) {
-      fetchHistory();
+  const fetchAvailability = async () => {
+    setLoadingSlots(true);
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
+      setAvailableSlots(res.data.available_slots || []);
+    } catch (err) {
+      console.error('Error fetching availability:', err);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
-  }, [activeTab, user?.user_id]);
-
-  // --- 5. Effect for Doctors (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const res = await api.get(`/doctors?clinic_id=${selectedClinic}`);
-        setDoctors(res.data);
-      } catch (err) {
-        console.error('Error fetching doctors:', err);
-      }
-    };
-
-    if (selectedClinic) {
-      fetchDoctors();
-    } else {
-      setDoctors([]);
-      setSelectedDoctor('');
-    }
-  }, [selectedClinic]);
-
-  // --- 6. Effect for Availability (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoadingSlots(true);
-      try {
-        // Fix: Use local date components manually to format as YYYY-MM-DD
-        const offset = selectedDate.getTimezoneOffset();
-        const localDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
-        const dateStr = localDate.toISOString().split('T')[0];
-
-        const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
-        setAvailableSlots(res.data.available_slots || []);
-      } catch (err) {
-        console.error('Error fetching availability:', err);
-        setAvailableSlots([]);
-      } finally {
-        setLoadingSlots(false);
-      }
-    };
-
-    if (selectedDoctor && selectedDate) {
-      fetchAvailability();
-    }
-  }, [selectedDoctor, selectedDate]);
-
+  };
 
   const handleDateClick = (info) => {
     const clickedDate = new Date(info.dateStr);
@@ -235,7 +204,7 @@ const PatientDashboard = () => {
       setShowBookingModal(false);
       setNotes('');
       setSelectedSlot(null);
-      fetchData(); // Refresh appointments list
+      fetchData();
     } catch (err) {
       console.error('Error booking appointment:', err);
       alert(err.response?.data?.detail || t('notifications.bookingError'));
@@ -307,12 +276,12 @@ const PatientDashboard = () => {
   const calendarEvents = appointments
     .filter(apt => apt.status !== 'CANCELLED')
     .map(apt => {
-      // Color coding: Stronger green for CONFIRMED appointments (better visibility)
+      // Color coding: Light green for CONFIRMED appointments
       let bgColor = '#3B82F6'; // Default blue for scheduled
       let textColor = 'white';
 
       if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
-        bgColor = '#22C55E'; // Stronger green for confirmed (better visibility)
+        bgColor = '#22C55E'; // Green for confirmed
         textColor = 'white';
       } else if (apt.status === 'COMPLETED') {
         bgColor = '#9CA3AF'; // Gray for completed
@@ -453,8 +422,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
@@ -464,8 +433,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('calendar')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
@@ -475,8 +444,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('clinics')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'clinics'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Building2 className="w-5 h-5 flex-shrink-0" />
@@ -486,8 +455,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('history')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <History className="w-5 h-5 flex-shrink-0" />
@@ -497,8 +466,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Settings className="w-5 h-5 flex-shrink-0" />
@@ -554,51 +523,6 @@ const PatientDashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
-
-              {/* User Profile - Always visible in top right */}
-              <div className="relative">
-                <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  {user?.picture ? (
-                    <img src={user.picture} alt={user?.name} className="w-8 h-8 rounded-full" />
-                  ) : (
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                      {user?.name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500">{t('patientDashboard.patient')}</p>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
-
-                {userDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
-                      <p className="text-xs text-blue-600 mt-1">{t('patientDashboard.patient')}</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('profile')}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <Settings className="w-4 h-4" />
-                      {t('patientDashboard.profileSettings')}
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      {t('common.signOut')}
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </header>
@@ -739,7 +663,7 @@ const PatientDashboard = () => {
 
               {/* Booking Modal */}
               {showBookingModal && selectedDate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                   <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
                       <h2 className="font-semibold text-gray-900">{t('calendar.bookAppointment')}</h2>
@@ -751,7 +675,7 @@ const PatientDashboard = () => {
                       <div className="text-center py-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-gray-500">{t('calendar.selectedDate')}</p>
                         <p className="text-lg font-semibold text-blue-600">
-                          {formatDateCapitalized(selectedDate)}
+                          {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
 
@@ -770,8 +694,8 @@ const PatientDashboard = () => {
                                 key={slot.time}
                                 onClick={() => setSelectedSlot(slot)}
                                 className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                                   }`}
                               >
                                 {slot.time}
@@ -1130,6 +1054,22 @@ const PatientDashboard = () => {
                         onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                         className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder={t('auth.placeholders.phone')}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('patientDashboard.address')}
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={profileForm.address}
+                        onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder={t('patientDashboard.addressPlaceholder')}
                       />
                     </div>
                   </div>
