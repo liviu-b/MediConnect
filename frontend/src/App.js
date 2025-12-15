@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ChevronDown } from 'lucide-react';
 
+const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
 // Configure axios defaults
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
