@@ -65,6 +65,18 @@
   background-color: rgba(59, 130, 246, 0.08);
 }
 
+/* Smooth animation for date click */
+.fc .fc-daygrid-day:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.fc .fc-daygrid-day:active {
+  background-color: rgba(59, 130, 246, 0.12);
+  transition: background-color 0.1s ease-in;
+}
+
 .fc .fc-event {
   border-radius: 4px;
   padding: 2px 4px;

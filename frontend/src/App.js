@@ -160,7 +160,17 @@ const AuthCallback = () => {
           });
           
           sessionStorage.setItem('just_authenticated', 'true');
-          navigate('/dashboard', { replace: true, state: { user: response.data.user } });
+
+          // Redirect based on role
+          const role = response.data.user?.role;
+          let redirectPath = '/dashboard';
+          if (role === 'USER') {
+            redirectPath = '/patient-dashboard';
+          } else if (role === 'DOCTOR' || role === 'ASSISTANT') {
+            redirectPath = '/staff-dashboard';
+          }
+
+          navigate(redirectPath, { replace: true, state: { user: response.data.user } });
         } catch (error) {
           console.error('Auth error:', error);
           navigate('/login', { replace: true });
@@ -439,6 +449,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import StaffDashboard from "./pages/StaffDashboard";
+import PatientDashboard from "./pages/PatientDashboard";
 
 // App Router
 function AppRouter() {
@@ -466,6 +477,14 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/patient-dashboard"
+        element={
+          <ProtectedRoute>
+            <PatientDashboard />
+          </ProtectedRoute>
+          }
+        />
       <Route
         path="/dashboard"
         element={

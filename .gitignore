@@ -59,6 +59,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
+admin_dashboard_test.py
 
 # --- System files ---
 .DS_Store

@@ -204,7 +204,7 @@ const CalendarPage = () => {
               <option value="">{t('calendar.selectDoctor')}</option>
               {doctors.map((doctor) => (
                 <option key={doctor.doctor_id} value={doctor.doctor_id}>
-                  Dr. {doctor.name} - {doctor.specialty}
+                  Dr. {doctor.name} - {t(`specialties.${doctor.specialty}`, doctor.specialty)}
                 </option>
               ))}
             </select>

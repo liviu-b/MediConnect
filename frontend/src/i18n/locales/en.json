@@ -218,7 +218,9 @@
     "noHistory": "No previous appointments",
     "noPrescriptions": "No prescriptions recorded",
     "noRecords": "No medical records",
-    "historyError": "Could not load patient history"
+    "historyError": "Could not load patient history",
+    "acceptAppointment": "Accept",
+    "rejectAppointment": "Reject"
   },
   "clinics": {
     "title": "Medical Centers",
@@ -253,7 +255,10 @@
     "comment": "Comment",
     "reviewPlaceholder": "Share your experience with this medical center...",
     "submitReview": "Submit Review",
-    "noReviews": "No reviews yet"
+    "noReviews": "No reviews yet",
+    "respondToReview": "Respond",
+    "respond": "Send Response",
+    "responsePlaceholder": "Write your response..."
   },
   "settings": {
     "welcomeTitle": "Welcome to MediConnect!",
@@ -265,7 +270,8 @@
     "operatingHours": "Operating Hours",
     "operatingHoursHelp": "Set the clinic's general opening hours. These hours will constrain when doctors can set their availability.",
     "closed": "Closed",
-    "closedDay": "Closed"
+    "closedDay": "Closed",
+    "medicalCenterSettings": "Medical Center Settings"
   },
   "doctors": {
     "title": "Doctors",
@@ -342,6 +348,7 @@
     "clinicHours": "Clinic",
     "clinicClosed": "Clinic is closed on this day",
     "noPeriods": "No availability set - click to add",
+    "calendar": "Calendar",
     "addPeriod": "Add period"
   },
   "services": {
@@ -436,5 +443,39 @@
 "sportsMedicine": "Sports Medicine",
 "urology": "Urology"
 
-  }
+  },
+
+  "patientDashboard": {
+    "title": "My Dashboard",
+    "subtitle": "Manage your appointments and health records",
+    "patient": "Patient",
+    "profileSettings": "Profile Settings",
+    "personalData": "Personal Information",
+    "upcomingAppointments": "Upcoming Appointments",
+    "noUpcoming": "No upcoming appointments",
+    "clinicsSubtitle": "Browse available medical centers",
+    "namePlaceholder": "First Name Last Name",
+    "addressPlaceholder": "Enter your address",
+    "dateOfBirth": "Date of Birth",
+    "emailCannotChange": "Email cannot be changed",
+    "myHistory": "My History",
+    "myCalendar": "My Calendar",
+    "historySubtitle": "View your completed appointments, prescriptions and medical records",
+    "completedAppointments": "Completed Appointments",
+    "noCompletedAppointments": "No completed appointments yet",
+    "prescriptionsReceived": "Prescriptions",
+    "recommendationsReceived": "Recommendations & Medical Letters",
+    "noPrescriptions": "No prescriptions received",
+    "noRecommendations": "No recommendations or letters yet",
+    "viewDetails": "View Details",
+    "downloadPdf": "Download PDF",
+    "medication": "Medication",
+    "dosage": "Dosage",
+    "frequency": "Frequency",
+    "duration": "Duration",
+    "confirmedAppointment": "Confirmed",
+    "scheduledAppointment": "Scheduled"
+
+    }
+
 }

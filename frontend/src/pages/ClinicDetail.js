@@ -40,6 +40,11 @@ const ClinicDetail = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
 
+  // Admin response state
+  const [respondingToReview, setRespondingToReview] = useState(null);
+  const [responseText, setResponseText] = useState('');
+  const [submittingResponse, setSubmittingResponse] = useState(false);
+
   useEffect(() => {
     fetchClinicData();
   }, [clinicId]);
@@ -123,6 +128,25 @@ const ClinicDetail = () => {
     }
     return `${symbol}${price.toFixed(2)}`;
   };
+
+  const handleRespondToReview = async (reviewId) => {
+    setSubmittingResponse(true);
+    try {
+      await api.post(`/clinics/${clinicId}/reviews/${reviewId}/respond`, {
+        response: responseText
+      });
+      setRespondingToReview(null);
+      setResponseText('');
+      fetchClinicData(); // Refresh reviews
+    } catch (err) {
+      console.error('Error responding to review:', err);
+      alert(t('notifications.error'));
+    } finally {
+      setSubmittingResponse(false);
+    }
+  };
+  
+  const isClinicAdmin = user?.role === 'CLINIC_ADMIN' && user?.clinic_id === clinicId;
 
   if (loading) {
     return (
@@ -226,7 +250,7 @@ const ClinicDetail = () => {
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          {t('clinics.reviews')} ({reviews.length})
+          {t('clinics.reviews').charAt(0).toUpperCase() + t('clinics.reviews').slice(1)} ({reviews.length})
         </button>
       </div>
 
@@ -308,8 +332,8 @@ const ClinicDetail = () => {
 
       {activeTab === 'reviews' && (
         <div className="space-y-4">
-          {/* Add Review Button */}
-          {user && !showReviewForm && (
+          {/* Add Review Button *- Only for patients */}
+          {user && !isClinicAdmin && (
             <button
               onClick={() => setShowReviewForm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
@@ -410,6 +434,57 @@ const ClinicDetail = () => {
                       {review.comment && (
                         <p className="text-gray-600 mt-2">{review.comment}</p>
                       )}
+
+                      {/* Admin Response */}
+                      {review.admin_response && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                          <p className="text-sm text-gray-700">{review.admin_response}</p>
+                        </div>
+                      )}
+                      
+                      {/* Admin - Add Response */}
+                      {isClinicAdmin && !review.admin_response && (
+                        <div className="mt-3">
+                          {respondingToReview === review.review_id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={responseText}
+                                onChange={(e) => setResponseText(e.target.value)}
+                                rows={2}
+                                placeholder={t('clinics.responseRomânăPlaceholder')}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setRespondingToReview(null);
+                                    setResponseText('');
+                                  }}
+                                  className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                                >
+                                  {t('common.cancel')}
+                                </button>
+                                <button
+                                  onClick={() => handleRespondToReview(review.review_id)}
+                                  disabled={submittingResponse}
+                                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  {submittingResponse && <Loader2 className="w-3 h-3 animate-spin" />}
+                                  {t('clinics.respond')}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setRespondingToReview(review.review_id)}
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              {t('clinics.respondToReview')}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </div>

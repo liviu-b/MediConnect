@@ -122,7 +122,6 @@ const Staff = () => {
       case 'NURSE': return t('staff.nurse');
       case 'ADMIN': return t('staff.admin');
       case 'DOCTOR': return t('staff.doctor');
-      case 'ASSISTANT': return t('staff.assistant');
       default: return role;
     }
   };
@@ -321,11 +320,10 @@ const Staff = () => {
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="RECEPTIONIST">{t('staff.receptionist')}</option>
-                  <option value="NURSE">{t('staff.nurse')}</option>
                   <option value="ADMIN">{t('staff.admin')}</option>
                   <option value="DOCTOR">{t('staff.doctor')}</option>
-                  <option value="ASSISTANT">{t('staff.assistant')}</option>
+                  <option value="NURSE">{t('staff.nurse')}</option>
+                  <option value="RECEPTIONIST">{t('staff.receptionist')}</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-2">

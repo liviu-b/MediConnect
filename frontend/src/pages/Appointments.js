@@ -98,7 +98,17 @@ const Appointments = () => {
       setCancelingId(null);
     }
   };
-
+  const handleAcceptAppointment = async (id) => {
+    try {
+      await api.put(`/appointments/${id}`, {
+        status: 'CONFIRMED'
+      });
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error accepting appointment:', err);
+      alert(t('notifications.error'));
+      }
+  };
   const viewPatientHistory = async (apt) => {
     setSelectedAppointmentForHistory(apt);
     setHistoryLoading(true);
@@ -250,6 +260,26 @@ const Appointments = () => {
                     {t(`appointments.${apt.status.toLowerCase()}`)}
                   </span>
                   <div className="flex gap-1">
+                       {/* Admin actions - Accept/Reject for SCHEDULED appointments */}
+                    {isClinicAdmin && apt.status === 'SCHEDULED' && (
+                      <>
+                        <button
+                          onClick={() => handleAcceptAppointment(apt.appointment_id)}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title={t('appointments.acceptAppointment')}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openCancelModal(apt)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title={t('appointments.rejectAppointment')}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+
                     {/* View Patient History - Only for completed appointments and staff */}
                     {apt.status === 'COMPLETED' && (isClinicAdmin || (isDoctor && apt.is_own_patient)) && (
                       <button
@@ -260,7 +290,7 @@ const Appointments = () => {
                         <History className="w-4 h-4" />
                       </button>
                     )}
-                    {apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
+                    {!isClinicAdmin && apt.status !== 'COMPLETED' && (
                       <button
                         onClick={() => isStaff ? openCancelModal(apt) : handlePatientCancel(apt.appointment_id)}
                         disabled={cancelingId === apt.appointment_id}

@@ -42,7 +42,7 @@ const RegisterUser = () => {
         password: form.password
       });
       sessionStorage.setItem('just_authenticated', 'true');
-      navigate('/dashboard', { replace: true, state: { user: res.data.user } });
+      navigate('/patient-dashboard', { replace: true, state: { user: res.data.user } });
     } catch (err) {
       // Check for specific error codes
       if (err.response?.status === 400) {

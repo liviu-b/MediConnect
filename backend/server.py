@@ -147,6 +147,7 @@ class Doctor(BaseModel):
     picture: Optional[str] = None
     consultation_duration: int = 30
     consultation_fee: float = 0.0
+    currency: str = "LEI"  # LEI or EURO
     is_active: bool = True
     availability_schedule: dict = Field(default_factory=lambda: {
         "monday": [{"start": "09:00", "end": "12:00"}, {"start": "14:00", "end": "17:00"}],
@@ -168,6 +169,7 @@ class DoctorCreate(BaseModel):
     picture: Optional[str] = None
     consultation_duration: int = 30
     consultation_fee: float = 0.0
+    currency: str = "LEI"  # LEI or EURO
     availability_schedule: Optional[dict] = None
 
 class DoctorUpdate(BaseModel):
@@ -179,6 +181,7 @@ class DoctorUpdate(BaseModel):
     picture: Optional[str] = None
     consultation_duration: Optional[int] = None
     consultation_fee: Optional[float] = None
+    currency: Optional[str] = None
     is_active: Optional[bool] = None
     availability_schedule: Optional[dict] = None
 
@@ -342,12 +345,17 @@ class Review(BaseModel):
     user_name: str
     rating: int  # 1-5 stars
     comment: Optional[str] = None
+    admin_response: Optional[str] = None  # Response from medical center admin
+    admin_response_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ReviewCreate(BaseModel):
     clinic_id: str
     rating: int  # 1-5 stars
     comment: Optional[str] = None
+
+class ReviewResponse(BaseModel):
+    response: str  # Admin's response text
 
 class Service(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -942,6 +950,41 @@ async def create_review(clinic_id: str, data: ReviewCreate, request: Request):
     await db.reviews.insert_one(doc)
     
     return review
+
+@api_router.post("/clinics/{clinic_id}/reviews/{review_id}/respond")
+async def respond_to_review(clinic_id: str, review_id: str, data: ReviewResponse, request: Request):
+    """Admin responds to a review"""
+    user = await require_clinic_admin(request)
+    
+    # Verify admin owns this clinic
+    if user.clinic_id != clinic_id:
+        raise HTTPException(status_code=403, detail="You can only respond to reviews for your clinic")
+    
+    # Verify review exists
+    review = await db.reviews.find_one({"review_id": review_id, "clinic_id": clinic_id}, {"_id": 0})
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    
+    # Get clinic name for response
+    clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
+    clinic_name = clinic.get('name', 'Medical Center') if clinic else 'Medical Center'
+    
+    # Format response with clinic name
+    formatted_response = f"{clinic_name} thank you for your comment"
+    if data.response and data.response.strip():
+        formatted_response = data.response.strip()
+    
+    # Update review with response
+    await db.reviews.update_one(
+        {"review_id": review_id},
+        {"$set": {
+            "admin_response": formatted_response,
+            "admin_response_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    updated_review = await db.reviews.find_one({"review_id": review_id}, {"_id": 0})
+    return updated_review
 
 @api_router.get("/clinics/{clinic_id}/stats")
 async def get_clinic_stats(clinic_id: str):

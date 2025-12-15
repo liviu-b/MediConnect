@@ -9,9 +9,10 @@ import {
   Mail,
   Phone,
   Clock,
-  DollarSign,
   Loader2,
-  X
+  X,
+  Euro,
+  Coins
 } from 'lucide-react';
 
 // Specialty keys for translation
@@ -48,6 +49,11 @@ const specialtyKeys = [
 'urology',
 ];
 
+const CURRENCIES = [
+  { code: 'LEI', symbol: 'LEI' },
+  { code: 'EURO', symbol: '€' }
+];
+
 const Doctors = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -62,7 +68,8 @@ const Doctors = () => {
     specialty: '',
     bio: '',
     consultation_duration: 30,
-    consultation_fee: 0
+    consultation_fee: 0,
+    currency: 'LEI'
   });
   const [saving, setSaving] = useState(false);
 
@@ -93,7 +100,8 @@ const Doctors = () => {
         specialty: doctor.specialty,
         bio: doctor.bio || '',
         consultation_duration: doctor.consultation_duration,
-        consultation_fee: doctor.consultation_fee
+        consultation_fee: doctor.consultation_fee,
+        currency: doctor.currency || 'LEI'
       });
     } else {
       setEditingDoctor(null);
@@ -104,10 +112,24 @@ const Doctors = () => {
         specialty: '',
         bio: '',
         consultation_duration: 30,
-        consultation_fee: 0
+        consultation_fee: 0,
+        currency: 'LEI'
       });
     }
     setShowModal(true);
+  };
+  
+  const getCurrencySymbol = (currency) => {
+    const curr = CURRENCIES.find(c => c.code === currency);
+    return curr ? curr.symbol : currency;
+  };
+
+  const formatPrice = (price, currency) => {
+    const symbol = getCurrencySymbol(currency);
+    if (currency === 'LEI') {
+      return `${price.toFixed(2)} ${symbol}`;
+    }
+    return `${symbol}${price.toFixed(2)}`;
   };
 
   const handleSubmit = async (e) => {
@@ -223,9 +245,8 @@ const Doctors = () => {
                   <Clock className="w-4 h-4" />
                   {t('doctors.consultation', { duration: doctor.consultation_duration })}
                 </span>
-                <span className="flex items-center gap-1 text-green-600 font-medium">
-                  <DollarSign className="w-4 h-4" />
-                  {doctor.consultation_fee.toFixed(2)}
+                <span className="text-green-600 font-medium">
+                  {formatPrice(doctor.consultation_fee, doctor.currency || 'LEI')}
                 </span>
               </div>
             </div>
@@ -289,18 +310,18 @@ const Doctors = () => {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('doctors.consultationDuration')}</label>
+                <input
+                  type="number"
+                  min="5"
+                  step="5"
+                  value={form.consultation_duration}
+                  onChange={(e) => setForm({ ...form, consultation_duration: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('doctors.consultationDuration')}</label>
-                  <input
-                    type="number"
-                    min="5"
-                    step="5"
-                    value={form.consultation_duration}
-                    onChange={(e) => setForm({ ...form, consultation_duration: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('doctors.consultationFee')}</label>
                   <input
@@ -311,6 +332,20 @@ const Doctors = () => {
                     onChange={(e) => setForm({ ...form, consultation_fee: parseFloat(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('services.currency')}</label>
+                  <select
+                    value={form.currency}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {CURRENCIES.map((currency) => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.code} ({currency.symbol})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>

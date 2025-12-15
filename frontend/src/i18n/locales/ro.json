@@ -218,7 +218,9 @@
     "noHistory": "Nicio programare anterioară",
     "noPrescriptions": "Nicio prescripție înregistrată",
     "noRecords": "Nicio înregistrare medicală",
-    "historyError": "Nu s-a putut încărca istoricul pacientului"
+    "historyError": "Nu s-a putut încărca istoricul pacientului",
+    "acceptAppointment": "Acceptă",
+    "rejectAppointment": "Respinge"
   },
   "clinics": {
     "title": "Centre Medicale",
@@ -253,7 +255,10 @@
     "comment": "Comentariu",
     "reviewPlaceholder": "Împărtășește experiența ta cu acest centru medical...",
     "submitReview": "Trimite Recenzia",
-    "noReviews": "Nicio recenzie încă"
+    "noReviews": "Nicio recenzie încă",
+    "respondToReview": "Răspunde",
+    "respond": "Trimite Răspuns",
+    "responsePlaceholder": "Scrie răspunsul tău..."
   },
   "settings": {
     "welcomeTitle": "Bine ai venit la MediConnect!",
@@ -265,7 +270,8 @@
     "operatingHours": "Program de Funcționare",
     "operatingHoursHelp": "Setează programul general al clinicii. Aceste ore vor limita intervalele în care medicii pot seta disponibilitatea lor.",
     "closed": "Închis",
-    "closedDay": "Închis"
+    "closedDay": "Închis",
+    "medicalCenterSettings": "Setări Centru Medical"
   },
   "doctors": {
     "title": "Medici",
@@ -342,6 +348,7 @@
     "clinicHours": "Clinica",
     "clinicClosed": "Clinica este închisă în această zi",
     "noPeriods": "Nicio disponibilitate setată - click pentru a adăuga",
+    "calendar": "Calendar",
     "addPeriod": "Adaugă perioadă"
   },
   "services": {
@@ -436,5 +443,38 @@
 "sportsMedicine": "Medicină Sportivă",
 "urology": "Urologie"
 
-  }
+  },
+
+"patientDashboard": {
+    "title": "Tabloul Meu",
+    "subtitle": "Gestionează programările și fișele tale medicale",
+    "patient": "Pacient",
+    "profileSettings": "Setări Profil",
+    "personalData": "Informații Personale",
+    "upcomingAppointments": "Programări Viitoare",
+    "noUpcoming": "Nu există programări viitoare",
+    "clinicsSubtitle": "Răsfoiește centrele medicale disponibile",
+    "namePlaceholder": "Prenume Nume",
+    "addressPlaceholder": "Introduceți adresa",
+    "dateOfBirth": "Data Nașterii",
+    "emailCannotChange": "Email-ul nu poate fi schimbat",
+    "myHistory": "Istoricul Meu",
+    "myCalendar": "Calendarul Meu",
+    "historySubtitle": "Vezi programările finalizate, rețetele și documentele medicale",
+    "completedAppointments": "Programări Finalizate",
+    "noCompletedAppointments": "Nu există programări finalizate",
+    "prescriptionsReceived": "Rețete",
+    "recommendationsReceived": "Recomandări și Scrisori Medicale",
+    "noPrescriptions": "Nu există rețete primite",
+    "noRecommendations": "Nu există recomandări sau scrisori",
+    "viewDetails": "Vezi Detalii",
+    "downloadPdf": "Descarcă PDF",
+    "medication": "Medicament",
+    "dosage": "Dozaj",
+    "frequency": "Frecvență",
+    "duration": "Durată",
+    "confirmedAppointment": "Confirmat",
+    "scheduledAppointment": "Programat"
+
+    }
 }

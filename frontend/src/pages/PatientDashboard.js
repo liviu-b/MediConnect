@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import roLocale from '@fullcalendar/core/locales/ro';
+import enLocale from '@fullcalendar/core/locales/en-gb';
 import {
   Building2,
   Calendar,
@@ -20,23 +25,39 @@ import {
   CheckCircle,
   ChevronRight,
   Star,
-  Cake
+  Cake,
+  History,
+  FileText,
+  Pill,
+  Download,
+  X,
+  Stethoscope,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const PatientDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const calendarRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
-
+  
   // Dashboard data
   const [appointments, setAppointments] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [clinicStats, setClinicStats] = useState({});
-
+  
+  // History data
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [medicalRecords, setMedicalRecords] = useState([]);
+  const [expandedPrescription, setExpandedPrescription] = useState(null);
+  const [expandedRecord, setExpandedRecord] = useState(null);
+  
   // Profile form
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -46,6 +67,18 @@ const PatientDashboard = () => {
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  
+  // Calendar states
+  const [selectedClinic, setSelectedClinic] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [doctors, setDoctors] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [booking, setBooking] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -58,6 +91,27 @@ const PatientDashboard = () => {
     }
     fetchData();
   }, [user]);
+  
+  useEffect(() => {
+    if (activeTab === 'history' && user) {
+      fetchHistory();
+    }
+  }, [activeTab, user]);
+  
+  useEffect(() => {
+    if (selectedClinic) {
+      fetchDoctors(selectedClinic);
+    } else {
+      setDoctors([]);
+      setSelectedDoctor('');
+    }
+  }, [selectedClinic]);
+  
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) {
+      fetchAvailability();
+    }
+  }, [selectedDoctor, selectedDate]);
 
   const fetchData = async () => {
     try {
@@ -67,13 +121,13 @@ const PatientDashboard = () => {
       ]);
       setAppointments(appointmentsRes.data);
       setClinics(clinicsRes.data);
-
+      
       // Fetch stats for each clinic
       const statsPromises = clinicsRes.data.map(clinic => 
         api.get(`/clinics/${clinic.clinic_id}/stats`).catch(() => ({ data: { average_rating: 0, review_count: 0 } }))
       );
       const statsResults = await Promise.all(statsPromises);
-
+      
       const statsMap = {};
       clinicsRes.data.forEach((clinic, index) => {
         statsMap[clinic.clinic_id] = statsResults[index].data;
@@ -85,14 +139,87 @@ const PatientDashboard = () => {
       setLoading(false);
     }
   };
+  
+  const fetchHistory = async () => {
+    if (!user?.user_id) return;
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`/patients/${user.user_id}/history`);
+      setPrescriptions(res.data.prescriptions || []);
+      setMedicalRecords(res.data.medical_records || []);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+  const fetchDoctors = async (clinicId) => {
+    try {
+      const res = await api.get(`/doctors?clinic_id=${clinicId}`);
+      setDoctors(res.data);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+    }
+  };
+  
+  const fetchAvailability = async () => {
+    setLoadingSlots(true);
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
+      setAvailableSlots(res.data.available_slots || []);
+    } catch (err) {
+      console.error('Error fetching availability:', err);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+  
+  const handleDateClick = (info) => {
+    const clickedDate = new Date(info.dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (clickedDate < today) return;
+    
+    setSelectedDate(clickedDate);
+    setSelectedSlot(null);
+    if (selectedClinic && selectedDoctor) {
+      setShowBookingModal(true);
+    }
+  };
+  
+  const handleBook = async () => {
+    if (!selectedSlot) return;
+    setBooking(true);
+    try {
+      await api.post('/appointments', {
+        doctor_id: selectedDoctor,
+        clinic_id: selectedClinic,
+        date_time: selectedSlot.datetime,
+        notes: notes || null
+      });
+      setShowBookingModal(false);
+      setNotes('');
+      setSelectedSlot(null);
+      fetchData();
+    } catch (err) {
+      console.error('Error booking appointment:', err);
+      alert(err.response?.data?.detail || t('notifications.bookingError'));
+    } finally {
+      setBooking(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
-      navigate('/login', { replace: true });
+      navigate('/auth/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      navigate('/login', { replace: true });
+      navigate('/auth/login', { replace: true });
     }
   };
 
@@ -100,7 +227,7 @@ const PatientDashboard = () => {
     e.preventDefault();
     setSavingProfile(true);
     setProfileSaved(false);
-
+    
     try {
       await api.put('/auth/profile', profileForm);
       setProfileSaved(true);
@@ -117,6 +244,11 @@ const PatientDashboard = () => {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString();
+  };
+  
+  const formatDateTime = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString();
   };
 
   const renderStars = (rating) => {
@@ -136,6 +268,126 @@ const PatientDashboard = () => {
   const upcomingAppointments = appointments
     .filter(apt => apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED')
     .slice(0, 3);
+    
+  const completedAppointments = appointments
+    .filter(apt => apt.status === 'COMPLETED');
+    
+  // Calendar events with color coding - GREEN for confirmed
+  const calendarEvents = appointments
+    .filter(apt => apt.status !== 'CANCELLED')
+    .map(apt => {
+      // Color coding: Light green for CONFIRMED appointments
+      let bgColor = '#3B82F6'; // Default blue for scheduled
+      let textColor = 'white';
+      
+      if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
+        bgColor = '#22C55E'; // Green for confirmed
+        textColor = 'white';
+      } else if (apt.status === 'COMPLETED') {
+        bgColor = '#9CA3AF'; // Gray for completed
+        textColor = 'white';
+      }
+      
+      return {
+        id: apt.appointment_id,
+        title: `Dr. ${apt.doctor_name}`,
+        start: apt.date_time,
+        backgroundColor: bgColor,
+        borderColor: 'transparent',
+        textColor: textColor,
+        extendedProps: {
+          status: apt.status,
+          specialty: apt.doctor_specialty
+        }
+      };
+    });
+  
+  const generatePrescriptionPDF = (prescription) => {
+    // Create a simple HTML representation for printing/downloading
+    const doc = appointments.find(a => a.appointment_id === prescription.appointment_id);
+    const doctorName = doc?.doctor_name || 'Doctor';
+    
+    const content = `
+      <html>
+        <head>
+          <title>Prescription - ${formatDate(prescription.created_at)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
+            .header { margin-bottom: 20px; }
+            .med-item { background: #f3f4f6; padding: 15px; margin: 10px 0; border-radius: 8px; }
+            .label { color: #6b7280; font-size: 12px; }
+            .value { font-weight: bold; }
+            .notes { margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 8px; }
+          </style>
+        </head>
+        <body>
+          <h1>Medical Prescription</h1>
+          <div class="header">
+            <p><span class="label">Date:</span> <span class="value">${formatDate(prescription.created_at)}</span></p>
+            <p><span class="label">Doctor:</span> <span class="value">Dr. ${doctorName}</span></p>
+          </div>
+          <h2>Medications</h2>
+          ${prescription.medications.map(med => `
+            <div class="med-item">
+              <p><span class="label">Medication:</span> <span class="value">${med.name}</span></p>
+              <p><span class="label">Dosage:</span> ${med.dosage}</p>
+              <p><span class="label">Frequency:</span> ${med.frequency}</p>
+              <p><span class="label">Duration:</span> ${med.duration}</p>
+            </div>
+          `).join('')}
+          ${prescription.notes ? `<div class="notes"><strong>Notes:</strong> ${prescription.notes}</div>` : ''}
+        </body>
+      </html>
+    `;
+    
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prescription_${prescription.prescription_id}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  const generateRecordPDF = (record) => {
+    const doc = appointments.find(a => a.appointment_id === record.appointment_id);
+    const doctorName = doc?.doctor_name || 'Doctor';
+    
+    const content = `
+      <html>
+        <head>
+          <title>${record.title} - ${formatDate(record.created_at)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
+            .type { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 20px; }
+            .header { margin-bottom: 20px; }
+            .label { color: #6b7280; font-size: 12px; }
+            .value { font-weight: bold; }
+            .content { background: #f9fafb; padding: 20px; border-radius: 8px; white-space: pre-wrap; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <h1>${record.title}</h1>
+          <span class="type">${record.record_type}</span>
+          <div class="header">
+            <p><span class="label">Date:</span> <span class="value">${formatDate(record.created_at)}</span></p>
+            <p><span class="label">Doctor:</span> <span class="value">Dr. ${doctorName}</span></p>
+          </div>
+          <div class="content">${record.content}</div>
+        </body>
+      </html>
+    `;
+    
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${record.record_type.toLowerCase()}_${record.record_id}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -179,7 +431,19 @@ const PatientDashboard = () => {
               <Calendar className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('nav.dashboard')}</span>
             </button>
-
+            
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                activeTab === 'calendar'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <CalendarDays className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{t('patientDashboard.myCalendar')}</span>
+            </button>
+            
             <button
               onClick={() => setActiveTab('clinics')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
@@ -191,7 +455,19 @@ const PatientDashboard = () => {
               <Building2 className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('clinics.title')}</span>
             </button>
-
+            
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                activeTab === 'history'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <History className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{t('patientDashboard.myHistory')}</span>
+            </button>
+            
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
@@ -245,7 +521,9 @@ const PatientDashboard = () => {
               </button>
               <h1 className="text-lg font-bold text-gray-900">
                 {activeTab === 'dashboard' && t('patientDashboard.title')}
+                {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
                 {activeTab === 'clinics' && t('clinics.title')}
+                {activeTab === 'history' && t('patientDashboard.myHistory')}
                 {activeTab === 'profile' && t('patientDashboard.profileSettings')}
               </h1>
             </div>
@@ -278,7 +556,7 @@ const PatientDashboard = () => {
                   <CalendarDays className="w-5 h-5 text-blue-600" />
                   {t('patientDashboard.upcomingAppointments')}
                 </h3>
-
+                
                 {upcomingAppointments.length > 0 ? (
                   <div className="space-y-3">
                     {upcomingAppointments.map((apt) => (
@@ -296,7 +574,7 @@ const PatientDashboard = () => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                         }`}>
-                          {apt.status}
+                          {apt.status === 'CONFIRMED' ? t('patientDashboard.confirmedAppointment') : t('patientDashboard.scheduledAppointment')}
                         </span>
                       </div>
                     ))}
@@ -306,11 +584,172 @@ const PatientDashboard = () => {
                 )}
               </div>
             </div>
+          ) : activeTab === 'calendar' ? (
+            /* Calendar Tab */
+            <div className="space-y-4">
+              {/* Filters */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h2 className="font-medium text-gray-700 mb-3">{t('calendar.selectClinicDoctor')}</h2>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">{t('calendar.clinic')}</label>
+                    <select
+                      value={selectedClinic}
+                      onChange={(e) => setSelectedClinic(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">{t('calendar.selectClinic')}</option>
+                      {clinics.map((clinic) => (
+                        <option key={clinic.clinic_id} value={clinic.clinic_id}>
+                          {clinic.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">{t('calendar.doctor')}</label>
+                    <select
+                      value={selectedDoctor}
+                      onChange={(e) => setSelectedDoctor(e.target.value)}
+                      disabled={!selectedClinic}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
+                    >
+                      <option value="">{t('calendar.selectDoctor')}</option>
+                      {doctors.map((doctor) => (
+                        <option key={doctor.doctor_id} value={doctor.doctor_id}>
+                          Dr. {doctor.name} - {doctor.specialty}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {!selectedClinic && (
+                  <p className="mt-3 text-sm text-gray-500">{t('calendar.selectFirst')}</p>
+                )}
+                {selectedClinic && selectedDoctor && (
+                  <p className="mt-3 text-sm text-blue-600">{t('calendar.clickToBook')}</p>
+                )}
+              </div>
+              
+              {/* Legend */}
+              <div className="bg-white rounded-xl border border-gray-200 p-3">
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-green-500"></div>
+                    <span className="text-gray-600">{t('patientDashboard.confirmedAppointment')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-blue-500"></div>
+                    <span className="text-gray-600">{t('patientDashboard.scheduledAppointment')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gray-400"></div>
+                    <span className="text-gray-600">{t('appointments.completed')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  events={calendarEvents}
+                  dateClick={handleDateClick}
+                  locale={i18n.language === 'ro' ? roLocale : enLocale}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                  }}
+                  height="auto"
+                  dayMaxEvents={3}
+                />
+              </div>
+
+              {/* Booking Modal */}
+              {showBookingModal && selectedDate && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
+                      <h2 className="font-semibold text-gray-900">{t('calendar.bookAppointment')}</h2>
+                      <button onClick={() => setShowBookingModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                        <X className="w-5 h-5 text-gray-500" />
+                      </button>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="text-center py-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-gray-500">{t('calendar.selectedDate')}</p>
+                        <p className="text-lg font-semibold text-blue-600">
+                          {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.availableSlots')}</label>
+                        {loadingSlots ? (
+                          <div className="flex justify-center py-4">
+                            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                          </div>
+                        ) : availableSlots.length === 0 ? (
+                          <p className="text-center py-4 text-gray-500">{t('calendar.noSlots')}</p>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {availableSlots.map((slot) => (
+                              <button
+                                key={slot.time}
+                                onClick={() => setSelectedSlot(slot)}
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                  selectedSlot?.time === slot.time
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                }`}
+                              >
+                                {slot.time}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('calendar.notes')}</label>
+                        <textarea
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          rows={2}
+                          placeholder={t('calendar.notesPlaceholder')}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowBookingModal(false)}
+                          className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                        >
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          onClick={handleBook}
+                          disabled={!selectedSlot || booking}
+                          className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {booking && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {t('calendar.bookAppointment')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : activeTab === 'clinics' ? (
             /* Clinics Tab */
             <div className="space-y-4">
               <p className="text-sm text-gray-500">{t('patientDashboard.clinicsSubtitle')}</p>
-
+              
               {clinics.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                   <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-3" />
@@ -320,7 +759,7 @@ const PatientDashboard = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   {clinics.map((clinic) => {
                     const stats = clinicStats[clinic.clinic_id] || { average_rating: 0, review_count: 0 };
-
+                    
                     return (
                       <div
                         key={clinic.clinic_id}
@@ -337,7 +776,7 @@ const PatientDashboard = () => {
                               {clinic.description && (
                                 <p className="text-sm text-gray-500 line-clamp-1">{clinic.description}</p>
                               )}
-
+                              
                               {/* Rating */}
                               {stats.review_count > 0 && (
                                 <div className="flex items-center gap-1 mt-1">
@@ -351,7 +790,7 @@ const PatientDashboard = () => {
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                         </div>
-
+                        
                         <div className="mt-4 space-y-2 text-sm">
                           <p className="flex items-center gap-2 text-gray-600">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -374,6 +813,204 @@ const PatientDashboard = () => {
                 </div>
               )}
             </div>
+          ) : activeTab === 'history' ? (
+            /* History Tab */
+            <div className="space-y-6">
+              <p className="text-sm text-gray-500">{t('patientDashboard.historySubtitle')}</p>
+              
+              {historyLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <>
+                  {/* Completed Appointments */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      {t('patientDashboard.completedAppointments')}
+                    </h3>
+                    
+                    {completedAppointments.length > 0 ? (
+                      <div className="space-y-3">
+                        {completedAppointments.map((apt) => (
+                          <div key={apt.appointment_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <Stethoscope className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">Dr. {apt.doctor_name}</p>
+                                <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
+                                <p className="text-xs text-gray-400">{formatDateTime(apt.date_time)}</p>
+                              </div>
+                            </div>
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              {t('appointments.completed')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">{t('patientDashboard.noCompletedAppointments')}</p>
+                    )}
+                  </div>
+
+                  {/* Prescriptions */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Pill className="w-5 h-5 text-purple-600" />
+                      {t('patientDashboard.prescriptionsReceived')}
+                    </h3>
+                    
+                    {prescriptions.length > 0 ? (
+                      <div className="space-y-3">
+                        {prescriptions.map((prescription) => {
+                          const isExpanded = expandedPrescription === prescription.prescription_id;
+                          const apt = appointments.find(a => a.appointment_id === prescription.appointment_id);
+                          
+                          return (
+                            <div key={prescription.prescription_id} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <button
+                                onClick={() => setExpandedPrescription(isExpanded ? null : prescription.prescription_id)}
+                                className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FileText className="w-5 h-5 text-purple-600" />
+                                  <div className="text-left">
+                                    <p className="font-medium text-gray-900">
+                                      {prescription.medications.length} {t('patientDashboard.medication')}(s)
+                                    </p>
+                                    <p className="text-sm text-gray-500">{formatDate(prescription.created_at)}</p>
+                                  </div>
+                                </div>
+                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                              </button>
+                              
+                              {isExpanded && (
+                                <div className="p-4 space-y-3 bg-white">
+                                  {apt && (
+                                    <p className="text-sm text-gray-500">
+                                      Dr. {apt.doctor_name} - {apt.doctor_specialty}
+                                    </p>
+                                  )}
+                                  
+                                  {prescription.medications.map((med, idx) => (
+                                    <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                                      <p className="font-medium text-gray-900">{med.name}</p>
+                                      <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                                        <div>
+                                          <span className="text-gray-500">{t('patientDashboard.dosage')}:</span>
+                                          <p className="font-medium">{med.dosage}</p>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500">{t('patientDashboard.frequency')}:</span>
+                                          <p className="font-medium">{med.frequency}</p>
+                                        </div>
+                                        <div>
+                                          <span className="text-gray-500">{t('patientDashboard.duration')}:</span>
+                                          <p className="font-medium">{med.duration}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  
+                                  {prescription.notes && (
+                                    <div className="p-3 bg-yellow-50 rounded-lg text-sm">
+                                      <p className="text-gray-700">{prescription.notes}</p>
+                                    </div>
+                                  )}
+                                  
+                                  <button
+                                    onClick={() => generatePrescriptionPDF(prescription)}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    {t('patientDashboard.downloadPdf')}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">{t('patientDashboard.noPrescriptions')}</p>
+                    )}
+                  </div>
+
+                  {/* Medical Records / Recommendations */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-teal-600" />
+                      {t('patientDashboard.recommendationsReceived')}
+                    </h3>
+                    
+                    {medicalRecords.length > 0 ? (
+                      <div className="space-y-3">
+                        {medicalRecords.map((record) => {
+                          const isExpanded = expandedRecord === record.record_id;
+                          const apt = appointments.find(a => a.appointment_id === record.appointment_id);
+                          
+                          const typeColor = {
+                            'RECOMMENDATION': 'bg-teal-50 text-teal-700',
+                            'LETTER': 'bg-blue-50 text-blue-700',
+                            'NOTE': 'bg-gray-100 text-gray-700'
+                          }[record.record_type] || 'bg-gray-100 text-gray-700';
+                          
+                          return (
+                            <div key={record.record_id} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <button
+                                onClick={() => setExpandedRecord(isExpanded ? null : record.record_id)}
+                                className="w-full flex items-center justify-between p-3 bg-teal-50 hover:bg-teal-100 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FileText className="w-5 h-5 text-teal-600" />
+                                  <div className="text-left">
+                                    <p className="font-medium text-gray-900">{record.title}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeColor}`}>
+                                        {record.record_type}
+                                      </span>
+                                      <span className="text-sm text-gray-500">{formatDate(record.created_at)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                              </button>
+                              
+                              {isExpanded && (
+                                <div className="p-4 space-y-3 bg-white">
+                                  {apt && (
+                                    <p className="text-sm text-gray-500">
+                                      Dr. {apt.doctor_name} - {apt.doctor_specialty}
+                                    </p>
+                                  )}
+                                  
+                                  <div className="p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-gray-700 whitespace-pre-wrap">{record.content}</p>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => generateRecordPDF(record)}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    {t('patientDashboard.downloadPdf')}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">{t('patientDashboard.noRecommendations')}</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             /* Profile Settings Tab */
             <div className="max-w-lg">
@@ -382,7 +1019,7 @@ const PatientDashboard = () => {
                   <User className="w-5 h-5 text-blue-600" />
                   {t('patientDashboard.personalData')}
                 </h3>
-
+                
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -396,7 +1033,7 @@ const PatientDashboard = () => {
                       placeholder={t('patientDashboard.namePlaceholder')}
                     />
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.email')}
@@ -412,7 +1049,7 @@ const PatientDashboard = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{t('patientDashboard.emailCannotChange')}</p>
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.phone')}
@@ -428,7 +1065,7 @@ const PatientDashboard = () => {
                       />
                     </div>
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('patientDashboard.address')}
@@ -444,7 +1081,7 @@ const PatientDashboard = () => {
                       />
                     </div>
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('patientDashboard.dateOfBirth')}
@@ -459,7 +1096,7 @@ const PatientDashboard = () => {
                       />
                     </div>
                   </div>
-
+                  
                   <button
                     type="submit"
                     disabled={savingProfile}

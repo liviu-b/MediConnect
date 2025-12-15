@@ -7,7 +7,6 @@ import {
   Edit2,
   Briefcase,
   Clock,
-  DollarSign,
   Loader2,
   X,
   Euro,
@@ -154,16 +153,11 @@ const Services = () => {
           {services.map((service) => (
             <div key={service.service_id} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center text-white">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                    {service.description && (
-                      <p className="text-xs text-gray-500 line-clamp-1">{service.description}</p>
-                    )}
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                  {service.description && (
+                    <p className="text-xs text-gray-500 line-clamp-1 mt-1">{service.description}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -185,12 +179,7 @@ const Services = () => {
                   <Clock className="w-4 h-4" />
                   {service.duration} min
                 </span>
-                <span className="flex items-center gap-1 text-green-600 font-medium">
-                  {service.currency === 'EURO' ? (
-                    <Euro className="w-4 h-4" />
-                  ) : (
-                    <Coins className="w-4 h-4" />
-                  )}
+                <span className="text-green-600 font-medium">
                   {formatPrice(service.price, service.currency || 'LEI')}
                 </span>
               </div>

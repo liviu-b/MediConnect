@@ -20,7 +20,17 @@ const Login = () => {
     try {
       const res = await api.post('/auth/login', form);
       sessionStorage.setItem('just_authenticated', 'true');
-      navigate('/dashboard', { replace: true, state: { user: res.data.user } });
+
+      // Redirect based on role
+      const role = res.data.user?.role;
+      let redirectPath = '/dashboard';
+      if (role === 'USER') {
+        redirectPath = '/patient-dashboard';
+      } else if (role === 'DOCTOR' || role === 'ASSISTANT') {
+        redirectPath = '/staff-dashboard';
+      }
+
+      navigate(redirectPath, { replace: true, state: { user: res.data.user } });
     } catch (err) {
         // Check for 401 (unauthorized) - wrong email/password
       if (err.response?.status === 401) {
