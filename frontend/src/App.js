@@ -18,6 +18,8 @@ import {
   Menu,
   X
 } from "lucide-react";
+import { ChevronDown } from 'lucide-react';
+
 
 // Configure axios defaults
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -319,8 +321,8 @@ const Layout = ({ children }) => {
           setSidebarOpen(false);
         }}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${isActive
-            ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-            : 'text-gray-600 hover:bg-gray-100'
+          ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+          : 'text-gray-600 hover:bg-gray-100'
           }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
