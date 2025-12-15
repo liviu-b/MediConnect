@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
@@ -33,7 +33,8 @@ import {
   X,
   Stethoscope,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertCircle
 } from 'lucide-react';
 
 const PatientDashboard = () => {
@@ -71,6 +72,13 @@ const PatientDashboard = () => {
   const [expandedPrescription, setExpandedPrescription] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
 
+  // Cancellation modal
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelAppointment, setCancelAppointment] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelError, setCancelError] = useState('');
+  const [canceling, setCanceling] = useState(false);
+
   // Profile form
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -93,8 +101,40 @@ const PatientDashboard = () => {
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // --- 1. Define fetchData with useCallback so it can be a stable dependency ---
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        date_of_birth: user.date_of_birth || ''
+      });
+    }
+    fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && user) {
+      fetchHistory();
+    }
+  }, [activeTab, user]);
+
+  useEffect(() => {
+    if (selectedClinic) {
+      fetchDoctors(selectedClinic);
+    } else {
+      setDoctors([]);
+      setSelectedDoctor('');
+    }
+  }, [selectedClinic]);
+
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) {
+      fetchAvailability();
+    }
+  }, [selectedDoctor, selectedDate]);
+
+  const fetchData = async () => {
     try {
       const [appointmentsRes, clinicsRes] = await Promise.all([
         api.get('/appointments'),
@@ -121,92 +161,44 @@ const PatientDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.user_id]);
+  };
 
-  // --- 2. Effect for Initial Data Fetching ---
-  useEffect(() => {
-    if (user?.user_id) {
-      fetchData();
+  const fetchHistory = async () => {
+    if (!user?.user_id) return;
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`/patients/${user.user_id}/history`);
+      setPrescriptions(res.data.prescriptions || []);
+      setMedicalRecords(res.data.medical_records || []);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setHistoryLoading(false);
     }
-  }, [user?.user_id, fetchData]);
+  };
 
-  // --- 3. Effect for Syncing Profile Form (Separated to avoid overwriting input) ---
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        name: user.name || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        date_of_birth: user.date_of_birth || ''
-      });
+  const fetchDoctors = async (clinicId) => {
+    try {
+      const res = await api.get(`/doctors?clinic_id=${clinicId}`);
+      setDoctors(res.data);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
     }
-  }, [user?.name, user?.phone, user?.address, user?.date_of_birth]);
+  };
 
-  // --- 4. Effect for History (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!user?.user_id) return;
-      setHistoryLoading(true);
-      try {
-        const res = await api.get(`/patients/${user.user_id}/history`);
-        setPrescriptions(res.data.prescriptions || []);
-        setMedicalRecords(res.data.medical_records || []);
-      } catch (err) {
-        console.error('Error fetching history:', err);
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
-
-    if (activeTab === 'history' && user) {
-      fetchHistory();
+  const fetchAvailability = async () => {
+    setLoadingSlots(true);
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
+      setAvailableSlots(res.data.available_slots || []);
+    } catch (err) {
+      console.error('Error fetching availability:', err);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
-  }, [activeTab, user?.user_id]);
-
-  // --- 5. Effect for Doctors (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const res = await api.get(`/doctors?clinic_id=${selectedClinic}`);
-        setDoctors(res.data);
-      } catch (err) {
-        console.error('Error fetching doctors:', err);
-      }
-    };
-
-    if (selectedClinic) {
-      fetchDoctors();
-    } else {
-      setDoctors([]);
-      setSelectedDoctor('');
-    }
-  }, [selectedClinic]);
-
-  // --- 6. Effect for Availability (Fetch function moved inside) ---
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      setLoadingSlots(true);
-      try {
-        // Fix: Use local date components manually to format as YYYY-MM-DD
-        const offset = selectedDate.getTimezoneOffset();
-        const localDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
-        const dateStr = localDate.toISOString().split('T')[0];
-
-        const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
-        setAvailableSlots(res.data.available_slots || []);
-      } catch (err) {
-        console.error('Error fetching availability:', err);
-        setAvailableSlots([]);
-      } finally {
-        setLoadingSlots(false);
-      }
-    };
-
-    if (selectedDoctor && selectedDate) {
-      fetchAvailability();
-    }
-  }, [selectedDoctor, selectedDate]);
-
+  };
 
   const handleDateClick = (info) => {
     const clickedDate = new Date(info.dateStr);
@@ -235,7 +227,7 @@ const PatientDashboard = () => {
       setShowBookingModal(false);
       setNotes('');
       setSelectedSlot(null);
-      fetchData(); // Refresh appointments list
+      fetchData();
     } catch (err) {
       console.error('Error booking appointment:', err);
       alert(err.response?.data?.detail || t('notifications.bookingError'));
@@ -247,7 +239,7 @@ const PatientDashboard = () => {
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
-      navigate('/auth/login', { replace: true });
+      navigate('/auth/login', { replace: true }); // Patient goes to login page
     } catch (error) {
       console.error('Logout error:', error);
       navigate('/auth/login', { replace: true });
@@ -280,6 +272,36 @@ const PatientDashboard = () => {
   const formatDateTime = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleString();
+  };
+
+  const openCancelModal = (apt) => {
+    setCancelAppointment(apt);
+    setCancelReason('');
+    setCancelError('');
+    setShowCancelModal(true);
+  };
+
+  const handleCancelWithReason = async () => {
+    if (!cancelReason.trim() || cancelReason.trim().length < 3) {
+      setCancelError(t('appointments.cancelReasonRequired'));
+      return;
+    }
+
+    setCanceling(true);
+    try {
+      await api.post(`/appointments/${cancelAppointment.appointment_id}/cancel`, {
+        reason: cancelReason.trim()
+      });
+      setShowCancelModal(false);
+      setCancelAppointment(null);
+      fetchData();
+      alert(t('notifications.cancelSuccess'));
+    } catch (err) {
+      console.error('Error canceling appointment:', err);
+      setCancelError(err.response?.data?.detail || t('notifications.error'));
+    } finally {
+      setCanceling(false);
+    }
   };
 
   const renderStars = (rating) => {
@@ -453,8 +475,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
@@ -464,8 +486,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('calendar')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
@@ -475,8 +497,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('clinics')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'clinics'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Building2 className="w-5 h-5 flex-shrink-0" />
@@ -486,8 +508,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('history')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <History className="w-5 h-5 flex-shrink-0" />
@@ -497,8 +519,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Settings className="w-5 h-5 flex-shrink-0" />
@@ -506,21 +528,8 @@ const PatientDashboard = () => {
             </button>
           </nav>
 
-          {/* User & Logout */}
+          {/* Logout button only - profile moved to header */}
           <div className="p-2 border-t border-gray-200">
-            <div className="flex items-center gap-2 px-3 py-2 mb-2">
-              {user?.picture ? (
-                <img src={user.picture} alt={user?.name} className="w-8 h-8 rounded-full" />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                  {user?.name?.charAt(0) || 'U'}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500">{t('patientDashboard.patient')}</p>
-              </div>
-            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -631,7 +640,7 @@ const PatientDashboard = () => {
                   <div className="space-y-3">
                     {upcomingAppointments.map((apt) => (
                       <div key={apt.appointment_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-gray-900">Dr. {apt.doctor_name}</p>
                           <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
                           <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
@@ -641,10 +650,21 @@ const PatientDashboard = () => {
                             {apt.duration} min
                           </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                          {apt.status === 'CONFIRMED' ? t('patientDashboard.confirmedAppointment') : t('patientDashboard.scheduledAppointment')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                            {apt.status === 'CONFIRMED' ? t('patientDashboard.confirmedAppointment') : t('patientDashboard.scheduledAppointment')}
+                          </span>
+                          {apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
+                            <button
+                              onClick={() => openCancelModal(apt)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title={t('appointments.cancelAppointment')}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -770,8 +790,8 @@ const PatientDashboard = () => {
                                 key={slot.time}
                                 onClick={() => setSelectedSlot(slot)}
                                 className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                                   }`}
                               >
                                 {slot.time}
@@ -1169,6 +1189,71 @@ const PatientDashboard = () => {
           )}
         </div>
       </main>
+
+      {/* Cancellation Modal */}
+      {showCancelModal && cancelAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="w-5 h-5" />
+                <h2 className="font-semibold">{t('appointments.cancelAppointment')}</h2>
+              </div>
+              <button onClick={() => setShowCancelModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">{t('calendar.doctor')}:</span> Dr. {cancelAppointment.doctor_name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">{t('calendar.selectedDate')}:</span> {formatDateTime(cancelAppointment.date_time)}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('appointments.cancellationReason')} <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                  placeholder={t('appointments.reasonPlaceholder')}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">{t('appointments.reasonHelp')}</p>
+              </div>
+
+              {cancelError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                  {cancelError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                >
+                  {t('appointments.keepAppointment')}
+                </button>
+                <button
+                  onClick={handleCancelWithReason}
+                  disabled={canceling}
+                  className="flex-1 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {canceling && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('appointments.yesCancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

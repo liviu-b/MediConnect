@@ -16,7 +16,7 @@ import {
   Settings,
   LogOut,
   Menu,
-  ChevronDown
+  X
 } from "lucide-react";
 
 // Configure axios defaults
@@ -198,7 +198,6 @@ const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
   const location = useLocation();
-  const contextValue = useMemo(() => ({ user, setUser }), [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -268,9 +267,6 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // ADD THIS LINE:
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
@@ -323,8 +319,8 @@ const Layout = ({ children }) => {
           setSidebarOpen(false);
         }}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${isActive
-          ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-          : 'text-gray-600 hover:bg-gray-100'
+            ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+            : 'text-gray-600 hover:bg-gray-100'
           }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />

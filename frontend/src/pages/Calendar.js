@@ -286,8 +286,8 @@ const CalendarPage = () => {
                         key={slot.time}
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                           }`}
                       >
                         {slot.time}
