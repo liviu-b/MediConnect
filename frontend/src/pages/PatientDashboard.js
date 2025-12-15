@@ -46,7 +46,6 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Helper to capitalize first letter (for Romanian months)
   const formatDateCapitalized = (date) => {
@@ -475,8 +474,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
@@ -486,8 +485,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('calendar')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
@@ -497,8 +496,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('clinics')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'clinics'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Building2 className="w-5 h-5 flex-shrink-0" />
@@ -508,8 +507,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('history')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <History className="w-5 h-5 flex-shrink-0" />
@@ -519,8 +518,8 @@ const PatientDashboard = () => {
             <button
               onClick={() => setActiveTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Settings className="w-5 h-5 flex-shrink-0" />
@@ -790,8 +789,8 @@ const PatientDashboard = () => {
                                 key={slot.time}
                                 onClick={() => setSelectedSlot(slot)}
                                 className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                                   }`}
                               >
                                 {slot.time}

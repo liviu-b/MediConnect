@@ -39,7 +39,6 @@ const StaffDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('calendar');
   const [loading, setLoading] = useState(true);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Doctor data
   const [doctor, setDoctor] = useState(null);
