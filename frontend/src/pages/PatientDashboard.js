@@ -46,6 +46,7 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Helper to capitalize first letter (for Romanian months)
   const formatDateCapitalized = (date) => {
