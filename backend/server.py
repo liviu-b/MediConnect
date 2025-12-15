@@ -868,17 +868,14 @@ async def validate_cui(cui: str):
 # ==================== CLINIC MANAGEMENT ROUTES ====================
 
 @api_router.get("/clinics")
-async def get_clinics(request: Request):
-    user = await get_current_user(request)
-    if user and user.role == "CLINIC_ADMIN" and user.clinic_id:
-        clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
-        return [clinic] if clinic else []
-    
-    clinics = await db.clinics.find({"is_verified": True}, {"_id": 0}).to_list(100)
+async def get_clinics():
+    """Get list of all clinics"""
+    clinics = await db.clinics.find({}, {"_id": 0}).to_list(length=100)
     return clinics
 
 @api_router.get("/clinics/{clinic_id}")
 async def get_clinic(clinic_id: str):
+    """Get details of a specific clinic"""
     clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
     if not clinic:
         raise HTTPException(status_code=404, detail="Clinic not found")
