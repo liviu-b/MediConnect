@@ -6,7 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import roLocale from '../i18n/roCalendarLocale';
+import roLocale from '@fullcalendar/core/locales/ro';
 import enLocale from '@fullcalendar/core/locales/en-gb';
 import {
   Building2,
@@ -435,8 +435,8 @@ const StaffDashboard = () => {
             <button
               onClick={() => setActiveTab('calendar')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
@@ -446,8 +446,8 @@ const StaffDashboard = () => {
             <button
               onClick={() => setActiveTab('appointments')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'appointments'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
@@ -458,8 +458,8 @@ const StaffDashboard = () => {
               <button
                 onClick={() => setActiveTab('availability')}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'availability'
-                    ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
                   }`}
               >
                 <Clock className="w-5 h-5 flex-shrink-0" />
@@ -630,8 +630,8 @@ const StaffDashboard = () => {
                       key={status}
                       onClick={() => setStatusFilter(status)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${statusFilter === status
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
                       {status === 'all' ? t('appointments.all') : t(`appointments.${status.toLowerCase()}`)} ({statusCounts[status]})

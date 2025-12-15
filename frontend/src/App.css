@@ -37,6 +37,8 @@
 .fc .fc-toolbar-title {
   font-size: 1rem;
   font-weight: 600;
+  text-transform: capitalize;
+  /* Capitalize first letter of month names */
 }
 
 .fc .fc-button {
@@ -139,15 +141,33 @@
 }
 
 /* Status Colors */
-.status-scheduled { @apply bg-blue-50 text-blue-700 border-blue-200; }
-.status-confirmed { @apply bg-green-50 text-green-700 border-green-200; }
-.status-cancelled { @apply bg-red-50 text-red-700 border-red-200; }
-.status-completed { @apply bg-purple-50 text-purple-700 border-purple-200; }
+.status-scheduled {
+  @apply bg-blue-50 text-blue-700 border-blue-200;
+}
+
+.status-confirmed {
+  @apply bg-green-50 text-green-700 border-green-200;
+}
+
+.status-cancelled {
+  @apply bg-red-50 text-red-700 border-red-200;
+}
+
+.status-completed {
+  @apply bg-purple-50 text-purple-700 border-purple-200;
+}
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fadeIn {
@@ -156,19 +176,25 @@
 
 /* Page Transitions */
 @keyframes pageSlideIn {
-  from { 
-    opacity: 0; 
-    transform: translateX(20px); 
+  from {
+    opacity: 0;
+    transform: translateX(20px);
   }
-  to { 
-    opacity: 1; 
-    transform: translateX(0); 
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
 @keyframes pageFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .page-transition {
