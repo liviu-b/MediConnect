@@ -35,6 +35,18 @@ const CalendarPage = () => {
 
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
 
+  // Helper to capitalize first letter (for Romanian months)
+  const formatDateCapitalized = (date) => {
+    const formatted = date.toLocaleDateString(i18n.language === 'ro' ? 'ro-RO' : 'en-GB', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    // Capitalize first letter of the string
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -86,7 +98,11 @@ const CalendarPage = () => {
     if (!selectedDoctor) return;
     try {
       const res = await api.get(`/appointments?doctor_id=${selectedDoctor}`);
-      setAppointments(res.data);
+      // For patients: filter to show only their own appointments
+      const filteredAppointments = isClinicAdmin
+        ? res.data
+        : res.data.filter(apt => apt.patient_id === user?.user_id);
+      setAppointments(filteredAppointments);
     } catch (err) {
       console.error('Error fetching appointments:', err);
     }
@@ -145,10 +161,10 @@ const CalendarPage = () => {
   const calendarEvents = appointments
     .filter(apt => apt.status !== 'CANCELLED')
     .map(apt => {
-      // Color coding: Light green for CONFIRMED/ACCEPTED appointments
+      // Color coding: Stronger green for CONFIRMED/ACCEPTED appointments (better visibility)
       let bgColor = '#3B82F6'; // Default blue
       if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
-        bgColor = '#59bb7dff'; // Light green for confirmed
+        bgColor = '#22C55E'; // Stronger green for confirmed (better visibility)
       } else if (apt.status === 'COMPLETED') {
         bgColor = '#9CA3AF'; // Gray for completed
       }
@@ -159,7 +175,7 @@ const CalendarPage = () => {
         start: apt.date_time,
         backgroundColor: bgColor,
         borderColor: 'transparent',
-        textColor: apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED' ? '#166534' : 'white'
+        textColor: 'white'
       };
     });
 
@@ -239,7 +255,7 @@ const CalendarPage = () => {
 
       {/* Booking Modal */}
       {showBookingModal && selectedDate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
               <h2 className="font-semibold text-gray-900">{t('calendar.bookAppointment')}</h2>
@@ -251,7 +267,7 @@ const CalendarPage = () => {
               <div className="text-center py-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-gray-500">{t('calendar.selectedDate')}</p>
                 <p className="text-lg font-semibold text-blue-600">
-                  {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  {formatDateCapitalized(selectedDate)}
                 </p>
               </div>
 
@@ -270,8 +286,8 @@ const CalendarPage = () => {
                         key={slot.time}
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                           }`}
                       >
                         {slot.time}
