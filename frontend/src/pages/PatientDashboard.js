@@ -6,7 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import roLocale from '@fullcalendar/core/locales/ro';
+import roLocale from '../i18n/roCalendarLocale';
 import enLocale from '@fullcalendar/core/locales/en-gb';
 import {
   Building2,
@@ -45,19 +45,32 @@ const PatientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
-  
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Helper to capitalize first letter (for Romanian months)
+  const formatDateCapitalized = (date) => {
+    const formatted = date.toLocaleDateString(i18n.language === 'ro' ? 'ro-RO' : 'en-GB', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    // Capitalize first letter of the string
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
   // Dashboard data
   const [appointments, setAppointments] = useState([]);
   const [clinics, setClinics] = useState([]);
   const [clinicStats, setClinicStats] = useState({});
-  
+
   // History data
   const [historyLoading, setHistoryLoading] = useState(false);
   const [prescriptions, setPrescriptions] = useState([]);
   const [medicalRecords, setMedicalRecords] = useState([]);
   const [expandedPrescription, setExpandedPrescription] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
-  
+
   // Profile form
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -67,7 +80,7 @@ const PatientDashboard = () => {
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
-  
+
   // Calendar states
   const [selectedClinic, setSelectedClinic] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState('');
@@ -91,13 +104,13 @@ const PatientDashboard = () => {
     }
     fetchData();
   }, [user]);
-  
+
   useEffect(() => {
     if (activeTab === 'history' && user) {
       fetchHistory();
     }
   }, [activeTab, user]);
-  
+
   useEffect(() => {
     if (selectedClinic) {
       fetchDoctors(selectedClinic);
@@ -106,7 +119,7 @@ const PatientDashboard = () => {
       setSelectedDoctor('');
     }
   }, [selectedClinic]);
-  
+
   useEffect(() => {
     if (selectedDoctor && selectedDate) {
       fetchAvailability();
@@ -119,15 +132,17 @@ const PatientDashboard = () => {
         api.get('/appointments'),
         api.get('/clinics')
       ]);
-      setAppointments(appointmentsRes.data);
+      // Filter to show ONLY patient's own appointments
+      const myAppointments = appointmentsRes.data.filter(apt => apt.patient_id === user?.user_id);
+      setAppointments(myAppointments);
       setClinics(clinicsRes.data);
-      
+
       // Fetch stats for each clinic
-      const statsPromises = clinicsRes.data.map(clinic => 
+      const statsPromises = clinicsRes.data.map(clinic =>
         api.get(`/clinics/${clinic.clinic_id}/stats`).catch(() => ({ data: { average_rating: 0, review_count: 0 } }))
       );
       const statsResults = await Promise.all(statsPromises);
-      
+
       const statsMap = {};
       clinicsRes.data.forEach((clinic, index) => {
         statsMap[clinic.clinic_id] = statsResults[index].data;
@@ -139,7 +154,7 @@ const PatientDashboard = () => {
       setLoading(false);
     }
   };
-  
+
   const fetchHistory = async () => {
     if (!user?.user_id) return;
     setHistoryLoading(true);
@@ -153,7 +168,7 @@ const PatientDashboard = () => {
       setHistoryLoading(false);
     }
   };
-  
+
   const fetchDoctors = async (clinicId) => {
     try {
       const res = await api.get(`/doctors?clinic_id=${clinicId}`);
@@ -162,7 +177,7 @@ const PatientDashboard = () => {
       console.error('Error fetching doctors:', err);
     }
   };
-  
+
   const fetchAvailability = async () => {
     setLoadingSlots(true);
     try {
@@ -176,21 +191,21 @@ const PatientDashboard = () => {
       setLoadingSlots(false);
     }
   };
-  
+
   const handleDateClick = (info) => {
     const clickedDate = new Date(info.dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (clickedDate < today) return;
-    
+
     setSelectedDate(clickedDate);
     setSelectedSlot(null);
     if (selectedClinic && selectedDoctor) {
       setShowBookingModal(true);
     }
   };
-  
+
   const handleBook = async () => {
     if (!selectedSlot) return;
     setBooking(true);
@@ -227,7 +242,7 @@ const PatientDashboard = () => {
     e.preventDefault();
     setSavingProfile(true);
     setProfileSaved(false);
-    
+
     try {
       await api.put('/auth/profile', profileForm);
       setProfileSaved(true);
@@ -245,7 +260,7 @@ const PatientDashboard = () => {
     const date = new Date(dateStr);
     return date.toLocaleDateString();
   };
-  
+
   const formatDateTime = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleString();
@@ -268,26 +283,26 @@ const PatientDashboard = () => {
   const upcomingAppointments = appointments
     .filter(apt => apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED')
     .slice(0, 3);
-    
+
   const completedAppointments = appointments
     .filter(apt => apt.status === 'COMPLETED');
-    
+
   // Calendar events with color coding - GREEN for confirmed
   const calendarEvents = appointments
     .filter(apt => apt.status !== 'CANCELLED')
     .map(apt => {
-      // Color coding: Light green for CONFIRMED appointments
+      // Color coding: Stronger green for CONFIRMED appointments (better visibility)
       let bgColor = '#3B82F6'; // Default blue for scheduled
       let textColor = 'white';
-      
+
       if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
-        bgColor = '#22C55E'; // Green for confirmed
+        bgColor = '#22C55E'; // Stronger green for confirmed (better visibility)
         textColor = 'white';
       } else if (apt.status === 'COMPLETED') {
         bgColor = '#9CA3AF'; // Gray for completed
         textColor = 'white';
       }
-      
+
       return {
         id: apt.appointment_id,
         title: `Dr. ${apt.doctor_name}`,
@@ -301,12 +316,12 @@ const PatientDashboard = () => {
         }
       };
     });
-  
+
   const generatePrescriptionPDF = (prescription) => {
     // Create a simple HTML representation for printing/downloading
     const doc = appointments.find(a => a.appointment_id === prescription.appointment_id);
     const doctorName = doc?.doctor_name || 'Doctor';
-    
+
     const content = `
       <html>
         <head>
@@ -340,7 +355,7 @@ const PatientDashboard = () => {
         </body>
       </html>
     `;
-    
+
     const blob = new Blob([content], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -349,11 +364,11 @@ const PatientDashboard = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-  
+
   const generateRecordPDF = (record) => {
     const doc = appointments.find(a => a.appointment_id === record.appointment_id);
     const doctorName = doc?.doctor_name || 'Doctor';
-    
+
     const content = `
       <html>
         <head>
@@ -379,7 +394,7 @@ const PatientDashboard = () => {
         </body>
       </html>
     `;
-    
+
     const blob = new Blob([content], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -401,9 +416,8 @@ const PatientDashboard = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 w-56 ${
-          sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
-        }`}
+        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 w-56 ${sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -422,59 +436,54 @@ const PatientDashboard = () => {
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'dashboard'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('nav.dashboard')}</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'calendar'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('patientDashboard.myCalendar')}</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('clinics')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'clinics'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'clinics'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <Building2 className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('clinics.title')}</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('history')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'history'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <History className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('patientDashboard.myHistory')}</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('profile')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'profile'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <Settings className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('patientDashboard.profileSettings')}</span>
@@ -529,6 +538,51 @@ const PatientDashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
+
+              {/* User Profile - Always visible in top right */}
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  {user?.picture ? (
+                    <img src={user.picture} alt={user?.name} className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-xs text-gray-500">{t('patientDashboard.patient')}</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      <p className="text-xs text-blue-600 mt-1">{t('patientDashboard.patient')}</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('profile')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      {t('patientDashboard.profileSettings')}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      {t('common.signOut')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -556,7 +610,7 @@ const PatientDashboard = () => {
                   <CalendarDays className="w-5 h-5 text-blue-600" />
                   {t('patientDashboard.upcomingAppointments')}
                 </h3>
-                
+
                 {upcomingAppointments.length > 0 ? (
                   <div className="space-y-3">
                     {upcomingAppointments.map((apt) => (
@@ -571,9 +625,8 @@ const PatientDashboard = () => {
                             {apt.duration} min
                           </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
                           {apt.status === 'CONFIRMED' ? t('patientDashboard.confirmedAppointment') : t('patientDashboard.scheduledAppointment')}
                         </span>
                       </div>
@@ -630,7 +683,7 @@ const PatientDashboard = () => {
                   <p className="mt-3 text-sm text-blue-600">{t('calendar.clickToBook')}</p>
                 )}
               </div>
-              
+
               {/* Legend */}
               <div className="bg-white rounded-xl border border-gray-200 p-3">
                 <div className="flex flex-wrap gap-4 text-sm">
@@ -670,7 +723,7 @@ const PatientDashboard = () => {
 
               {/* Booking Modal */}
               {showBookingModal && selectedDate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
                   <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
                       <h2 className="font-semibold text-gray-900">{t('calendar.bookAppointment')}</h2>
@@ -682,7 +735,7 @@ const PatientDashboard = () => {
                       <div className="text-center py-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-gray-500">{t('calendar.selectedDate')}</p>
                         <p className="text-lg font-semibold text-blue-600">
-                          {selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                          {formatDateCapitalized(selectedDate)}
                         </p>
                       </div>
 
@@ -700,11 +753,10 @@ const PatientDashboard = () => {
                               <button
                                 key={slot.time}
                                 onClick={() => setSelectedSlot(slot)}
-                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                                  selectedSlot?.time === slot.time
+                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${selectedSlot?.time === slot.time
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                                }`}
+                                  }`}
                               >
                                 {slot.time}
                               </button>
@@ -749,7 +801,7 @@ const PatientDashboard = () => {
             /* Clinics Tab */
             <div className="space-y-4">
               <p className="text-sm text-gray-500">{t('patientDashboard.clinicsSubtitle')}</p>
-              
+
               {clinics.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                   <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-3" />
@@ -759,7 +811,7 @@ const PatientDashboard = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   {clinics.map((clinic) => {
                     const stats = clinicStats[clinic.clinic_id] || { average_rating: 0, review_count: 0 };
-                    
+
                     return (
                       <div
                         key={clinic.clinic_id}
@@ -776,7 +828,7 @@ const PatientDashboard = () => {
                               {clinic.description && (
                                 <p className="text-sm text-gray-500 line-clamp-1">{clinic.description}</p>
                               )}
-                              
+
                               {/* Rating */}
                               {stats.review_count > 0 && (
                                 <div className="flex items-center gap-1 mt-1">
@@ -790,7 +842,7 @@ const PatientDashboard = () => {
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                         </div>
-                        
+
                         <div className="mt-4 space-y-2 text-sm">
                           <p className="flex items-center gap-2 text-gray-600">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -817,7 +869,7 @@ const PatientDashboard = () => {
             /* History Tab */
             <div className="space-y-6">
               <p className="text-sm text-gray-500">{t('patientDashboard.historySubtitle')}</p>
-              
+
               {historyLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -830,7 +882,7 @@ const PatientDashboard = () => {
                       <CheckCircle className="w-5 h-5 text-green-600" />
                       {t('patientDashboard.completedAppointments')}
                     </h3>
-                    
+
                     {completedAppointments.length > 0 ? (
                       <div className="space-y-3">
                         {completedAppointments.map((apt) => (
@@ -862,13 +914,13 @@ const PatientDashboard = () => {
                       <Pill className="w-5 h-5 text-purple-600" />
                       {t('patientDashboard.prescriptionsReceived')}
                     </h3>
-                    
+
                     {prescriptions.length > 0 ? (
                       <div className="space-y-3">
                         {prescriptions.map((prescription) => {
                           const isExpanded = expandedPrescription === prescription.prescription_id;
                           const apt = appointments.find(a => a.appointment_id === prescription.appointment_id);
-                          
+
                           return (
                             <div key={prescription.prescription_id} className="border border-gray-200 rounded-lg overflow-hidden">
                               <button
@@ -886,7 +938,7 @@ const PatientDashboard = () => {
                                 </div>
                                 {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
                               </button>
-                              
+
                               {isExpanded && (
                                 <div className="p-4 space-y-3 bg-white">
                                   {apt && (
@@ -894,7 +946,7 @@ const PatientDashboard = () => {
                                       Dr. {apt.doctor_name} - {apt.doctor_specialty}
                                     </p>
                                   )}
-                                  
+
                                   {prescription.medications.map((med, idx) => (
                                     <div key={idx} className="p-3 bg-gray-50 rounded-lg">
                                       <p className="font-medium text-gray-900">{med.name}</p>
@@ -914,13 +966,13 @@ const PatientDashboard = () => {
                                       </div>
                                     </div>
                                   ))}
-                                  
+
                                   {prescription.notes && (
                                     <div className="p-3 bg-yellow-50 rounded-lg text-sm">
                                       <p className="text-gray-700">{prescription.notes}</p>
                                     </div>
                                   )}
-                                  
+
                                   <button
                                     onClick={() => generatePrescriptionPDF(prescription)}
                                     className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -945,19 +997,19 @@ const PatientDashboard = () => {
                       <FileText className="w-5 h-5 text-teal-600" />
                       {t('patientDashboard.recommendationsReceived')}
                     </h3>
-                    
+
                     {medicalRecords.length > 0 ? (
                       <div className="space-y-3">
                         {medicalRecords.map((record) => {
                           const isExpanded = expandedRecord === record.record_id;
                           const apt = appointments.find(a => a.appointment_id === record.appointment_id);
-                          
+
                           const typeColor = {
                             'RECOMMENDATION': 'bg-teal-50 text-teal-700',
                             'LETTER': 'bg-blue-50 text-blue-700',
                             'NOTE': 'bg-gray-100 text-gray-700'
                           }[record.record_type] || 'bg-gray-100 text-gray-700';
-                          
+
                           return (
                             <div key={record.record_id} className="border border-gray-200 rounded-lg overflow-hidden">
                               <button
@@ -978,7 +1030,7 @@ const PatientDashboard = () => {
                                 </div>
                                 {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
                               </button>
-                              
+
                               {isExpanded && (
                                 <div className="p-4 space-y-3 bg-white">
                                   {apt && (
@@ -986,11 +1038,11 @@ const PatientDashboard = () => {
                                       Dr. {apt.doctor_name} - {apt.doctor_specialty}
                                     </p>
                                   )}
-                                  
+
                                   <div className="p-3 bg-gray-50 rounded-lg">
                                     <p className="text-gray-700 whitespace-pre-wrap">{record.content}</p>
                                   </div>
-                                  
+
                                   <button
                                     onClick={() => generateRecordPDF(record)}
                                     className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -1019,7 +1071,7 @@ const PatientDashboard = () => {
                   <User className="w-5 h-5 text-blue-600" />
                   {t('patientDashboard.personalData')}
                 </h3>
-                
+
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1033,7 +1085,7 @@ const PatientDashboard = () => {
                       placeholder={t('patientDashboard.namePlaceholder')}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.email')}
@@ -1049,7 +1101,7 @@ const PatientDashboard = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{t('patientDashboard.emailCannotChange')}</p>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.phone')}
@@ -1065,23 +1117,7 @@ const PatientDashboard = () => {
                       />
                     </div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('patientDashboard.address')}
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={profileForm.address}
-                        onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder={t('patientDashboard.addressPlaceholder')}
-                      />
-                    </div>
-                  </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('patientDashboard.dateOfBirth')}
@@ -1096,7 +1132,7 @@ const PatientDashboard = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <button
                     type="submit"
                     disabled={savingProfile}

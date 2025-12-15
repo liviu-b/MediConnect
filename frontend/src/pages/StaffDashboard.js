@@ -6,7 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import roLocale from '@fullcalendar/core/locales/ro';
+import roLocale from '../i18n/roCalendarLocale';
 import enLocale from '@fullcalendar/core/locales/en-gb';
 import {
   Building2,
@@ -23,7 +23,10 @@ import {
   AlertCircle,
   XCircle,
   History,
-  ChevronDown
+  ChevronDown,
+  FileText,
+  Pill,
+  Plus
 } from 'lucide-react';
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -37,26 +40,38 @@ const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [loading, setLoading] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  
+
   // Doctor data
   const [doctor, setDoctor] = useState(null);
   const [clinicHours, setClinicHours] = useState(null);
-  
+
   // Availability editing
   const [availability, setAvailability] = useState({});
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [availabilitySaved, setAvailabilitySaved] = useState(false);
-  
+
   // Appointments data
   const [appointments, setAppointments] = useState([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showColleagueAppointments, setShowColleagueAppointments] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelAppointment, setCancelAppointment] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState('');
+
+  // Prescription and Medical Record states
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [showMedicalRecordModal, setShowMedicalRecordModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [medications, setMedications] = useState([{ name: '', dosage: '', frequency: '', duration: '' }]);
+  const [prescriptionNotes, setPrescriptionNotes] = useState('');
+  const [recordType, setRecordType] = useState('RECOMMENDATION');
+  const [recordTitle, setRecordTitle] = useState('');
+  const [recordContent, setRecordContent] = useState('');
+  const [savingDocument, setSavingDocument] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -77,13 +92,13 @@ const StaffDashboard = () => {
         if (myDoctor) {
           setDoctor(myDoctor);
           setAvailability(myDoctor.availability_schedule || {});
-          
+
           // Fetch clinic hours
           const clinicRes = await api.get(`/clinics/${myDoctor.clinic_id}`);
           setClinicHours(clinicRes.data.working_hours || {});
         }
       }
-      
+
       // Fetch appointments for calendar
       await fetchAppointments();
     } catch (err) {
@@ -108,10 +123,10 @@ const StaffDashboard = () => {
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
-      navigate('/auth/login', { replace: true });
+      navigate('/auth/already-registered', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      navigate('/auth/login', { replace: true });
+      navigate('/auth/already-registered', { replace: true });
     }
   };
 
@@ -153,10 +168,10 @@ const StaffDashboard = () => {
 
   const handleSaveAvailability = async () => {
     if (!doctor) return;
-    
+
     setSavingAvailability(true);
     setAvailabilitySaved(false);
-    
+
     try {
       await api.put(`/doctors/${doctor.doctor_id}/availability`, {
         availability_schedule: availability
@@ -195,7 +210,7 @@ const StaffDashboard = () => {
       setCancelError(t('appointments.cancelReasonRequired'));
       return;
     }
-    
+
     setCancelingId(cancelAppointment.appointment_id);
     try {
       await api.post(`/appointments/${cancelAppointment.appointment_id}/cancel`, {
@@ -224,6 +239,87 @@ const StaffDashboard = () => {
     }
   };
 
+  const openPrescriptionModal = (apt) => {
+    setSelectedAppointment(apt);
+    setMedications([{ name: '', dosage: '', frequency: '', duration: '' }]);
+    setPrescriptionNotes('');
+    setShowPrescriptionModal(true);
+  };
+
+  const openMedicalRecordModal = (apt) => {
+    setSelectedAppointment(apt);
+    setRecordType('RECOMMENDATION');
+    setRecordTitle('');
+    setRecordContent('');
+    setShowMedicalRecordModal(true);
+  };
+
+  const addMedication = () => {
+    setMedications([...medications, { name: '', dosage: '', frequency: '', duration: '' }]);
+  };
+
+  const updateMedication = (index, field, value) => {
+    const updated = [...medications];
+    updated[index][field] = value;
+    setMedications(updated);
+  };
+
+  const removeMedication = (index) => {
+    setMedications(medications.filter((_, i) => i !== index));
+  };
+
+  const handleCreatePrescription = async () => {
+    if (!selectedAppointment) return;
+
+    const validMedications = medications.filter(m => m.name && m.dosage);
+    if (validMedications.length === 0) {
+      alert('Please add at least one medication');
+      return;
+    }
+
+    setSavingDocument(true);
+    try {
+      await api.post('/prescriptions', {
+        appointment_id: selectedAppointment.appointment_id,
+        medications: validMedications,
+        notes: prescriptionNotes || null
+      });
+      alert(t('appointments.prescriptionSuccess'));
+      setShowPrescriptionModal(false);
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error creating prescription:', err);
+      alert(err.response?.data?.detail || t('notifications.error'));
+    } finally {
+      setSavingDocument(false);
+    }
+  };
+
+  const handleCreateMedicalRecord = async () => {
+    if (!selectedAppointment || !recordTitle || !recordContent) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setSavingDocument(true);
+    try {
+      await api.post('/medical-records', {
+        appointment_id: selectedAppointment.appointment_id,
+        record_type: recordType,
+        title: recordTitle,
+        content: recordContent
+      });
+      alert(t('appointments.recordSuccess'));
+      setShowMedicalRecordModal(false);
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error creating medical record:', err);
+      alert(err.response?.data?.detail || t('notifications.error'));
+    } finally {
+      setSavingDocument(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'SCHEDULED': return 'bg-blue-100 text-blue-700';
@@ -234,9 +330,13 @@ const StaffDashboard = () => {
     }
   };
 
-  const getRowBackground = (status) => {
+  const getRowBackground = (status, isOwnPatient) => {
+    if (isOwnPatient === false) {
+      // Colleague's patient
+      return 'bg-gray-50 border-gray-300';
+    }
     if (status === 'CONFIRMED' || status === 'ACCEPTED') {
-      return 'bg-green-50 border-green-200';
+      return 'bg-green-100 border-green-300';
     }
     return 'bg-white border-gray-200';
   };
@@ -247,11 +347,12 @@ const StaffDashboard = () => {
   };
 
   const filteredAppointments = appointments.filter(apt => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       apt.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
       apt.doctor_name?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesColleagueFilter = showColleagueAppointments || apt.is_own_patient !== false;
+    return matchesSearch && matchesStatus && matchesColleagueFilter;
   });
 
   const statusCounts = {
@@ -262,24 +363,42 @@ const StaffDashboard = () => {
     CANCELLED: appointments.filter(a => a.status === 'CANCELLED').length
   };
 
-  // Calendar events
+  // Calendar events with colleague appointments
   const calendarEvents = appointments
-    .filter(apt => apt.status !== 'CANCELLED')
+    .filter(apt => {
+      if (apt.status === 'CANCELLED') return false;
+      // Filter out colleague appointments if toggle is off
+      if (!showColleagueAppointments && apt.is_own_patient === false) return false;
+      return true;
+    })
     .map(apt => {
+      const isOwnPatient = apt.is_own_patient !== false; // Default to true if not set
+
       let bgColor = '#3B82F6'; // Default blue
-      if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
-        bgColor = '#86EFAC'; // Light green
+      let borderColor = 'transparent';
+
+      if (!isOwnPatient) {
+        // Colleague's patient - light gray with border
+        bgColor = '#E5E7EB'; // Light gray
+        borderColor = '#9CA3AF'; // Gray border
+      } else if (apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED') {
+        bgColor = '#22C55E'; // Green for confirmed
       } else if (apt.status === 'COMPLETED') {
-        bgColor = '#9CA3AF'; // Gray
+        bgColor = '#9CA3AF'; // Gray for completed
       }
-      
+
       return {
         id: apt.appointment_id,
-        title: apt.patient_name,
+        title: isOwnPatient ? apt.patient_name : `${apt.doctor_name.split(' ')[0]} - ${apt.patient_name}`,
         start: apt.date_time,
         backgroundColor: bgColor,
-        borderColor: 'transparent',
-        textColor: apt.status === 'CONFIRMED' || apt.status === 'ACCEPTED' ? '#166534' : 'white'
+        borderColor: borderColor,
+        textColor: !isOwnPatient ? '#374151' : 'white',
+        extendedProps: {
+          isOwnPatient,
+          doctorName: apt.doctor_name,
+          patientName: apt.patient_name
+        }
       };
     });
 
@@ -295,9 +414,8 @@ const StaffDashboard = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 w-56 ${
-          sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
-        }`}
+        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 w-56 ${sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -316,11 +434,10 @@ const StaffDashboard = () => {
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'calendar'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <Calendar className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('nav.calendar')}</span>
@@ -328,26 +445,24 @@ const StaffDashboard = () => {
 
             <button
               onClick={() => setActiveTab('appointments')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                activeTab === 'appointments'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'appointments'
                   ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <CalendarDays className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('nav.appointments')}</span>
             </button>
-            
+
             {user?.role === 'DOCTOR' && (
               <button
                 onClick={() => setActiveTab('availability')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  activeTab === 'availability'
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'availability'
                     ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                     : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
-                <Settings className="w-5 h-5 flex-shrink-0" />
+                <Clock className="w-5 h-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{t('staffDashboard.myAvailability')}</span>
               </button>
             )}
@@ -379,15 +494,15 @@ const StaffDashboard = () => {
                 <Menu className="w-5 h-5" />
               </button>
               <h1 className="text-lg font-bold text-gray-900">
-                {activeTab === 'calendar' ? t('nav.calendar') : 
-                 activeTab === 'appointments' ? t('nav.appointments') : 
-                 t('staffDashboard.myAvailability')}
+                {activeTab === 'calendar' ? t('nav.calendar') :
+                  activeTab === 'appointments' ? t('nav.appointments') :
+                    t('staffDashboard.myAvailability')}
               </h1>
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
-              
-              {/* User Dropdown */}
+
+              {/* User Profile - Always visible in top right */}
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -436,21 +551,64 @@ const StaffDashboard = () => {
             </div>
           ) : activeTab === 'calendar' ? (
             /* Calendar Tab */
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                events={calendarEvents}
-                locale={i18n.language === 'ro' ? roLocale : enLocale}
-                headerToolbar={{
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: ''
-                }}
-                height="auto"
-                dayMaxEvents={3}
-              />
+            <div className="space-y-4">
+              {/* Calendar Controls */}
+              {user?.role === 'DOCTOR' && (
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-700">
+                        {t('staffDashboard.viewOptions') || 'Opțiuni Vizualizare'}
+                      </span>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={showColleagueAppointments}
+                          onChange={(e) => setShowColleagueAppointments(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {t('staffDashboard.showColleagues') || 'Arată programări colegi'}
+                        </span>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-green-500 rounded"></div>
+                        <span className="text-gray-600">{t('staffDashboard.myPatients') || 'Pacienții mei'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gray-300 border-2 border-gray-400 rounded"></div>
+                        <span className="text-gray-600">{t('staffDashboard.colleaguePatients') || 'Pacienți colegi'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  events={calendarEvents}
+                  locale={i18n.language === 'ro' ? roLocale : enLocale}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                  }}
+                  height="auto"
+                  dayMaxEvents={3}
+                  eventMouseEnter={(info) => {
+                    // Tooltip on hover
+                    const { extendedProps } = info.event;
+                    if (extendedProps && !extendedProps.isOwnPatient) {
+                      info.el.title = `Dr. ${extendedProps.doctorName} - ${extendedProps.patientName}`;
+                    }
+                  }}
+                />
+              </div>
             </div>
           ) : activeTab === 'appointments' ? (
             /* Appointments Tab */
@@ -471,11 +629,10 @@ const StaffDashboard = () => {
                     <button
                       key={status}
                       onClick={() => setStatusFilter(status)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                        statusFilter === status
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${statusFilter === status
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       {status === 'all' ? t('appointments.all') : t(`appointments.${status.toLowerCase()}`)} ({statusCounts[status]})
                     </button>
@@ -498,17 +655,23 @@ const StaffDashboard = () => {
                   {filteredAppointments.map((apt) => (
                     <div
                       key={apt.appointment_id}
-                      className={`rounded-xl border p-4 ${getRowBackground(apt.status)}`}
+                      className={`rounded-xl border p-4 ${getRowBackground(apt.status, apt.is_own_patient)}`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            apt.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 'bg-blue-100 text-blue-600'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${apt.status === 'CONFIRMED' ? 'bg-green-200 text-green-700' : 'bg-blue-100 text-blue-600'
+                            }`}>
                             <CalendarDays className="w-5 h-5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-900">{apt.patient_name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900">{apt.patient_name}</p>
+                              {apt.is_own_patient === false && (
+                                <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs rounded-full">
+                                  {t('appointments.colleaguePatient')}
+                                </span>
+                              )}
+                            </div>
                             {apt.patient_email && <p className="text-sm text-gray-500">{apt.patient_email}</p>}
                             <p className="text-sm text-blue-600">Dr. {apt.doctor_name}</p>
                             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
@@ -532,7 +695,7 @@ const StaffDashboard = () => {
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
                             {t(`appointments.${apt.status.toLowerCase()}`)}
                           </span>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-wrap">
                             {/* Accept/Reject for SCHEDULED appointments */}
                             {apt.status === 'SCHEDULED' && (
                               <>
@@ -549,6 +712,25 @@ const StaffDashboard = () => {
                                   title={t('appointments.rejectAppointment')}
                                 >
                                   <XCircle className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                            {/* Add Prescription & Medical Record for CONFIRMED/COMPLETED */}
+                            {(apt.status === 'CONFIRMED' || apt.status === 'COMPLETED') && user?.role === 'DOCTOR' && (
+                              <>
+                                <button
+                                  onClick={() => openPrescriptionModal(apt)}
+                                  className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                  title={t('appointments.addPrescription')}
+                                >
+                                  <Pill className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => openMedicalRecordModal(apt)}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title={t('appointments.addMedicalRecord')}
+                                >
+                                  <FileText className="w-4 h-4" />
                                 </button>
                               </>
                             )}
@@ -597,7 +779,7 @@ const StaffDashboard = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       {!isClinicOpen(day) ? (
                         <p className="text-sm text-gray-400 italic">{t('staffDashboard.clinicClosed')}</p>
                       ) : (availability[day] || []).length === 0 ? (
@@ -653,6 +835,195 @@ const StaffDashboard = () => {
         </div>
       </main>
 
+      {/* Prescription Modal */}
+      {showPrescriptionModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
+              <div className="flex items-center gap-2 text-purple-600">
+                <Pill className="w-5 h-5" />
+                <h2 className="font-semibold">{t('appointments.createPrescription')}</h2>
+              </div>
+              <button onClick={() => setShowPrescriptionModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-700">{t('appointments.patient')}: {selectedAppointment.patient_name}</p>
+                <p className="text-xs text-gray-500">{formatDate(selectedAppointment.date_time)}</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">{t('appointments.medications')}</label>
+                  <button
+                    onClick={addMedication}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {t('appointments.addMedication')}
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {medications.map((med, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Medicament {index + 1}</span>
+                        {medications.length > 1 && (
+                          <button
+                            onClick={() => removeMedication(index)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            {t('appointments.remove')}
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder={t('appointments.medicationName')}
+                          value={med.name}
+                          onChange={(e) => updateMedication(index, 'name', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <input
+                          type="text"
+                          placeholder={t('appointments.dosage')}
+                          value={med.dosage}
+                          onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <input
+                          type="text"
+                          placeholder={t('appointments.frequency')}
+                          value={med.frequency}
+                          onChange={(e) => updateMedication(index, 'frequency', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <input
+                          type="text"
+                          placeholder={t('appointments.duration')}
+                          value={med.duration}
+                          onChange={(e) => updateMedication(index, 'duration', e.target.value)}
+                          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('appointments.prescriptionNotes')}</label>
+                <textarea
+                  value={prescriptionNotes}
+                  onChange={(e) => setPrescriptionNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  placeholder="Note adiționale..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowPrescriptionModal(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleCreatePrescription}
+                  disabled={savingDocument}
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {savingDocument && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('common.save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Medical Record Modal */}
+      {showMedicalRecordModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
+              <div className="flex items-center gap-2 text-blue-600">
+                <FileText className="w-5 h-5" />
+                <h2 className="font-semibold">{t('appointments.createMedicalRecord')}</h2>
+              </div>
+              <button onClick={() => setShowMedicalRecordModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-700">{t('appointments.patient')}: {selectedAppointment.patient_name}</p>
+                <p className="text-xs text-gray-500">{formatDate(selectedAppointment.date_time)}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('appointments.recordType')}</label>
+                <select
+                  value={recordType}
+                  onChange={(e) => setRecordType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="RECOMMENDATION">{t('appointments.recommendation')}</option>
+                  <option value="LETTER">{t('appointments.letter')}</option>
+                  <option value="NOTE">{t('appointments.note')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('appointments.recordTitle')}</label>
+                <input
+                  type="text"
+                  value={recordTitle}
+                  onChange={(e) => setRecordTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="ex. Recomandare tratament, Scrisoare medicală..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('appointments.recordContent')}</label>
+                <textarea
+                  value={recordContent}
+                  onChange={(e) => setRecordContent(e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Introduceți conținutul documentului medical..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowMedicalRecordModal(false)}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleCreateMedicalRecord}
+                  disabled={savingDocument}
+                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {savingDocument && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('common.save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cancellation Modal */}
       {showCancelModal && cancelAppointment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -666,7 +1037,7 @@ const StaffDashboard = () => {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="p-4 space-y-4">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm text-gray-600">
@@ -676,7 +1047,7 @@ const StaffDashboard = () => {
                   <span className="font-medium">{t('appointments.title')}:</span> {formatDate(cancelAppointment.date_time)}
                 </p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('appointments.cancellationReason')} <span className="text-red-500">*</span>
@@ -690,13 +1061,13 @@ const StaffDashboard = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">{t('appointments.reasonHelp')}</p>
               </div>
-              
+
               {cancelError && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
                   {cancelError}
                 </div>
               )}
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCancelModal(false)}
