@@ -328,7 +328,7 @@ const ClinicDetail = () => {
 
       {activeTab === 'reviews' && (
         <div className="space-y-4">
-          {/* Add Review Button *- Only for patients */}
+          {/* Add Review Button - Only for patients */}
           {user && !isClinicAdmin && !showReviewForm && (
             <button
               onClick={() => setShowReviewForm(true)}
@@ -479,7 +479,6 @@ const ClinicDetail = () => {
                           )}
                         </div>
                       )}
-
                     </div>
                   </div>
                 </div>
