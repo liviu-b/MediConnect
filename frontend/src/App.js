@@ -267,6 +267,9 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // ADD THIS LINE:
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
