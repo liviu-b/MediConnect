@@ -198,6 +198,7 @@ const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
   const location = useLocation();
+  const contextValue = useMemo(() => ({ user, setUser }), [user]);
 
   useEffect(() => {
     let isMounted = true;

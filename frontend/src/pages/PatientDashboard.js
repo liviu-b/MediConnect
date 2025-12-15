@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
@@ -93,40 +93,8 @@ const PatientDashboard = () => {
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        name: user.name || '',
-        phone: user.phone || '',
-        address: user.address || '',
-        date_of_birth: user.date_of_birth || ''
-      });
-    }
-    fetchData();
-  }, [user]);
-
-  useEffect(() => {
-    if (activeTab === 'history' && user) {
-      fetchHistory();
-    }
-  }, [activeTab, user]);
-
-  useEffect(() => {
-    if (selectedClinic) {
-      fetchDoctors(selectedClinic);
-    } else {
-      setDoctors([]);
-      setSelectedDoctor('');
-    }
-  }, [selectedClinic]);
-
-  useEffect(() => {
-    if (selectedDoctor && selectedDate) {
-      fetchAvailability();
-    }
-  }, [selectedDoctor, selectedDate]);
-
-  const fetchData = async () => {
+  // --- 1. Define fetchData with useCallback so it can be a stable dependency ---
+  const fetchData = useCallback(async () => {
     try {
       const [appointmentsRes, clinicsRes] = await Promise.all([
         api.get('/appointments'),
@@ -153,44 +121,92 @@ const PatientDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.user_id]);
 
-  const fetchHistory = async () => {
-    if (!user?.user_id) return;
-    setHistoryLoading(true);
-    try {
-      const res = await api.get(`/patients/${user.user_id}/history`);
-      setPrescriptions(res.data.prescriptions || []);
-      setMedicalRecords(res.data.medical_records || []);
-    } catch (err) {
-      console.error('Error fetching history:', err);
-    } finally {
-      setHistoryLoading(false);
+  // --- 2. Effect for Initial Data Fetching ---
+  useEffect(() => {
+    if (user?.user_id) {
+      fetchData();
     }
-  };
+  }, [user?.user_id, fetchData]);
 
-  const fetchDoctors = async (clinicId) => {
-    try {
-      const res = await api.get(`/doctors?clinic_id=${clinicId}`);
-      setDoctors(res.data);
-    } catch (err) {
-      console.error('Error fetching doctors:', err);
+  // --- 3. Effect for Syncing Profile Form (Separated to avoid overwriting input) ---
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        date_of_birth: user.date_of_birth || ''
+      });
     }
-  };
+  }, [user?.name, user?.phone, user?.address, user?.date_of_birth]);
 
-  const fetchAvailability = async () => {
-    setLoadingSlots(true);
-    try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
-      setAvailableSlots(res.data.available_slots || []);
-    } catch (err) {
-      console.error('Error fetching availability:', err);
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
+  // --- 4. Effect for History (Fetch function moved inside) ---
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!user?.user_id) return;
+      setHistoryLoading(true);
+      try {
+        const res = await api.get(`/patients/${user.user_id}/history`);
+        setPrescriptions(res.data.prescriptions || []);
+        setMedicalRecords(res.data.medical_records || []);
+      } catch (err) {
+        console.error('Error fetching history:', err);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    if (activeTab === 'history' && user) {
+      fetchHistory();
     }
-  };
+  }, [activeTab, user?.user_id]);
+
+  // --- 5. Effect for Doctors (Fetch function moved inside) ---
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const res = await api.get(`/doctors?clinic_id=${selectedClinic}`);
+        setDoctors(res.data);
+      } catch (err) {
+        console.error('Error fetching doctors:', err);
+      }
+    };
+
+    if (selectedClinic) {
+      fetchDoctors();
+    } else {
+      setDoctors([]);
+      setSelectedDoctor('');
+    }
+  }, [selectedClinic]);
+
+  // --- 6. Effect for Availability (Fetch function moved inside) ---
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      setLoadingSlots(true);
+      try {
+        // Fix: Use local date components manually to format as YYYY-MM-DD
+        const offset = selectedDate.getTimezoneOffset();
+        const localDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
+        const dateStr = localDate.toISOString().split('T')[0];
+
+        const res = await api.get(`/doctors/${selectedDoctor}/availability?date=${dateStr}`);
+        setAvailableSlots(res.data.available_slots || []);
+      } catch (err) {
+        console.error('Error fetching availability:', err);
+        setAvailableSlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    if (selectedDoctor && selectedDate) {
+      fetchAvailability();
+    }
+  }, [selectedDoctor, selectedDate]);
+
 
   const handleDateClick = (info) => {
     const clickedDate = new Date(info.dateStr);
@@ -219,7 +235,7 @@ const PatientDashboard = () => {
       setShowBookingModal(false);
       setNotes('');
       setSelectedSlot(null);
-      fetchData();
+      fetchData(); // Refresh appointments list
     } catch (err) {
       console.error('Error booking appointment:', err);
       alert(err.response?.data?.detail || t('notifications.bookingError'));
