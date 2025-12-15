@@ -267,6 +267,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false); // <--- FIXED: Added this line
 
   const handleLogout = async () => {
     try {
