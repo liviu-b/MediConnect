@@ -34,12 +34,12 @@ services:
       - backend
     restart: unless-stopped
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8001
+      - REACT_APP_BACKEND_URL=http://localhost:8000
     ports:
       - "3000:3000"
 
 volumes:
   mongo_data:
 
-# The backend connects to MongoDB via hostname 'mongo'.
-# The frontend expects the backend at http://localhost:8000 when accessed from the host.
+    # The backend connects to MongoDB via hostname 'mongo'.
+    # The frontend expects the backend at http://localhost:8000 when accessed from the host.
