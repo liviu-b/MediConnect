@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from app.routers import clinics, doctors, services, staff, appointments, stats, patients, medical, auth
 
 # Load environment
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -33,7 +34,9 @@ app.add_middleware(
 
 def _include_router_safely(module_path: str, router_attr: str = "router", prefix: str | None = None):
     try:
-        mod = __import__(module_path, fromlist=[router_attr])
+        # Import direct prin importlib
+        import importlib
+        mod = importlib.import_module(module_path)
         router = getattr(mod, router_attr)
         if prefix:
             app.include_router(router, prefix=prefix)
@@ -41,7 +44,7 @@ def _include_router_safely(module_path: str, router_attr: str = "router", prefix
             app.include_router(router)
         logger.info(f"Included router: {module_path}")
     except Exception as e:
-        logger.warning(f"Skipping router {module_path}: {e}")
+        logger.exception(f"Skipping router {module_path}: {e}")
 
 # API routers expected under app.routers.* with their own prefixes
 _include_router_safely('app.routers.auth')
@@ -51,7 +54,6 @@ _include_router_safely('app.routers.services')
 _include_router_safely('app.routers.staff')
 _include_router_safely('app.routers.appointments')
 _include_router_safely('app.routers.stats')
-# Future routers to be added during refactor
 _include_router_safely('app.routers.patients')
 _include_router_safely('app.routers.medical')
 
