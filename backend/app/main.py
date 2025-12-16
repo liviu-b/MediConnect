@@ -15,7 +15,7 @@ app = FastAPI(title="MediConnect API", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True, allow_methods=[""], allow_headers=[""], 
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"], 
     allow_methods=CORS_ALLOW_METHODS,
     allow_headers=CORS_ALLOW_HEADERS,
 )
