@@ -10,8 +10,6 @@ services:
       - ./.env
     environment:
       - SECRET_KEY=${SECRET_KEY}
-    depends_on:
-      - mongo
 
   frontend:
     build:
@@ -21,8 +19,6 @@ services:
       - "3000:3000"
     environment:
       - REACT_APP_BACKEND_URL=http://localhost:3000
-    depends_on:
-      - backend
 
   mongo:
     image: mongo:6
