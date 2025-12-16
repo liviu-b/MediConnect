@@ -1,16 +1,17 @@
 services:
   backend:
     build: ./backend
+    volumes:
+      - ./backend:/app
+      - ./backend/requirements.txt:/requirements.txt
+      - ./.env:/app/.env
+    working_dir: /app
     env_file:
       - ./.env
     ports:
       - "8000:8000"
     environment:
       - SECRET_KEY=${SECRET_KEY}
-    volumes:
-      - ./backend:/app
-      - ./backend/requirements.txt:/requirements.txt
-      - ./.env:/app/.env
 
   frontend:
     build:
@@ -19,7 +20,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8000
+      - REACT_APP_BACKEND_URL=http://backend:8000
 
   mongo:
     image: mongo:6
