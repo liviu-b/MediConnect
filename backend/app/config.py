@@ -35,9 +35,21 @@ CORS_ALLOW_HEADERS = _parse_list(os.getenv("CORS_ALLOW_HEADERS"), default=["*"])
 
 # Safety Guard: Ensure wildcard origin is not used with credentials
 if CORS_ALLOW_CREDENTIALS and "*" in CORS_ORIGINS:
-    # Remove '*' and fallback to localhost if it was the only entry
     CORS_ORIGINS = [origin for origin in CORS_ORIGINS if origin != "*"]
     if not CORS_ORIGINS:
         CORS_ORIGINS = ["http://localhost:3000"]
 
-# ... (Retain your existing Database, Secret Key, and Email configurations below)
+# --- Database Configuration (Restored) ---
+# Default to 'mongo' service name for docker-compose, or localhost for local run
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongo:27017/mediconnect")
+DB_NAME = os.getenv("DB_NAME", "mediconnect")
+
+# --- Security Configuration ---
+# WARNING: Change this in production!
+SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey_change_me_in_prod")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# --- Email Configuration ---
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev")
