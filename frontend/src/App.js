@@ -28,10 +28,14 @@ axios.defaults.withCredentials = true;
 
 // API helper
 const api = {
-  get: (url, config = {}) => axios.get(`${API}${url}`, config),
-  post: (url, data, config = {}) => axios.post(`${API}${url}`, data, config),
-  put: (url, data, config = {}) => axios.put(`${API}${url}`, data, config),
-  delete: (url, config = {}) => axios.delete(`${API}${url}`, config)
+  get: (url, config = {}) =>
+    axios.get(`${API}${url}`, { ...config, withCredentials: true }),
+  post: (url, data, config = {}) =>
+    axios.post(`${API}${url}`, data, { ...config, withCredentials: true }),
+  put: (url, data, config = {}) =>
+    axios.put(`${API}${url}`, data, { ...config, withCredentials: true }),
+  delete: (url, config = {}) =>
+    axios.delete(`${API}${url}`, { ...config, withCredentials: true })
 };
 
 // Auth Context
