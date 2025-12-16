@@ -4,7 +4,6 @@ from pathlib import Path
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.routers import clinics, doctors, services, staff, appointments, stats, patients, medical, auth
 
 # Load environment
 ROOT_DIR = Path(__file__).resolve().parents[1]
