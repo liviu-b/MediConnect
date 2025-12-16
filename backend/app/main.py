@@ -1,35 +1,26 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from .config import (
-    CORS_ORIGINS, 
-    CORS_ALLOW_CREDENTIALS, 
-    CORS_ALLOW_METHODS, 
-    CORS_ALLOW_HEADERS
-)
-from .routers import (
-    auth as auth_router,
-    clinics as clinics_router,
-    doctors as doctors_router,
-    staff as staff_router,
-    services as services_router,
-    appointments as appointments_router,
-    reviews as reviews_router,
-    records as records_router
-)
+from .config import CORS_ORIGINS, CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
+from .routers import auth as auth_router
+from .routers import clinics as clinics_router
+from .routers import doctors as doctors_router
+from .routers import staff as staff_router
+from .routers import services as services_router
+from .routers import appointments as appointments_router
+from .routers import reviews as reviews_router
+from .routers import records as records_router
 
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
-# Single CORS Middleware with Robust Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=CORS_ALLOW_CREDENTIALS,
-    allow_methods=CORS_ALLOW_METHODS,
-    allow_headers=CORS_ALLOW_HEADERS,
+    allow_origins=CORS_ORIGINS,              # <--- Uses the smart list from config.py
+    allow_credentials=CORS_ALLOW_CREDENTIALS,# <--- Uses the True/False from config.py
+    allow_methods=CORS_ALLOW_METHODS,        # <--- Passed only once
+    allow_headers=CORS_ALLOW_HEADERS,        # <--- Passed only once
 )
 
 api_prefix = "/api"
-
 app.include_router(auth_router.router, prefix=api_prefix)
 app.include_router(clinics_router.router, prefix=api_prefix)
 app.include_router(doctors_router.router, prefix=api_prefix)
@@ -38,7 +29,3 @@ app.include_router(services_router.router, prefix=api_prefix)
 app.include_router(appointments_router.router, prefix=api_prefix)
 app.include_router(reviews_router.router, prefix=api_prefix)
 app.include_router(records_router.router, prefix=api_prefix)
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to MediConnect API"}
