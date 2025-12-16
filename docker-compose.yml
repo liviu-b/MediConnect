@@ -1,33 +1,45 @@
 services:
-  backend:
-    build: ./backend
-    volumes:
-      - ./backend:/app
-      - ./.env:/app/.env
-    ports:
-      - "8000:8000"
-    env_file:
-      - ./.env
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_BACKEND_URL=http://localhost:3000
-
   mongo:
     image: mongo:6
+    restart: unless-stopped
     volumes:
       - mongo_data:/data/db
     ports:
       - "27017:27017"
 
+  backend:
+    build: ./backend
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - DB_NAME=mediconnect_db
+      - FRONTEND_URL=http://localhost:3000
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+    env_file:
+      - ./.env
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    restart: unless-stopped
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+
 volumes:
   mongo_data:
 
-    # Note: The backend service is configured to connect to the MongoDB service using the hostname 'mongo', which is the name of the MongoDB service defined in this docker-compose file.
+# The backend connects to MongoDB via hostname 'mongo'.
+# The frontend expects the backend at http://localhost:8000 when accessed from the host.
