@@ -1,6 +1,7 @@
 # --- IDE and editors ---
 .idea/
 .vscode/
+.qodo
 
 # --- Dependencies (Node/JS) ---
 node_modules/
