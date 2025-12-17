@@ -172,7 +172,13 @@ async def logout(request: Request, response: Response):
     session_token = request.cookies.get("session_token")
     if session_token:
         await db.user_sessions.delete_many({"session_token": session_token})
-    response.delete_cookie(key="session_token", path="/", secure=True, samesite="none")
+    from ..security import IS_PRODUCTION
+    response.delete_cookie(
+        key="session_token",
+        path="/",
+        secure=IS_PRODUCTION,
+        samesite="none" if IS_PRODUCTION else "lax"
+    )
     return {"message": "Logged out successfully"}
 
 
