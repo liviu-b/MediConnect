@@ -15,10 +15,13 @@ services:
     environment:
       - MONGO_URL=mongodb://mongo:27017
       - DB_NAME=mediconnect_db
-      - FRONTEND_URL=http://127.0.0.1:3000
-      - CORS_ORIGINS=http://localhost:3000
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+      - FRONTEND_URL=http://localhost:3000
+      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+      - CORS_ALLOW_HEADERS=["Authorization","Content-Type","Accept","Origin","X-Requested-With"]
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-MediConnect <onboarding@resend.dev>}
     env_file:
       - ./.env
     volumes:
@@ -34,12 +37,9 @@ services:
       - backend
     restart: unless-stopped
     environment:
-      - REACT_APP_BACKEND_URL=http://127.0.0.1:8000
+      - REACT_APP_BACKEND_URL=http://localhost:8000
     ports:
       - "3000:3000"
 
 volumes:
   mongo_data:
-
-    # The backend connects to MongoDB via hostname 'mongo'.
-    # The frontend expects the backend at http://localhost:8000 when accessed from the host.

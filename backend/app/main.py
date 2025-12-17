@@ -12,21 +12,30 @@ from .routers import records as records_router
 
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
+# Add CORS middleware
 app.add_middleware(
-CORSMiddleware,
-allow_origins=CORS_ORIGINS,
-allow_credentials=CORS_ALLOW_CREDENTIALS,
-allow_methods=[
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "PATCH",
-        "OPTIONS",
-    ],
-allow_headers=CORS_ALLOW_HEADERS,
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
+    allow_methods=CORS_ALLOW_METHODS,
+    allow_headers=CORS_ALLOW_HEADERS,
+    expose_headers=["*"],
 )
 
+# Health check endpoint
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "service": "MediConnect API",
+        "version": "2.0.0"
+    }
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+# Include routers
 api_prefix = "/api"
 app.include_router(auth_router.router, prefix=api_prefix)
 app.include_router(clinics_router.router, prefix=api_prefix)
