@@ -17,6 +17,9 @@ services:
       - DB_NAME=mediconnect_db
       - FRONTEND_URL=http://localhost:3000
       - CORS_ORIGINS=http://localhost:3000
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
+      - CORS_ALLOW_HEADERS=["Authorization","Content-Type","Accept","Origin","X-Requested-With"]
       - RESEND_API_KEY=${RESEND_API_KEY}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
     env_file:
