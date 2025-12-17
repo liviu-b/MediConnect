@@ -120,8 +120,8 @@ async def create_session(user_id: str, response: Response) -> str:
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=IS_PRODUCTION,                     # ✅ FIX
-        samesite="none" if IS_PRODUCTION else "lax",  # ✅ FIX
+        secure=IS_PRODUCTION,
+        samesite="none" if IS_PRODUCTION else "lax",
         path="/",
         max_age=7 * 24 * 60 * 60,
     )
