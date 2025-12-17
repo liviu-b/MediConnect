@@ -279,7 +279,8 @@
     "noReviews": "No reviews yet",
     "respondToReview": "Respond",
     "respond": "Send Response",
-    "responsePlaceholder": "Write your response..."
+    "responsePlaceholder": "Write your response...",
+    "details": "Medical Center Details"
   },
   "settings": {
     "welcomeTitle": "Welcome to MediConnect!",
@@ -417,7 +418,8 @@
     "error": "An error occurred.",
     "loginSuccess": "Welcome!",
     "registerSuccess": "Account created!",
-    "invalidCredentials": "Incorrect email or password"
+    "invalidCredentials": "Incorrect email or password",
+    "profileUpdated": "Profile updated successfully!"
   },
   "days": {
     "mon": "Mon",

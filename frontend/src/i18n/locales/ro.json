@@ -278,7 +278,8 @@
     "noReviews": "Nicio recenzie încă",
     "respondToReview": "Răspunde",
     "respond": "Trimite Răspuns",
-    "responsePlaceholder": "Scrie răspunsul tău..."
+    "responsePlaceholder": "Scrie răspunsul tău...",
+    "details": "Detalii Centru Medical"
   },
   "settings": {
     "welcomeTitle": "Bine ai venit la MediConnect!",
@@ -416,7 +417,8 @@
     "error": "A apărut o eroare.",
     "loginSuccess": "Bine ai venit!",
     "registerSuccess": "Cont creat!",
-    "invalidCredentials": "Email sau parolă incorectă"
+    "invalidCredentials": "Email sau parolă incorectă",
+    "profileUpdated": "Profil actualizat cu succes!"
   },
   "days": {
     "mon": "Lun",

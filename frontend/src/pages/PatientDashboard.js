@@ -34,7 +34,10 @@ import {
   Stethoscope,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 
 const PatientDashboard = () => {
@@ -101,6 +104,12 @@ const PatientDashboard = () => {
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
+  // Clinic detail state
+  const [selectedClinicData, setSelectedClinicData] = useState(null);
+  const [clinicServices, setClinicServices] = useState([]);
+  const [clinicReviews, setClinicReviews] = useState([]);
+  const [clinicDetailTab, setClinicDetailTab] = useState('info');
+
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -133,6 +142,12 @@ const PatientDashboard = () => {
       fetchAvailability();
     }
   }, [selectedDoctor, selectedDate]);
+
+  useEffect(() => {
+    if (activeTab === 'clinicDetail' && selectedClinic) {
+      fetchClinicDetail(selectedClinic);
+    }
+  }, [activeTab, selectedClinic]);
 
   const fetchData = async () => {
     try {
@@ -174,6 +189,24 @@ const PatientDashboard = () => {
       console.error('Error fetching history:', err);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const fetchClinicDetail = async (clinicId) => {
+    setLoading(true);
+    try {
+      const [clinicRes, servicesRes, reviewsRes] = await Promise.all([
+        api.get(`/clinics/${clinicId}`),
+        api.get(`/services?clinic_id=${clinicId}`),
+        api.get(`/clinics/${clinicId}/reviews`)
+      ]);
+      setSelectedClinicData(clinicRes.data);
+      setClinicServices(servicesRes.data);
+      setClinicReviews(reviewsRes.data);
+    } catch (err) {
+      console.error('Error fetching clinic detail:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -239,10 +272,10 @@ const PatientDashboard = () => {
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout');
-      navigate('/auth/login', { replace: true }); // Patient goes to login page
+      navigate('/login', { replace: true }); // Patient goes to login page
     } catch (error) {
       console.error('Logout error:', error);
-      navigate('/auth/login', { replace: true });
+      navigate('/login', { replace: true });
     }
   };
 
@@ -252,13 +285,16 @@ const PatientDashboard = () => {
     setProfileSaved(false);
 
     try {
-      await api.put('/auth/profile', profileForm);
+      const response = await api.put('/auth/profile', profileForm);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
-      // Refresh user data
-      if (refreshUser) refreshUser();
+      // Refresh user data from response
+      if (refreshUser) {
+        await refreshUser();
+      }
     } catch (err) {
       console.error('Error saving profile:', err);
+      alert(t('notifications.error'));
     } finally {
       setSavingProfile(false);
     }
@@ -553,13 +589,24 @@ const PatientDashboard = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-lg font-bold text-gray-900">
-                {activeTab === 'dashboard' && t('patientDashboard.title')}
-                {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
-                {activeTab === 'clinics' && t('clinics.title')}
-                {activeTab === 'history' && t('patientDashboard.myHistory')}
-                {activeTab === 'profile' && t('patientDashboard.profileSettings')}
-              </h1>
+              <div className="flex items-center gap-2">
+                {activeTab === 'clinicDetail' && (
+                  <button
+                    onClick={() => setActiveTab('clinics')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
+                <h1 className="text-lg font-bold text-gray-900">
+                  {activeTab === 'dashboard' && t('patientDashboard.title')}
+                  {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
+                  {activeTab === 'clinics' && t('clinics.title')}
+                  {activeTab === 'clinicDetail' && (selectedClinicData?.name || t('clinics.details'))}
+                  {activeTab === 'history' && t('patientDashboard.myHistory')}
+                  {activeTab === 'profile' && t('patientDashboard.profileSettings')}
+                </h1>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
@@ -592,7 +639,10 @@ const PatientDashboard = () => {
                       <p className="text-xs text-blue-600 mt-1">{t('patientDashboard.patient')}</p>
                     </div>
                     <button
-                      onClick={() => setActiveTab('profile')}
+                      onClick={() => {
+                        setActiveTab('profile');
+                        setUserDropdownOpen(false);
+                      }}
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Settings className="w-4 h-4" />
@@ -851,7 +901,10 @@ const PatientDashboard = () => {
                     return (
                       <div
                         key={clinic.clinic_id}
-                        onClick={() => navigate(`/clinics/${clinic.clinic_id}`)}
+                        onClick={() => {
+                          setActiveTab('clinicDetail');
+                          setSelectedClinic(clinic.clinic_id);
+                        }}
                         className="bg-white rounded-xl border border-gray-200 p-4 cursor-pointer hover:shadow-lg hover:border-blue-200 transition-all"
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -1099,16 +1152,210 @@ const PatientDashboard = () => {
                 </>
               )}
             </div>
+          ) : activeTab === 'clinicDetail' && selectedClinicData ? (
+            /* Clinic Detail Tab */
+            <div className="space-y-4">
+              {/* Clinic Header */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white flex-shrink-0">
+                    <Building2 className="w-8 h-8" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-900">{selectedClinicData.name}</h2>
+                    {selectedClinicData.description && (
+                      <p className="text-gray-600 mt-1">{selectedClinicData.description}</p>
+                    )}
+
+                    {/* Rating */}
+                    {clinicStats[selectedClinic] && clinicStats[selectedClinic].review_count > 0 && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex">{renderStars(clinicStats[selectedClinic].average_rating)}</div>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {clinicStats[selectedClinic].average_rating.toFixed(1)}
+                        </span>
+                        <span className="text-gray-500">
+                          ({clinicStats[selectedClinic].review_count} {t('clinics.reviews')})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <p className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    {selectedClinicData.address}
+                  </p>
+                  {selectedClinicData.phone && (
+                    <p className="flex items-center gap-2 text-gray-600">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      {selectedClinicData.phone}
+                    </p>
+                  )}
+                  {selectedClinicData.email && (
+                    <p className="flex items-center gap-2 text-gray-600">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      {selectedClinicData.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-2 border-b border-gray-200">
+                <button
+                  onClick={() => setClinicDetailTab('info')}
+                  className={`px-4 py-2 font-medium transition-colors ${clinicDetailTab === 'info'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                  {t('clinics.info')}
+                </button>
+                <button
+                  onClick={() => setClinicDetailTab('services')}
+                  className={`px-4 py-2 font-medium transition-colors ${clinicDetailTab === 'services'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                  {t('nav.services')} ({clinicServices.length})
+                </button>
+                <button
+                  onClick={() => setClinicDetailTab('reviews')}
+                  className={`px-4 py-2 font-medium transition-colors ${clinicDetailTab === 'reviews'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                  {t('clinics.reviews')} ({clinicReviews.length})
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {clinicDetailTab === 'info' && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    {t('settings.operatingHours')}
+                  </h3>
+
+                  {selectedClinicData.working_hours ? (
+                    <div className="space-y-2">
+                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                        const hours = selectedClinicData.working_hours[day];
+                        const isToday = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][new Date().getDay() === 0 ? 6 : new Date().getDay() - 1] === day;
+
+                        return (
+                          <div
+                            key={day}
+                            className={`flex items-center justify-between py-2 px-3 rounded-lg ${isToday ? 'bg-blue-50' : ''}`}
+                          >
+                            <span className={`font-medium ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
+                              {t(`days.${day}`)}
+                              {isToday && <span className="ml-2 text-xs text-blue-500">({t('clinics.today')})</span>}
+                            </span>
+                            <span className={hours ? 'text-gray-600' : 'text-red-500'}>
+                              {hours ? `${hours.start} - ${hours.end}` : t('settings.closed')}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">{t('clinics.noHoursSet')}</p>
+                  )}
+                </div>
+              )}
+
+              {clinicDetailTab === 'services' && (
+                <div className="space-y-3">
+                  {clinicServices.length === 0 ? (
+                    <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                      <Briefcase className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500">{t('services.noServices')}</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {clinicServices.map((service) => (
+                        <div key={service.service_id} className="bg-white rounded-xl border border-gray-200 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center text-white">
+                              <Briefcase className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">{service.name}</h4>
+                              {service.description && (
+                                <p className="text-sm text-gray-500">{service.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 mt-2 text-sm">
+                                <span className="flex items-center gap-1 text-gray-500">
+                                  <Clock className="w-4 h-4" />
+                                  {service.duration} min
+                                </span>
+                                <span className="font-semibold text-green-600">
+                                  {service.price} {service.currency === 'EURO' ? '€' : 'LEI'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {clinicDetailTab === 'reviews' && (
+                <div className="space-y-4">
+                  {clinicReviews.length === 0 ? (
+                    <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                      <MessageSquare className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500">{t('clinics.noReviews')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {clinicReviews.map((review) => (
+                        <div key={review.review_id} className="bg-white rounded-xl border border-gray-200 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-semibold">
+                              {review.user_name?.charAt(0) || 'U'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-gray-900">{review.user_name}</h4>
+                                <span className="text-xs text-gray-500">{formatDate(review.created_at)}</span>
+                              </div>
+                              <div className="flex mt-1">{renderStars(review.rating)}</div>
+                              {review.comment && (
+                                <p className="text-gray-600 mt-2">{review.comment}</p>
+                              )}
+                              {review.admin_response && (
+                                <div className="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                                  <p className="text-sm text-gray-700">{review.admin_response}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ) : (
             /* Profile Settings Tab */
-            <div className="max-w-lg">
+            <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5 text-blue-600" />
                   {t('patientDashboard.personalData')}
                 </h3>
 
-                <form onSubmit={handleSaveProfile} className="space-y-4">
+                <form onSubmit={handleSaveProfile} className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.name')}
@@ -1183,6 +1430,12 @@ const PatientDashboard = () => {
                     )}
                     {profileSaved ? t('notifications.saveSuccess') : t('common.save')}
                   </button>
+
+                  {profileSaved && (
+                    <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm text-center">
+                      {t('notifications.profileUpdated')}
+                    </div>
+                  )}
                 </form>
               </div>
             </div>
