@@ -16,7 +16,7 @@ services:
       - MONGO_URL=mongodb://mongo:27017
       - DB_NAME=mediconnect_db
       - FRONTEND_URL=http://localhost:3000
-      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+      - CORS_ORIGINS=http://localhost:3000
       - RESEND_API_KEY=${RESEND_API_KEY}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
     env_file:

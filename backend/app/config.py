@@ -6,82 +6,84 @@ from dotenv import load_dotenv
 
 # --- 1. Setup Environment ---
 ROOT_DIR = Path(__file__).resolve().parent.parent
-ENV_PATH = ROOT_DIR / '.env'
+ENV_PATH = ROOT_DIR / ".env"
 load_dotenv(ENV_PATH)
 
 # --- 2. Database Config ---
-MONGO_URL = os.environ.get('MONGO_URL', '')
+MONGO_URL = os.environ.get("MONGO_URL")
 if not MONGO_URL:
-    raise ValueError("MONGO_URL environment variable is required")
+    raise RuntimeError("MONGO_URL environment variable is required")
 
-DB_NAME = os.environ.get('DB_NAME', 'mediconnect_db')
+DB_NAME = os.environ.get("DB_NAME", "mediconnect_db")
 
 # --- 3. Email Config ---
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'MediConnect <onboarding@resend.dev>')
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "MediConnect <onboarding@resend.dev>",
+)
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-
-# --- 4. Helper Functions for Parsing ---
-def _parse_list(value, default_list):
-    """Safely parses a string list from env vars (e.g. '["http://a.com"]')"""
-    if value is None:
-        return list(default_list)
+# --- 4. Helper Parsers ---
+def parse_list(value):
+    if not value:
+        return []
     if isinstance(value, (list, tuple)):
         return list(value)
     s = str(value).strip()
-    if s.startswith("[") and s.endswith("]"):
-        try:
-            parsed = json.loads(s)
-            if isinstance(parsed, list):
-                return [str(x).strip() for x in parsed if str(x).strip()]
-        except Exception:
-            pass
-    return [item.strip() for item in s.split(",") if item.strip()]
+    if s.startswith("["):
+        return json.loads(s)
+    return [v.strip() for v in s.split(",") if v.strip()]
 
-def _parse_bool(value, default):
-    """Safely parses boolean values from env vars"""
-    if isinstance(value, bool):
-        return value
+def parse_bool(value, default=False):
     if value is None:
         return default
-    low = str(value).strip().lower()
-    if low in ("true", "1", "yes", "y"):
-        return True
-    if low in ("false", "0", "no", "n"):
-        return False
-    return default
+    return str(value).lower() in ("1", "true", "yes", "y")
 
-# --- 5. CORS Configuration (The Fix) ---
+# --- 5. CORS Configuration (PRODUCTION SAFE) ---
 
-# Specific defaults for local development
-_default_origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+# CORS ORIGINS (REQUIRED)
+CORS_ORIGINS = parse_list(os.environ.get("CORS_ORIGINS"))
+if not CORS_ORIGINS:
+    raise RuntimeError("CORS_ORIGINS must be explicitly set")
+
+# Credentials
+CORS_ALLOW_CREDENTIALS = parse_bool(
+    os.environ.get("CORS_ALLOW_CREDENTIALS", "true"),
+    True,
+)
+
+# Methods (explicit)
+CORS_ALLOW_METHODS = parse_list(
+    os.environ.get("CORS_ALLOW_METHODS")
+) or [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
 ]
 
-# Load origins from .env, or use the safe defaults above
-_raw_origins = os.environ.get('CORS_ORIGINS')
-CORS_ORIGINS = _parse_list(_raw_origins, _default_origins)
+# Headers (explicit)
+CORS_ALLOW_HEADERS = parse_list(
+    os.environ.get("CORS_ALLOW_HEADERS")
+) or [
+    "Authorization",
+    "Content-Type",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+]
 
-# Handle Credentials
-_raw_allow_credentials = os.environ.get('CORS_ALLOW_CREDENTIALS', 'true')
-CORS_ALLOW_CREDENTIALS = _parse_bool(_raw_allow_credentials, True)
-
-# Handle Methods and Headers
-_raw_methods = os.environ.get('CORS_ALLOW_METHODS', '["*"]')
-_raw_headers = os.environ.get('CORS_ALLOW_HEADERS', '["*"]')
-CORS_ALLOW_METHODS = _parse_list(_raw_methods, ["*"])
-CORS_ALLOW_HEADERS = _parse_list(_raw_headers, ["*"])
-
-# SAFETY CHECK: If credentials are on, forbid wildcard '*' origins
-if CORS_ALLOW_CREDENTIALS and any(o == "*" for o in CORS_ORIGINS):
-    # Fallback to localhost if misconfigured
-    CORS_ORIGINS = _default_origins 
+# 🚨 Hard safety rule
+if CORS_ALLOW_CREDENTIALS and "*" in CORS_ORIGINS:
+    raise RuntimeError(
+        "CORS_ORIGINS cannot contain '*' when credentials are enabled"
+    )
 
 # --- 6. Logging ---
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("mediconnect")

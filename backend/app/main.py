@@ -13,11 +13,18 @@ from .routers import records as records_router
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,              # <--- Uses the smart list from config.py
-    allow_credentials=CORS_ALLOW_CREDENTIALS,# <--- Uses the True/False from config.py
-    allow_methods=CORS_ALLOW_METHODS,        # <--- Passed only once
-    allow_headers=CORS_ALLOW_HEADERS,        # <--- Passed only once
+CORSMiddleware,
+allow_origins=CORS_ORIGINS,
+allow_credentials=CORS_ALLOW_CREDENTIALS,
+allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH",
+        "OPTIONS",
+    ],
+allow_headers=CORS_ALLOW_HEADERS,
 )
 
 api_prefix = "/api"
