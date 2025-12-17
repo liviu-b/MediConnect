@@ -4,6 +4,11 @@ import logging
 import json
 from dotenv import load_dotenv
 
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    "http://localhost:3000",
+)
+
 # --- 1. Setup Environment ---
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT_DIR / ".env"

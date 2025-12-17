@@ -3,7 +3,6 @@ from datetime import datetime, timezone, timedelta
 import uuid
 import httpx
 import re
-
 from ..db import db
 from ..schemas.user import User, UserRegister, UserLogin, UserUpdate, ForgotPasswordRequest, ResetPasswordRequest, PasswordResetToken
 from ..schemas.clinic import Clinic, ClinicRegistration
