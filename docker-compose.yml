@@ -1,20 +1,10 @@
 services:
-  mongo:
-    image: mongo:6
-    restart: unless-stopped
-    volumes:
-      - mongo_data:/data/db
-    ports:
-      - "27017:27017"
-
   backend:
     build: ./backend
-    depends_on:
-      - mongo
     restart: unless-stopped
     environment:
-      - MONGO_URL=mongodb://mongo:27017
-      - DB_NAME=mediconnect_db
+      - MONGO_URL=${MONGO_URL}
+      - DB_NAME=${DB_NAME:-mediconnect_db}
       - FRONTEND_URL=http://localhost:3000
       - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
       - CORS_ALLOW_CREDENTIALS=true
@@ -40,6 +30,3 @@ services:
       - REACT_APP_BACKEND_URL=http://localhost:8000
     ports:
       - "3000:3000"
-
-volumes:
-  mongo_data:
