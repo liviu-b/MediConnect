@@ -26,16 +26,38 @@ const API = `${BACKEND_URL}/api`;
 
 axios.defaults.withCredentials = true;
 
+// In-memory/session storage for bearer fallback
+const TOKEN_STORAGE_KEY = 'session_token';
+
+// Attach Authorization header if we have a session_token (bearer fallback)
+axios.interceptors.request.use((config) => {
+  try {
+    const token = sessionStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token && !config.headers?.Authorization) {
+      config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
+    }
+  } catch (_) {}
+  config.withCredentials = true;
+  return config;
+});
+
+// Extract and store session_token from auth responses
+axios.interceptors.response.use((response) => {
+  try {
+    const data = response?.data;
+    if (data && typeof data === 'object' && data.session_token) {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, data.session_token);
+    }
+  } catch (_) {}
+  return response;
+});
+
 // API helper
 const api = {
-  get: (url, config = {}) =>
-    axios.get(`${API}${url}`, { ...config, withCredentials: true }),
-  post: (url, data, config = {}) =>
-    axios.post(`${API}${url}`, data, { ...config, withCredentials: true }),
-  put: (url, data, config = {}) =>
-    axios.put(`${API}${url}`, data, { ...config, withCredentials: true }),
-  delete: (url, config = {}) =>
-    axios.delete(`${API}${url}`, { ...config, withCredentials: true })
+  get: (url, config = {}) => axios.get(`${API}${url}`, { ...config, withCredentials: true }),
+  post: (url, data, config = {}) => axios.post(`${API}${url}`, data, { ...config, withCredentials: true }),
+  put: (url, data, config = {}) => axios.put(`${API}${url}`, data, { ...config, withCredentials: true }),
+  delete: (url, config = {}) => axios.delete(`${API}${url}`, { ...config, withCredentials: true })
 };
 
 // Auth Context
@@ -163,6 +185,10 @@ const AuthCallback = () => {
           const response = await api.post('/auth/session', {}, {
             headers: { 'X-Session-ID': sessionId }
           });
+          // Persist token from response just in case cookie is blocked
+          if (response?.data?.session_token) {
+            sessionStorage.setItem('session_token', response.data.session_token);
+          }
 
           sessionStorage.setItem('just_authenticated', 'true');
 
