@@ -499,6 +499,8 @@
     "frequency": "Frequency",
     "duration": "Duration",
     "confirmedAppointment": "Confirmed",
-    "scheduledAppointment": "Scheduled"
+    "scheduledAppointment": "Scheduled",
+    "profileTip": "Keep Your Profile Updated",
+    "profileTipDesc": "Accurate information helps medical staff provide better care and contact you when needed."
   }
 }

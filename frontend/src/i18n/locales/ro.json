@@ -498,6 +498,8 @@
     "frequency": "Frecvență",
     "duration": "Durată",
     "confirmedAppointment": "Confirmat",
-    "scheduledAppointment": "Programat"
+    "scheduledAppointment": "Programat",
+    "profileTip": "Păstrează Profilul Actualizat",
+    "profileTipDesc": "Informațiile corecte ajută personalul medical să ofere îngrijire mai bună și să te contacteze când este necesar."
   }
 }
