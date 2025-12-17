@@ -92,3 +92,12 @@ agenthub/agents/youtube/db
 
 # --- Mobile development ---
 android-sdk/
+
+
+# production deployment
+PRODUCTION_DEPLOYMENT.md
+PRODUCTION_CHECKLIST.md
+docker-compose.prod.yml
+deploy-production.sh
+/nginx
+/nginx.conf
