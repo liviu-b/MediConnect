@@ -11,9 +11,9 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     """
     Get dashboard statistics based on user role
     """
-    user_id = current_user.get("user_id")
-    role = current_user.get("role")
-    clinic_id = current_user.get("clinic_id")
+    user_id = current_user.user_id if hasattr(current_user, 'user_id') else current_user.get("user_id")
+    role = current_user.role if hasattr(current_user, 'role') else current_user.get("role")
+    clinic_id = current_user.clinic_id if hasattr(current_user, 'clinic_id') else current_user.get("clinic_id")
 
     stats = {}
 

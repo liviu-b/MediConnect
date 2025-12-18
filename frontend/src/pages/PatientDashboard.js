@@ -519,8 +519,13 @@ const PatientDashboard = () => {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+            {/* Home Button - Uses replace to skip history */}
             <button
-              onClick={() => changeTab('dashboard')}
+              onClick={() => {
+                navigate('/patient-dashboard', { replace: true });
+                setActiveTab('dashboard');
+                setSidebarOpen(false);
+              }}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -529,6 +534,9 @@ const PatientDashboard = () => {
               <Calendar className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm font-medium">{t('nav.dashboard')}</span>
             </button>
+            
+            {/* Separator */}
+            <div className="border-t border-gray-200 my-2"></div>
 
             <button
               onClick={() => changeTab('calendar')}

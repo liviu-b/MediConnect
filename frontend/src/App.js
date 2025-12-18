@@ -323,12 +323,12 @@ const Layout = ({ children }) => {
 
   const handleLogoClick = (e) => {
     e.preventDefault();
-    // Navigate to appropriate dashboard based on role
+    // Navigate to appropriate dashboard based on role - using replace for absolute navigation
     const dashboardPath = user?.role === 'DOCTOR' || user?.role === 'ASSISTANT'
       ? '/staff-dashboard'
       : '/dashboard';
     if (location.pathname !== dashboardPath) {
-      navigate(dashboardPath);
+      navigate(dashboardPath, { replace: true });
     }
     setSidebarOpen(false);
   };
@@ -336,7 +336,6 @@ const Layout = ({ children }) => {
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
 
   const navItems = [
-    { path: '/dashboard', labelKey: 'nav.dashboard', icon: Home },
     { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
     { path: '/appointments', labelKey: 'nav.appointments', icon: ClipboardList },
     { path: '/clinics', labelKey: 'nav.clinics', icon: Building2 },
@@ -404,6 +403,34 @@ const Layout = ({ children }) => {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+            {/* Home Button - Uses replace to skip history */}
+            <button
+              onClick={() => {
+                // Always navigate to role-specific dashboard
+                let dashboardPath = '/dashboard';
+                if (user?.role === 'USER') {
+                  dashboardPath = '/patient-dashboard';
+                } else if (user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') {
+                  dashboardPath = '/staff-dashboard';
+                } else if (user?.role === 'CLINIC_ADMIN') {
+                  dashboardPath = '/dashboard';
+                }
+                navigate(dashboardPath, { replace: true });
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
+                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Home className="w-5 h-5 flex-shrink-0" />
+              {!sidebarCollapsed && <span className="text-sm font-medium text-left leading-tight">{t('nav.dashboard')}</span>}
+            </button>
+            
+            {/* Separator */}
+            {!sidebarCollapsed && <div className="border-t border-gray-200 my-2"></div>}
+            
             {navItems.map(renderNavItem)}
           </nav>
 

@@ -172,11 +172,11 @@ const ClinicDetail = () => {
       {/* Back Button */}
       <button
         onClick={() => {
-          // Navigate back to appropriate page based on user role
+          // Navigate back to appropriate page based on user role - using replace to avoid history pollution
           if (user?.role === 'PATIENT') {
-            navigate('/patient-dashboard?tab=clinics');
+            navigate('/patient-dashboard?tab=clinics', { replace: true });
           } else {
-            navigate('/clinics');
+            navigate('/clinics', { replace: true });
           }
         }}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
