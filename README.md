@@ -92,18 +92,23 @@ The app will be available at:
 
 # NOTE:
 ## Day 1: Build everything
+```bash
 docker-compose up -d --build
+```
 
 ## Day 2-N: Just start containers
+```bash
 docker-compose up -d
+```
 
 ## Edit code → Save → See changes instantly!
 
 ## Only rebuild if you add new packages:
+```bash
 docker-compose up -d --build
+```
 
 # Quick Reference for Future Restarts
-
 ## Normal restart (keeps data):
 ```bash
 docker-compose restart
