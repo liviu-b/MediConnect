@@ -489,11 +489,6 @@ const Layout = ({ children }) => {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
-              
-              {/* Location Switcher - Show for clinic admins and staff */}
-              {(user?.role === 'CLINIC_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'LOCATION_ADMIN' || user?.role === 'STAFF' || user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') && (
-                <LocationSwitcher compact />
-              )}
 
               {/* User Profile Dropdown - Always visible */}
               <div className="relative">
@@ -511,7 +506,7 @@ const Layout = ({ children }) => {
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                     <p className="text-xs text-gray-500">
-                      {isClinicAdmin ? t('users.clinicAdmin') : t('users.patient')}
+                      {isClinicAdmin ? t('users.clinicAdmin') : isSuperAdmin ? t('users.superAdmin') : t('users.patient')}
                     </p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />

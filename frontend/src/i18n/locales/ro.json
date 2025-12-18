@@ -431,6 +431,7 @@
     "administrator": "Admin",
     "patient": "Pacient",
     "clinicAdmin": "Admin Centru Medical",
+    "superAdmin": "Super Admin",
     "makeAdmin": "Fă Admin",
     "makePatient": "Fă Pacient"
   },

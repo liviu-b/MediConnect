@@ -432,6 +432,7 @@
     "administrator": "Admin",
     "patient": "Patient",
     "clinicAdmin": "Medical Center Admin",
+    "superAdmin": "Super Admin",
     "makeAdmin": "Make Admin",
     "makePatient": "Make Patient"
   },
