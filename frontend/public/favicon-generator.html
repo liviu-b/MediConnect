@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Generator</title>
+</head>
+<body>
+    <canvas id="canvas" width="32" height="32"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Blue background
+        ctx.fillStyle = '#0ea5e9';
+        ctx.fillRect(0, 0, 32, 32);
+        
+        // White cross
+        ctx.fillStyle = 'white';
+        ctx.fillRect(14, 6, 4, 20);  // vertical
+        ctx.fillRect(6, 14, 20, 4);  // horizontal
+        
+        // Center circle
+        ctx.beginPath();
+        ctx.arc(16, 16, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Convert to ICO and download
+        canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicon.ico';
+            a.click();
+        });
+    </script>
+</body>
+</html>
