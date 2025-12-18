@@ -103,3 +103,4 @@ deploy-production.sh
 /nginx.conf
 CLEANUP_SUMMARY.md
 OPTION1_IMPLEMENTATION.md
+STATS_ENDPOINT_FIX.md

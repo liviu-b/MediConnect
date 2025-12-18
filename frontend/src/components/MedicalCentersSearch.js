@@ -296,7 +296,7 @@ const MedicalCentersSearch = () => {
                 </CardContent>
                 <CardFooter className="pt-3 border-t border-gray-100">
                   <Button
-                    onClick={() => navigate(`/clinics/${center.clinic_id}`, { replace: true })}
+                    onClick={() => navigate(`/clinics/${center.clinic_id}`)}
                     variant="outline"
                     size="sm"
                     className="w-full text-xs"
