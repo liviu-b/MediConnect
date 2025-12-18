@@ -6,16 +6,12 @@ services:
       - MONGO_URL=${MONGO_URL}
       - DB_NAME=${DB_NAME:-mediconnect_db}
       - FRONTEND_URL=http://localhost:3000
-      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
-      - CORS_ALLOW_CREDENTIALS=true
-      - CORS_ALLOW_METHODS=["GET","POST","PUT","PATCH","DELETE","OPTIONS"]
-      - CORS_ALLOW_HEADERS=["Authorization","Content-Type","Accept","Origin","X-Requested-With"]
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-MediConnect <onboarding@resend.dev>}
+      - CHOKIDAR_USEPOLLING=true # Necesar pentru detecția schimbărilor în Codespaces
     env_file:
       - ./.env
     volumes:
       - ./backend:/app
+      - /app/node_modules # Protejează modulele instalate în container
     ports:
       - "8000:8000"
 
@@ -28,5 +24,10 @@ services:
     restart: unless-stopped
     environment:
       - REACT_APP_BACKEND_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true # ESENȚIAL pentru React în containere virtuale
+      - WDS_SOCKET_PORT=0 # Ajută la evitarea erorilor de WebSocket în Codespaces
+    volumes:
+      - ./frontend:/app # Această linie lipsea și este vitală pentru real-time
+      - /app/node_modules # Protejează modulele instalate în container
     ports:
       - "3000:3000"

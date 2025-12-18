@@ -12,5 +12,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Run without auto-reload inside container
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Adaugă flag-ul --reload pentru a monitoriza schimbările de cod
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
