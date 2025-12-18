@@ -1,5 +1,3 @@
-# Here are your Instructions
-
 # MediConnect
 
 MediConnect is a comprehensive healthcare appointment and clinic management platform. It facilitates the connection between patients and medical clinics, allowing for seamless appointment booking, doctor management, and clinic administration.
@@ -205,6 +203,25 @@ mediconnect/
 │   └── package.json
 └── docker-compose.yml      # Container orchestration
 ```
+
+---
+
+## 📚 Documentation
+
+For comprehensive documentation, please refer to:
+
+- **[MEDICONNECT_OVERVIEW.md](MEDICONNECT_OVERVIEW.md)** - Complete project overview, features, and getting started guide
+- **[TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md)** - Detailed technical documentation, API reference, and architecture
+
+### Quick Links
+
+- **Getting Started**: See [Installation & Setup](#-installation--setup) above
+- **API Documentation**: http://localhost:8001/docs (when running)
+- **Multi-Location System**: See MEDICONNECT_OVERVIEW.md
+- **Database Schema**: See TECHNICAL_REFERENCE.md
+- **Development Guide**: See TECHNICAL_REFERENCE.md
+
+---
 
 ## 🛡️ License
 

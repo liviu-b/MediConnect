@@ -87,6 +87,9 @@ agenthub/agents/youtube/db
 *.deb
 *.dylib
 
+# --- Documentation archive ---
+docs_archive/
+
 # --- Build caches ---
 .cache/
 
