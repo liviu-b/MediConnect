@@ -12,6 +12,9 @@ from .routers import reviews as reviews_router
 from .routers import records as records_router
 from .routers import migrate as migrate_router
 from .routers import stats as stats_router
+from .routers import organizations as organizations_router
+from .routers import locations as locations_router
+from .routers import access_requests as access_requests_router
 
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
@@ -51,3 +54,6 @@ app.include_router(reviews_router.router, prefix=api_prefix)
 app.include_router(records_router.router, prefix=api_prefix)
 app.include_router(migrate_router.router, prefix=api_prefix)
 app.include_router(stats_router.router, prefix=api_prefix)
+app.include_router(organizations_router.router, prefix=api_prefix)
+app.include_router(locations_router.router, prefix=api_prefix)
+app.include_router(access_requests_router.router, prefix=api_prefix)

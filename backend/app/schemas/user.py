@@ -14,8 +14,15 @@ class User(BaseModel):
     picture: Optional[str] = None
     password_hash: Optional[str] = None
     auth_provider: str = "email"
-    role: str = "USER"
-    clinic_id: Optional[str] = None
+    role: str = "USER"  # USER, SUPER_ADMIN, LOCATION_ADMIN, STAFF, DOCTOR, ASSISTANT
+    
+    # Multi-location support
+    organization_id: Optional[str] = None  # Which organization they belong to
+    clinic_id: Optional[str] = None  # DEPRECATED: kept for backward compatibility
+    
+    # Location access control (None = access all locations in organization)
+    assigned_location_ids: Optional[list] = None
+    
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

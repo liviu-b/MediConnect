@@ -7,11 +7,17 @@ import uuid
 class StaffMember(BaseModel):
     model_config = ConfigDict(extra="ignore")
     staff_id: str = Field(default_factory=lambda: f"staff_{uuid.uuid4().hex[:12]}")
-    clinic_id: str
+    organization_id: str  # Organization they belong to
+    clinic_id: Optional[str] = None  # DEPRECATED: kept for backward compatibility
+    
     name: str
     email: str
     phone: Optional[str] = None
-    role: str = "RECEPTIONIST"
+    role: str = "RECEPTIONIST"  # RECEPTIONIST, NURSE, DOCTOR, ADMIN
+    
+    # Location access (None = can access all locations)
+    assigned_location_ids: Optional[list] = None
+    
     is_active: bool = True
     invitation_status: str = "PENDING"
     invitation_token: Optional[str] = None
