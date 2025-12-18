@@ -247,7 +247,7 @@ const ClinicDetail = () => {
               : 'text-gray-500 hover:text-gray-700'
             }`}
         >
-          {t('clinics.reviews').charAt(0).toUpperCase() + t('clinics.reviews').slice(1)} ({reviews.length})
+          {t('clinics.reviews')} ({reviews.length})
         </button>
       </div>
 

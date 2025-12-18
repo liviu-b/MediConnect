@@ -3,6 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 from .config import CORS_ORIGINS, CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
 from .routers import auth as auth_router
 from .routers import clinics as clinics_router
+from .routers import centers as centers_router
 from .routers import doctors as doctors_router
 from .routers import staff as staff_router
 from .routers import services as services_router
@@ -40,6 +41,7 @@ async def health():
 api_prefix = "/api"
 app.include_router(auth_router.router, prefix=api_prefix)
 app.include_router(clinics_router.router, prefix=api_prefix)
+app.include_router(centers_router.router, prefix=api_prefix)
 app.include_router(doctors_router.router, prefix=api_prefix)
 app.include_router(staff_router.router, prefix=api_prefix)
 app.include_router(services_router.router, prefix=api_prefix)

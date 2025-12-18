@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import MedicalCentersSearch from '../components/MedicalCentersSearch';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -884,76 +885,8 @@ const PatientDashboard = () => {
               )}
             </div>
           ) : activeTab === 'clinics' ? (
-            /* Clinics Tab */
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500">{t('patientDashboard.clinicsSubtitle')}</p>
-
-              {clinics.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-                  <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500">{t('clinics.noClinics')}</p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {clinics.map((clinic) => {
-                    const stats = clinicStats[clinic.clinic_id] || { average_rating: 0, review_count: 0 };
-
-                    return (
-                      <div
-                        key={clinic.clinic_id}
-                        onClick={() => {
-                          setActiveTab('clinicDetail');
-                          setSelectedClinic(clinic.clinic_id);
-                        }}
-                        className="bg-white rounded-xl border border-gray-200 p-4 cursor-pointer hover:shadow-lg hover:border-blue-200 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white flex-shrink-0">
-                              <Building2 className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900">{clinic.name}</h3>
-                              {clinic.description && (
-                                <p className="text-sm text-gray-500 line-clamp-1">{clinic.description}</p>
-                              )}
-
-                              {/* Rating */}
-                              {stats.review_count > 0 && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <div className="flex">{renderStars(stats.average_rating)}</div>
-                                  <span className="text-sm text-gray-600 ml-1">
-                                    {stats.average_rating.toFixed(1)} ({stats.review_count})
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        </div>
-
-                        <div className="mt-4 space-y-2 text-sm">
-                          <p className="flex items-center gap-2 text-gray-600">
-                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="truncate">{clinic.address}</span>
-                          </p>
-                          {clinic.phone && (
-                            <p className="flex items-center gap-2 text-gray-600">
-                              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                              {clinic.phone}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <span className="text-xs text-blue-600 font-medium">{t('clinics.viewDetails')} →</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            /* Clinics Tab - Medical Centers Search */
+            <MedicalCentersSearch />
           ) : activeTab === 'history' ? (
             /* History Tab */
             <div className="space-y-6">

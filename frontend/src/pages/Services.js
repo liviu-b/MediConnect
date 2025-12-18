@@ -28,11 +28,7 @@ const Services = () => {
   const [editingService, setEditingService] = useState(null);
   const [form, setForm] = useState({ 
     name: '', 
-    name_en: '', 
-    name_ro: '', 
     description: '', 
-    description_en: '', 
-    description_ro: '', 
     duration: 30, 
     price: 0, 
     currency: 'LEI' 
@@ -54,38 +50,13 @@ const Services = () => {
     }
   };
 
-  const getLocalizedName = (service) => {
-    // Prioritize current language, but show what's available
-    if (i18n.language === 'en') {
-      // For English: prefer name_en, fallback to name_ro or name
-      return service.name_en || service.name_ro || service.name || '';
-    } else {
-      // For Romanian: prefer name_ro, fallback to name_en or name
-      return service.name_ro || service.name_en || service.name || '';
-    }
-  };
-
-  const getLocalizedDescription = (service) => {
-    // Prioritize current language, but show what's available
-    if (i18n.language === 'en') {
-      // For English: prefer description_en, fallback to description_ro or description
-      return service.description_en || service.description_ro || service.description || '';
-    } else {
-      // For Romanian: prefer description_ro, fallback to description_en or description
-      return service.description_ro || service.description_en || service.description || '';
-    }
-  };
-
+  
   const handleOpenModal = (service = null) => {
     if (service) {
       setEditingService(service);
       setForm({
         name: service.name || '',
-        name_en: service.name_en || '',
-        name_ro: service.name_ro || '',
         description: service.description || '',
-        description_en: service.description_en || '',
-        description_ro: service.description_ro || '',
         duration: service.duration,
         price: service.price,
         currency: service.currency || 'LEI'
@@ -94,11 +65,7 @@ const Services = () => {
       setEditingService(null);
       setForm({ 
         name: '', 
-        name_en: '', 
-        name_ro: '', 
         description: '', 
-        description_en: '', 
-        description_ro: '', 
         duration: 30, 
         price: 0, 
         currency: 'LEI' 
@@ -112,11 +79,7 @@ const Services = () => {
     setEditingService(null);
     setForm({ 
       name: '', 
-      name_en: '', 
-      name_ro: '', 
       description: '', 
-      description_en: '', 
-      description_ro: '', 
       duration: 30, 
       price: 0, 
       currency: 'LEI' 
@@ -127,16 +90,10 @@ const Services = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      // Use English name as default name if not provided
-      const submitData = {
-        ...form,
-        name: form.name_en || form.name_ro || form.name
-      };
-
       if (editingService) {
-        await api.put(`/services/${editingService.service_id}`, submitData);
+        await api.put(`/services/${editingService.service_id}`, form);
       } else {
-        await api.post('/services', submitData);
+        await api.post('/services', form);
       }
       handleCloseModal();
       fetchServices();
@@ -213,17 +170,13 @@ const Services = () => {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {services.map((service) => {
-            const localizedName = getLocalizedName(service);
-            const localizedDescription = getLocalizedDescription(service);
-
-            return (
+          {services.map((service) => (
               <div key={service.service_id} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{localizedName}</h3>
-                    {localizedDescription && (
-                      <p className="text-xs text-gray-500 line-clamp-1 mt-1">{localizedDescription}</p>
+                    <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                    {service.description && (
+                      <p className="text-xs text-gray-500 line-clamp-1 mt-1">{service.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -251,8 +204,7 @@ const Services = () => {
                   </span>
                 </div>
               </div>
-            );
-          })}
+          ))}
         </div>
       )}
 
@@ -269,57 +221,30 @@ const Services = () => {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* Service Name - English */}
+              {/* Service Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Service Name (English) <span className="text-red-500">*</span>
+                  {t('services.serviceName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  value={form.name_en}
-                  onChange={(e) => setForm({ ...form, name_en: e.target.value })}
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Cardiology"
+                  placeholder={t('services.serviceName')}
                 />
               </div>
 
-              {/* Service Name - Romanian */}
+              {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nume Serviciu (Română) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.name_ro}
-                  onChange={(e) => setForm({ ...form, name_ro: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="ex. Cardiologie"
-                />
-              </div>
-
-              {/* Description - English */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('services.serviceDescription')}</label>
                 <textarea
-                  value={form.description_en}
-                  onChange={(e) => setForm({ ...form, description_en: e.target.value })}
-                  rows={2}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={3}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Description in English..."
-                />
-              </div>
-
-              {/* Description - Romanian */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descriere (Română)</label>
-                <textarea
-                  value={form.description_ro}
-                  onChange={(e) => setForm({ ...form, description_ro: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Descriere în română..."
+                  placeholder={t('services.serviceDescription')}
                 />
               </div>
 
