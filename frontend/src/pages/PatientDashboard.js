@@ -1347,154 +1347,118 @@ const PatientDashboard = () => {
               )}
             </div>
           ) : (
-            /* Profile Settings Tab */
-            <div className="max-w-4xl mx-auto">
-              <div className="grid md:grid-cols-3 gap-4">
-                {/* Left Column - Profile Card */}
-                <div className="md:col-span-1">
-                  <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-20">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-600 to-teal-500 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4">
-                        {user?.name?.charAt(0) || 'U'}
-                      </div>
-                      <h3 className="font-semibold text-gray-900 text-lg">{user?.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="flex items-center justify-center gap-2 text-blue-600">
-                          <User className="w-4 h-4" />
-                          <span className="text-sm font-medium">{t('patientDashboard.patient')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            /* Profile Settings Tab - High density full-width layout */
+            <div className="mx-auto">
+              {/* Header strip */}
+              <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-gray-900">{t('patientDashboard.personalData')}</h3>
                 </div>
-
-                {/* Right Column - Form */}
-                <div className="md:col-span-2">
-                  <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-lg">
-                      <Settings className="w-5 h-5 text-blue-600" />
-                      {t('patientDashboard.personalData')}
-                    </h3>
-
-                    <form onSubmit={handleSaveProfile} className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            {t('auth.name')}
-                          </label>
-                          <input
-                            type="text"
-                            value={profileForm.name}
-                            onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            placeholder={t('patientDashboard.namePlaceholder')}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            {t('auth.phone')}
-                          </label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                              type="tel"
-                              value={profileForm.phone}
-                              onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                              className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                              placeholder={t('auth.placeholders.phone')}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          {t('auth.email')}
-                        </label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <input
-                            type="email"
-                            value={user?.email || ''}
-                            disabled
-                            className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed text-gray-500"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {t('patientDashboard.emailCannotChange')}
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          {t('patientDashboard.dateOfBirth')}
-                        </label>
-                        <div className="relative">
-                          <Cake className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <input
-                            type="date"
-                            value={profileForm.date_of_birth}
-                            onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
-                            className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      {profileSaved && (
-                        <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          {t('notifications.profileUpdated')}
-                        </div>
-                      )}
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setProfileForm({
-                            name: user?.name || '',
-                            phone: user?.phone || '',
-                            address: user?.address || '',
-                            date_of_birth: user?.date_of_birth || ''
-                          })}
-                          className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all"
-                        >
-                          {t('common.cancel')}
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={savingProfile}
-                          className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {savingProfile ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : profileSaved ? (
-                            <CheckCircle className="w-5 h-5" />
-                          ) : (
-                            <Save className="w-5 h-5" />
-                          )}
-                          {profileSaved ? t('notifications.saveSuccess') : t('common.save')}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-
-                  {/* Additional Info Card */}
-                  <div className="bg-blue-50 rounded-xl border border-blue-100 p-4 mt-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <AlertCircle className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-blue-900 text-sm mb-1">{t('patientDashboard.profileTip')}</h4>
-                        <p className="text-xs text-blue-700">{t('patientDashboard.profileTipDesc')}</p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <User className="w-3.5 h-3.5 text-gray-400" />
+                  <span>{user?.email}</span>
                 </div>
               </div>
+
+              {/* Dense form container */}
+              <form onSubmit={handleSaveProfile} className="bg-white border border-gray-200 rounded-lg p-3">
+                {/* Identity row */}
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-12 md:col-span-5">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.name')}</label>
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="w-full px-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder={t('patientDashboard.namePlaceholder')}
+                    />
+                  </div>
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.phone')}</label>
+                    <div className="relative">
+                      <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder={t('auth.placeholders.phone')}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('patientDashboard.dateOfBirth')}</label>
+                    <div className="relative">
+                      <Cake className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="date"
+                        value={profileForm.date_of_birth}
+                        onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
+                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account row */}
+                <div className="grid grid-cols-12 gap-3 mt-3">
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.email')}</label>
+                    <div className="relative">
+                      <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="email"
+                        value={user?.email || ''}
+                        disabled
+                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-500 text-sm"
+                      />
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {t('patientDashboard.emailCannotChange')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setProfileForm({
+                      name: user?.name || '',
+                      phone: user?.phone || '',
+                      address: user?.address || '',
+                      date_of_birth: user?.date_of_birth || ''
+                    })}
+                    className="sm:w-40 w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="sm:w-48 w-full py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md text-sm font-semibold hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {savingProfile ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : profileSaved ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {profileSaved ? t('notifications.saveSuccess') : t('common.save')}
+                  </button>
+
+                  {profileSaved && (
+                    <div className="flex-1 py-2 px-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-xs flex items-center gap-2">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {t('notifications.profileUpdated')}
+                    </div>
+                  )}
+                </div>
+              </form>
             </div>
           )}
         </div>
