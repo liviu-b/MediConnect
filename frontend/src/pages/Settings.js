@@ -319,6 +319,8 @@ const Settings = () => {
                       onChange={(e) => updateWorkingHours(day, 'start', e.target.value)}
                       className="px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       step="900"
+                      pattern="[0-9]{2}:[0-9]{2}"
+                      required
                     />
                     <span className="text-gray-400 text-xs">-</span>
                     <input
@@ -327,6 +329,8 @@ const Settings = () => {
                       onChange={(e) => updateWorkingHours(day, 'end', e.target.value)}
                       className="px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                       step="900"
+                      pattern="[0-9]{2}:[0-9]{2}"
+                      required
                     />
                   </div>
                 )}

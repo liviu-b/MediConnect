@@ -55,25 +55,25 @@ const Services = () => {
   };
 
   const getLocalizedName = (service) => {
-    if (i18n.language === 'ro' && service.name_ro) {
-      return service.name_ro;
+    // Prioritize current language, but show what's available
+    if (i18n.language === 'en') {
+      // For English: prefer name_en, fallback to name_ro or name
+      return service.name_en || service.name_ro || service.name || '';
+    } else {
+      // For Romanian: prefer name_ro, fallback to name_en or name
+      return service.name_ro || service.name_en || service.name || '';
     }
-    if (i18n.language === 'en' && service.name_en) {
-      return service.name_en;
-    }
-    // Fallback to default name
-    return service.name;
   };
 
   const getLocalizedDescription = (service) => {
-    if (i18n.language === 'ro' && service.description_ro) {
-      return service.description_ro;
+    // Prioritize current language, but show what's available
+    if (i18n.language === 'en') {
+      // For English: prefer description_en, fallback to description_ro or description
+      return service.description_en || service.description_ro || service.description || '';
+    } else {
+      // For Romanian: prefer description_ro, fallback to description_en or description
+      return service.description_ro || service.description_en || service.description || '';
     }
-    if (i18n.language === 'en' && service.description_en) {
-      return service.description_en;
-    }
-    // Fallback to default description
-    return service.description;
   };
 
   const handleOpenModal = (service = null) => {
@@ -221,12 +221,7 @@ const Services = () => {
               <div key={service.service_id} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{localizedName}</h3>
-                      {(service.name_en || service.name_ro) && (
-                        <Globe className="w-3.5 h-3.5 text-blue-500" title="Multilingual" />
-                      )}
-                    </div>
+                    <h3 className="font-semibold text-gray-900">{localizedName}</h3>
                     {localizedDescription && (
                       <p className="text-xs text-gray-500 line-clamp-1 mt-1">{localizedDescription}</p>
                     )}
@@ -266,78 +261,66 @@ const Services = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white">
-              <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-gray-900">
-                  {editingService ? t('services.editService') : t('services.addService')}
-                </h2>
-                <Globe className="w-4 h-4 text-blue-500" />
-              </div>
+              <h2 className="font-semibold text-gray-900">
+                {editingService ? t('services.editService') : t('services.addService')}
+              </h2>
               <button onClick={handleCloseModal} className="p-1 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* Multilingual Service Names */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Globe className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-blue-900">{t('services.serviceName')} (Multilingual)</h3>
-                </div>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      English Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={form.name_en}
-                      onChange={(e) => setForm({ ...form, name_en: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="e.g., Cardiology"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Romanian Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={form.name_ro}
-                      onChange={(e) => setForm({ ...form, name_ro: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="ex. Cardiologie"
-                    />
-                  </div>
-                </div>
+              {/* Service Name - English */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Name (English) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name_en}
+                  onChange={(e) => setForm({ ...form, name_en: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Cardiology"
+                />
               </div>
 
-              {/* Multilingual Descriptions */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('services.serviceDescription')} (Optional)</h3>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">English Description</label>
-                    <textarea
-                      value={form.description_en}
-                      onChange={(e) => setForm({ ...form, description_en: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                      placeholder="Description in English..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Romanian Description</label>
-                    <textarea
-                      value={form.description_ro}
-                      onChange={(e) => setForm({ ...form, description_ro: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                      placeholder="Descriere în română..."
-                    />
-                  </div>
-                </div>
+              {/* Service Name - Romanian */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nume Serviciu (Română) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name_ro}
+                  onChange={(e) => setForm({ ...form, name_ro: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="ex. Cardiologie"
+                />
+              </div>
+
+              {/* Description - English */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+                <textarea
+                  value={form.description_en}
+                  onChange={(e) => setForm({ ...form, description_en: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Description in English..."
+                />
+              </div>
+
+              {/* Description - Romanian */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descriere (Română)</label>
+                <textarea
+                  value={form.description_ro}
+                  onChange={(e) => setForm({ ...form, description_ro: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Descriere în română..."
+                />
               </div>
 
               {/* Duration and Price */}

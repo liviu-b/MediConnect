@@ -36,3 +36,24 @@ async def update_clinic(clinic_id: str, data: ClinicUpdate, request: Request):
     await db.clinics.update_one({"clinic_id": clinic_id}, {"$set": update_data})
     updated = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
     return updated
+
+
+@router.get("/{clinic_id}/stats")
+async def get_clinic_stats(clinic_id: str):
+    clinic = await db.clinics.find_one({"clinic_id": clinic_id}, {"_id": 0})
+    if not clinic:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+
+    pipeline = [
+        {"$match": {"clinic_id": clinic_id}},
+        {"$group": {"_id": "$clinic_id", "average_rating": {"$avg": "$rating"}, "review_count": {"$sum": 1}}}
+    ]
+    agg = await db.reviews.aggregate(pipeline).to_list(length=1)
+    if agg:
+        average = float(agg[0].get("average_rating", 0))
+        count = int(agg[0].get("review_count", 0))
+    else:
+        average = 0.0
+        count = 0
+
+    return {"average_rating": round(average, 1), "review_count": count}
