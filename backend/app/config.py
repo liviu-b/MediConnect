@@ -78,6 +78,7 @@ CORS_ALLOW_HEADERS = parse_list(
     "Accept",
     "Origin",
     "X-Requested-With",
+    "X-Location-ID",
 ]
 
 if CORS_ALLOW_CREDENTIALS and "*" in CORS_ORIGINS:

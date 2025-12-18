@@ -9,7 +9,7 @@ services:
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
       - CORS_ALLOW_CREDENTIALS=true
       - CORS_ALLOW_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
-      - CORS_ALLOW_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With
+      - CORS_ALLOW_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Location-ID
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-MediConnect <onboarding@resend.dev>}
       - PYTHONUNBUFFERED=1
