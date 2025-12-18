@@ -102,6 +102,28 @@ docker-compose up -d
 ## Only rebuild if you add new packages:
 docker-compose up -d --build
 
+# Quick Reference for Future Restarts
+
+## Normal restart (keeps data):
+```bash
+docker-compose restart
+```
+
+## Stop and start (keeps data):
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+## Full cleanup and rebuild:
+ ```bash
+docker-compose down -v
+docker system prune -a --volumes -f
+docker-compose up --build -d
+```
+
+-----------------------------------
+
 ### Option 2: Manual Setup
 
 #### Backend Setup
