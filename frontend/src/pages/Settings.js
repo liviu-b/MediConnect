@@ -120,9 +120,11 @@ const Settings = () => {
       const res = await api.put(`/clinics/${user.clinic_id}`, payload);
       setClinic(res.data);
       setSaved(true);
+      // Keep the success message visible for 3 seconds
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       console.error('Error updating clinic:', err);
+      alert(t('notifications.error'));
     } finally {
       setSaving(false);
     }
@@ -377,6 +379,14 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {/* Success Message */}
+        {saved && (
+          <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            {t('settings.changesSavedSuccessfully')}
+          </div>
+        )}
 
         {/* Save Button */}
         <button

@@ -293,7 +293,8 @@
     "operatingHoursHelp": "Set the clinic's general opening hours. These hours will constrain when doctors can set their availability.",
     "closed": "Closed",
     "closedDay": "Closed",
-    "medicalCenterSettings": "Medical Center Settings"
+    "medicalCenterSettings": "Medical Center Settings",
+    "changesSavedSuccessfully": "Your changes have been saved successfully!"
   },
   "doctors": {
     "title": "Doctors",

@@ -292,7 +292,8 @@
     "operatingHoursHelp": "Setează programul general al clinicii. Aceste ore vor limita intervalele în care medicii pot seta disponibilitatea lor.",
     "closed": "Închis",
     "closedDay": "Închis",
-    "medicalCenterSettings": "Setări Centru Medical"
+    "medicalCenterSettings": "Setări Centru Medical",
+    "changesSavedSuccessfully": "Modificările tale au fost salvate cu succes!"
   },
   "doctors": {
     "title": "Medici",

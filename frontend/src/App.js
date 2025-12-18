@@ -336,7 +336,7 @@ const Layout = ({ children }) => {
       { path: '/doctors', labelKey: 'nav.doctors', icon: Stethoscope },
       { path: '/staff', labelKey: 'nav.staff', icon: UserCog },
       { path: '/services', labelKey: 'nav.services', icon: Briefcase },
-      { path: '/settings', labelKey: 'nav.settings', icon: Settings }
+      { path: '/settings', labelKey: 'settings.medicalCenterSettings', icon: Settings }
     );
   }
 
