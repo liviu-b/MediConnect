@@ -248,7 +248,7 @@ const Settings = () => {
           </div>
 
           <div className="grid grid-cols-12 gap-2 mt-2">
-            <div className="col-span-12 md:col-span-4">
+            <div className="col-span-12 md:col-span-6">
               <label className="block text-xs font-medium text-gray-600 mb-1">{t('clinics.phone')}</label>
               <div className="relative">
                 <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -260,7 +260,7 @@ const Settings = () => {
                 />
               </div>
             </div>
-            <div className="col-span-12 md:col-span-4">
+            <div className="col-span-12 md:col-span-6">
               <label className="block text-xs font-medium text-gray-600 mb-1">{t('clinics.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -272,15 +272,17 @@ const Settings = () => {
                 />
               </div>
             </div>
-            <div className="col-span-12 md:col-span-4">
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t('clinics.description')}</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={1}
-                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
-              />
-            </div>
+          </div>
+
+          <div className="mt-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('clinics.description')}</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={4}
+              className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y text-sm min-h-[100px]"
+              placeholder={t('settings.enterDescription')}
+            />
           </div>
         </div>
 
@@ -316,6 +318,7 @@ const Settings = () => {
                       value={form.working_hours[day].start}
                       onChange={(e) => updateWorkingHours(day, 'start', e.target.value)}
                       className="px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      step="900"
                     />
                     <span className="text-gray-400 text-xs">-</span>
                     <input
@@ -323,6 +326,7 @@ const Settings = () => {
                       value={form.working_hours[day].end}
                       onChange={(e) => updateWorkingHours(day, 'end', e.target.value)}
                       className="px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      step="900"
                     />
                   </div>
                 )}

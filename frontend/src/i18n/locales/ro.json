@@ -287,6 +287,7 @@
     "verified": "Verificat",
     "enterClinicName": "Introdu numele centrului medical",
     "enterAddress": "Introdu adresa centrului medical",
+    "enterDescription": "Descrie centrul medical, serviciile și specialitățile...",
     "allowBookingHelp": "Permite pacienților să programeze online",
     "operatingHours": "Program de Funcționare",
     "operatingHoursHelp": "Setează programul general al clinicii. Aceste ore vor limita intervalele în care medicii pot seta disponibilitatea lor.",

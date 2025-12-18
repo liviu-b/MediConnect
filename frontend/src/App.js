@@ -356,7 +356,7 @@ const Layout = ({ children }) => {
           }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
-        {!sidebarCollapsed && <span className="text-sm font-medium">{t(item.labelKey)}</span>}
+        {!sidebarCollapsed && <span className="text-sm font-medium text-left leading-tight">{t(item.labelKey)}</span>}
       </button>
     );
   };

@@ -288,6 +288,7 @@
     "verified": "Verified",
     "enterClinicName": "Enter your medical center name",
     "enterAddress": "Enter your medical center address",
+    "enterDescription": "Describe your medical center, services, and specialties...",
     "allowBookingHelp": "Allow patients to book appointments online",
     "operatingHours": "Operating Hours",
     "operatingHoursHelp": "Set the clinic's general opening hours. These hours will constrain when doctors can set their availability.",
