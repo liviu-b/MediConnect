@@ -92,16 +92,16 @@ The app will be available at:
   * **Backend API:** `http://localhost:8001`
   * **API Docs:** `http://localhost:8001/docs`
 
-### NOTE:
-# Day 1: Build everything
+# NOTE:
+## Day 1: Build everything
 docker-compose up -d --build
 
-# Day 2-N: Just start containers
+## Day 2-N: Just start containers
 docker-compose up -d
 
-# Edit code → Save → See changes instantly!
+## Edit code → Save → See changes instantly!
 
-# Only rebuild if you add new packages:
+## Only rebuild if you add new packages:
 docker-compose up -d --build
 
 ### Option 2: Manual Setup
