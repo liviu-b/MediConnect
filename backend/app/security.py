@@ -8,15 +8,9 @@ import os
 from .db import db
 from .schemas.user import User, UserSession
 
-# --------------------
-# Environment
-# --------------------
 ENV = os.environ.get("ENV", "development")
 IS_PRODUCTION = ENV == "production"
 
-# --------------------
-# Password hashing
-# --------------------
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
@@ -31,9 +25,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-# --------------------
-# Auth helpers
-# --------------------
 async def get_current_user(request: Request) -> Optional[User]:
     session_token = request.cookies.get("session_token")
 
@@ -58,7 +49,6 @@ async def get_current_user(request: Request) -> Optional[User]:
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-    # Expired → cleanup
     if expires_at < datetime.now(timezone.utc):
         await db.user_sessions.delete_one({"session_token": session_token})
         return None
@@ -94,14 +84,10 @@ async def require_staff_or_admin(request: Request) -> User:
     return user
 
 
-# --------------------
-# Session creation
-# --------------------
 async def create_session(user_id: str, response: Response) -> str:
     session_token = f"session_{secrets.token_hex(32)}"
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
 
-    # One active session per user
     await db.user_sessions.delete_many({"user_id": user_id})
 
     session = UserSession(

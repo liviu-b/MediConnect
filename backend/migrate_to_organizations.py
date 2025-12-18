@@ -1,22 +1,10 @@
-"""
-Migration script to convert existing clinics to the new Organization/Location model.
-
-This script:
-1. Creates an Organization for each existing Clinic (using CUI)
-2. Converts each Clinic to a Location
-3. Updates Users to link to Organizations instead of Clinics
-4. Updates Staff to link to Organizations
-5. Preserves all existing data and relationships
-
-Run this script ONCE before deploying the new multi-location feature.
-"""
+"""Migration script to convert existing clinics to the new Organization/Location model."""
 
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime, timezone
 import os
 
-# MongoDB connection
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("DB_NAME", "mediconnect")
 
@@ -28,7 +16,6 @@ async def migrate():
     db = client[DB_NAME]
     
     try:
-        # Step 1: Get all existing clinics
         clinics = await db.clinics.find({}, {"_id": 0}).to_list(1000)
         print(f"📋 Found {len(clinics)} clinics to migrate")
         
@@ -36,7 +23,6 @@ async def migrate():
             print("✅ No clinics to migrate. Database is ready for new model.")
             return
         
-        # Step 2: Create Organizations and Locations
         organizations_created = 0
         locations_created = 0
         
@@ -46,17 +32,14 @@ async def migrate():
             
             print(f"\n📍 Processing clinic: {clinic.get('name', clinic_id)}")
             
-            # Check if organization already exists for this CUI
             existing_org = await db.organizations.find_one({"cui": cui})
             
             if existing_org:
                 organization_id = existing_org['organization_id']
                 print(f"   ℹ️  Organization already exists: {organization_id}")
             else:
-                # Create new organization from clinic data
                 organization_id = f"org_{clinic_id.replace('clinic_', '')}"
                 
-                # Find the admin user for this clinic to set as super admin
                 admin_user = await db.users.find_one(
                     {"clinic_id": clinic_id, "role": "CLINIC_ADMIN"},
                     {"_id": 0}
@@ -88,10 +71,8 @@ async def migrate():
                 organizations_created += 1
                 print(f"   ✅ Created organization: {organization_id}")
             
-            # Create location from clinic
             location_id = f"loc_{clinic_id.replace('clinic_', '')}"
             
-            # Check if location already exists
             existing_location = await db.locations.find_one({"location_id": location_id})
             
             if not existing_location:
@@ -121,7 +102,7 @@ async def migrate():
                         "reminder_hours": 24
                     }),
                     "is_active": True,
-                    "is_primary": True,  # First location is primary
+                    "is_primary": True,
                     "created_at": clinic.get('created_at', datetime.now(timezone.utc).isoformat())
                 }
                 
@@ -131,16 +112,14 @@ async def migrate():
             else:
                 print(f"   ℹ️  Location already exists: {location_id}")
             
-            # Update users linked to this clinic
             users_updated = await db.users.update_many(
                 {"clinic_id": clinic_id},
                 {"$set": {
                     "organization_id": organization_id,
-                    "assigned_location_ids": None  # Full access to all locations
+                    "assigned_location_ids": None
                 }}
             )
             
-            # Update CLINIC_ADMIN role to SUPER_ADMIN
             await db.users.update_many(
                 {"clinic_id": clinic_id, "role": "CLINIC_ADMIN"},
                 {"$set": {"role": "SUPER_ADMIN"}}
@@ -148,12 +127,11 @@ async def migrate():
             
             print(f"   ✅ Updated {users_updated.modified_count} users")
             
-            # Update staff linked to this clinic
             staff_updated = await db.staff.update_many(
                 {"clinic_id": clinic_id},
                 {"$set": {
                     "organization_id": organization_id,
-                    "assigned_location_ids": None  # Full access to all locations
+                    "assigned_location_ids": None
                 }}
             )
             
@@ -166,7 +144,6 @@ async def migrate():
         print(f"   📊 Total clinics processed: {len(clinics)}")
         print(f"="*60)
         
-        # Step 3: Create indexes for new collections
         print("\n📑 Creating indexes...")
         
         await db.organizations.create_index("cui", unique=True)

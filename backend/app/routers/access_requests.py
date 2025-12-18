@@ -18,9 +18,7 @@ router = APIRouter(prefix="/access-requests", tags=["access-requests"])
 
 @router.get("")
 async def get_access_requests(request: Request, status: str = None):
-    """
-    Get all access requests for the organization (Super Admin only)
-    """
+    """Get all access requests for the organization (Super Admin only)"""
     user = await require_auth(request)
     
     if user.role != "SUPER_ADMIN":
@@ -48,9 +46,7 @@ async def get_access_requests(request: Request, status: str = None):
 
 @router.get("/{request_id}")
 async def get_access_request(request_id: str, request: Request):
-    """
-    Get a specific access request (Super Admin only)
-    """
+    """Get a specific access request (Super Admin only)"""
     user = await require_auth(request)
     
     if user.role != "SUPER_ADMIN":
@@ -82,9 +78,7 @@ async def approve_access_request(
     response: Response,
     background_tasks: BackgroundTasks
 ):
-    """
-    Approve an access request and create the user account (Super Admin only)
-    """
+    """Approve an access request and create the user account (Super Admin only)"""
     user = await require_auth(request)
     
     if user.role != "SUPER_ADMIN":
@@ -176,9 +170,6 @@ async def approve_access_request(
         }}
     )
     
-    # TODO: Send approval email to requester
-    # background_tasks.add_task(send_approval_email, access_request, new_user)
-    
     return {
         "message": "Access request approved successfully",
         "user_id": user_id,
@@ -193,9 +184,7 @@ async def reject_access_request(
     request: Request,
     background_tasks: BackgroundTasks
 ):
-    """
-    Reject an access request (Super Admin only)
-    """
+    """Reject an access request (Super Admin only)"""
     user = await require_auth(request)
     
     if user.role != "SUPER_ADMIN":
@@ -235,9 +224,6 @@ async def reject_access_request(
         }}
     )
     
-    # TODO: Send rejection email to requester
-    # background_tasks.add_task(send_rejection_email, access_request, data.rejection_reason)
-    
     return {
         "message": "Access request rejected successfully"
     }
@@ -245,10 +231,7 @@ async def reject_access_request(
 
 @router.delete("/{request_id}")
 async def delete_access_request(request_id: str, request: Request):
-    """
-    Delete an access request (Super Admin only)
-    Can only delete rejected or expired requests
-    """
+    """Delete an access request (Super Admin only). Can only delete rejected or expired requests."""
     user = await require_auth(request)
     
     if user.role != "SUPER_ADMIN":

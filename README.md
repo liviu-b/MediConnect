@@ -206,23 +206,6 @@ mediconnect/
 
 ---
 
-## 📚 Documentation
-
-For comprehensive documentation, please refer to:
-
-- **[MEDICONNECT_OVERVIEW.md](MEDICONNECT_OVERVIEW.md)** - Complete project overview, features, and getting started guide
-- **[TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md)** - Detailed technical documentation, API reference, and architecture
-
-### Quick Links
-
-- **Getting Started**: See [Installation & Setup](#-installation--setup) above
-- **API Documentation**: http://localhost:8001/docs (when running)
-- **Multi-Location System**: See MEDICONNECT_OVERVIEW.md
-- **Database Schema**: See TECHNICAL_REFERENCE.md
-- **Development Guide**: See TECHNICAL_REFERENCE.md
-
----
-
 ## 🛡️ License
 
 This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.

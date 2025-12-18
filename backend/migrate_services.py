@@ -1,28 +1,19 @@
-"""
-Migration script to add multilingual fields to existing services.
-This script will copy existing 'name' and 'description' fields to both 
-'name_en', 'name_ro', 'description_en', and 'description_ro' for backward compatibility.
-
-Run this script once after deploying the multilingual service feature.
-"""
+"""Migration script to add multilingual fields to existing services."""
 
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
-# Database configuration
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://mongodb:27017")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "mediconnect_db")
 
 
 async def migrate_services():
-    """Migrate existing services to support multilingual names"""
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DATABASE_NAME]
     
     print("Starting service migration...")
     
-    # Find all services that don't have multilingual fields
     services = await db.services.find({
         "$or": [
             {"name_en": {"$exists": False}},
@@ -37,8 +28,6 @@ async def migrate_services():
         name = service.get("name", "")
         description = service.get("description", "")
         
-        # Update with multilingual fields
-        # Copy existing name/description to both languages as a starting point
         update_data = {}
         
         if "name_en" not in service:
