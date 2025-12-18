@@ -171,7 +171,14 @@ const ClinicDetail = () => {
     <div className="space-y-4">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/clinics')}
+        onClick={() => {
+          // Navigate back to appropriate page based on user role
+          if (user?.role === 'PATIENT') {
+            navigate('/patient-dashboard?tab=clinics');
+          } else {
+            navigate('/clinics');
+          }
+        }}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />

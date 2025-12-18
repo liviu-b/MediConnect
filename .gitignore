@@ -102,3 +102,4 @@ deploy-production.sh
 /nginx
 /nginx.conf
 CLEANUP_SUMMARY.md
+OPTION1_IMPLEMENTATION.md

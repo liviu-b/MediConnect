@@ -306,6 +306,8 @@
   "settings": {
     "welcomeTitle": "Welcome to MediConnect!",
     "welcomeMessage": "Please complete your medical center profile by filling in the required fields below.",
+    "locationSuggestionTitle": "Help Patients Find You!",
+    "locationSuggestionMessage": "Add your county and city so patients can easily find your medical center when searching by location. This will increase your visibility!",
     "verified": "Verified",
     "enterClinicName": "Enter your medical center name",
     "enterAddress": "Enter your medical center address",

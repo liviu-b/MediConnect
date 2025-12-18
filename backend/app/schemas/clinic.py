@@ -10,6 +10,8 @@ class Clinic(BaseModel):
     cui: str
     name: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
+    county: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     description: Optional[str] = None
@@ -37,6 +39,8 @@ class Clinic(BaseModel):
 class ClinicUpdate(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None
+    city: Optional[str] = None
+    county: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     description: Optional[str] = None

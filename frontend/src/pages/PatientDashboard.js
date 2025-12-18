@@ -48,9 +48,22 @@ const PatientDashboard = () => {
   const location = useLocation();
   const calendarRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Get initial tab from URL search params or default to 'dashboard'
+  const getInitialTab = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || 'dashboard';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [loading, setLoading] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Update URL when tab changes
+  const changeTab = (tab) => {
+    setActiveTab(tab);
+    navigate(`/patient-dashboard?tab=${tab}`, { replace: true });
+  };
 
   // Helper to capitalize first letter (for Romanian months)
   const formatDateCapitalized = (date) => {
@@ -105,7 +118,8 @@ const PatientDashboard = () => {
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // Clinic detail state
+  // Clinic detail state - keep as local state, not in URL
+  const [viewingClinicDetail, setViewingClinicDetail] = useState(false);
   const [selectedClinicData, setSelectedClinicData] = useState(null);
   const [clinicServices, setClinicServices] = useState([]);
   const [clinicReviews, setClinicReviews] = useState([]);
@@ -144,11 +158,7 @@ const PatientDashboard = () => {
     }
   }, [selectedDoctor, selectedDate]);
 
-  useEffect(() => {
-    if (activeTab === 'clinicDetail' && selectedClinic) {
-      fetchClinicDetail(selectedClinic);
-    }
-  }, [activeTab, selectedClinic]);
+  // Removed old clinicDetail tab logic - now using local state
 
   const fetchData = async () => {
     try {
@@ -510,7 +520,7 @@ const PatientDashboard = () => {
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
             <button
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => changeTab('dashboard')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'dashboard'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -521,7 +531,7 @@ const PatientDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('calendar')}
+              onClick={() => changeTab('calendar')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'calendar'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -532,7 +542,7 @@ const PatientDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('clinics')}
+              onClick={() => changeTab('clinics')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'clinics'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -543,7 +553,7 @@ const PatientDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => changeTab('history')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -554,7 +564,7 @@ const PatientDashboard = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('profile')}
+              onClick={() => changeTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -590,24 +600,13 @@ const PatientDashboard = () => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2">
-                {activeTab === 'clinicDetail' && (
-                  <button
-                    onClick={() => setActiveTab('clinics')}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                )}
-                <h1 className="text-lg font-bold text-gray-900">
-                  {activeTab === 'dashboard' && t('patientDashboard.title')}
-                  {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
-                  {activeTab === 'clinics' && t('clinics.title')}
-                  {activeTab === 'clinicDetail' && (selectedClinicData?.name || t('clinics.details'))}
-                  {activeTab === 'history' && t('patientDashboard.myHistory')}
-                  {activeTab === 'profile' && t('patientDashboard.profileSettings')}
-                </h1>
-              </div>
+              <h1 className="text-lg font-bold text-gray-900">
+                {activeTab === 'dashboard' && t('patientDashboard.title')}
+                {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
+                {activeTab === 'clinics' && t('clinics.title')}
+                {activeTab === 'history' && t('patientDashboard.myHistory')}
+                {activeTab === 'profile' && t('patientDashboard.profileSettings')}
+              </h1>
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
@@ -641,7 +640,7 @@ const PatientDashboard = () => {
                     </div>
                     <button
                       onClick={() => {
-                        setActiveTab('profile');
+                        changeTab('profile');
                         setUserDropdownOpen(false);
                       }}
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"

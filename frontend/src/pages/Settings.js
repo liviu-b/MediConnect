@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth, api } from '../App';
+import { ROMANIAN_COUNTIES, getCitiesForCounty } from '../lib/ro-cities';
 import {
   Building2,
   MapPin,
@@ -30,6 +31,8 @@ const Settings = () => {
   const [form, setForm] = useState({
     name: '',
     address: '',
+    city: '',
+    county: '',
     phone: '',
     email: '',
     description: '',
@@ -78,6 +81,8 @@ const Settings = () => {
       setForm({
         name: res.data.name || '',
         address: res.data.address || '',
+        city: res.data.city || '',
+        county: res.data.county || '',
         phone: res.data.phone || '',
         email: res.data.email || '',
         description: res.data.description || '',
@@ -144,6 +149,7 @@ const Settings = () => {
   };
 
   const isProfileIncomplete = !clinic?.name || !clinic?.address;
+  const isLocationMissing = !clinic?.city || !clinic?.county;
 
   if (user?.role !== 'CLINIC_ADMIN') {
     return (
@@ -171,6 +177,21 @@ const Settings = () => {
             <div>
               <h2 className="font-bold text-base">{t('settings.welcomeTitle')}</h2>
               <p className="text-white/90 text-xs mt-0.5">{t('settings.welcomeMessage')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Missing Suggestion Banner */}
+      {!isNewClinic && !isProfileIncomplete && isLocationMissing && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 text-white mb-3">
+          <div className="flex items-start gap-2">
+            <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-bold text-base">{t('settings.locationSuggestionTitle') || 'Help Patients Find You!'}</h2>
+              <p className="text-white/90 text-xs mt-0.5">
+                {t('settings.locationSuggestionMessage') || 'Add your county and city so patients can easily find your medical center when searching by location. This will increase your visibility!'}
+              </p>
             </div>
           </div>
         </div>
@@ -244,6 +265,42 @@ const Settings = () => {
                   placeholder={t('settings.enterAddress')}
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-12 gap-2 mt-2">
+            <div className="col-span-12 md:col-span-6">
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('centers.countyLabel')}</label>
+              <select
+                value={form.county}
+                onChange={(e) => {
+                  setForm({ ...form, county: e.target.value, city: '' });
+                }}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                <option value="">{t('centers.countyLabel')}...</option>
+                {ROMANIAN_COUNTIES.map((county) => (
+                  <option key={county} value={county}>
+                    {county}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('centers.cityLabel')}</label>
+              <select
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                disabled={!form.county}
+                className="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                <option value="">{t('centers.cityLabel')}...</option>
+                {form.county && getCitiesForCounty(form.county).map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

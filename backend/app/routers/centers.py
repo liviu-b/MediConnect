@@ -9,27 +9,27 @@ router = APIRouter(prefix="/centers", tags=["centers"])
 
 @router.get("")
 async def get_centers(
-    search_term: Optional[str] = Query(None, description="Search by name or specialty"),
+    search_term: Optional[str] = Query(None, description="Search by name or description"),
     county_filter: Optional[str] = Query(None, description="Filter by county (use 'all' for national search)"),
     city_filter: Optional[str] = Query(None, description="Filter by city within county")
 ):
     """
-    Get medical centers with optional filtering by search term, county, and city.
+    Get medical centers (clinics) with optional filtering by search term, county, and city.
     
     - If county_filter is 'all' or empty: search nationally
     - If county_filter is specified: filter by that county
     - If city_filter is also specified: filter by both county and city
-    - search_term matches against name or specialty (case-insensitive)
+    - search_term matches against name or description (case-insensitive)
     """
     # Build the query filter
     query_filter = {}
     
-    # Handle search term (case-insensitive regex for name or specialty)
+    # Handle search term (case-insensitive regex for name or description)
     if search_term and search_term.strip():
         search_pattern = re.escape(search_term.strip())
         query_filter["$or"] = [
             {"name": {"$regex": search_pattern, "$options": "i"}},
-            {"specialty": {"$regex": search_pattern, "$options": "i"}}
+            {"description": {"$regex": search_pattern, "$options": "i"}}
         ]
     
     # Handle county filter
@@ -42,8 +42,8 @@ async def get_centers(
         # Exact match for city (case-insensitive)
         query_filter["city"] = {"$regex": f"^{re.escape(city_filter.strip())}$", "$options": "i"}
     
-    # Execute query
-    centers = await db.medical_centers.find(query_filter, {"_id": 0}).to_list(length=1000)
+    # Execute query on clinics collection
+    centers = await db.clinics.find(query_filter, {"_id": 0}).to_list(length=1000)
     
     return {
         "count": len(centers),

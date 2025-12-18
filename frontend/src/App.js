@@ -230,6 +230,17 @@ const ProtectedRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const location = useLocation();
 
+  const refreshUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      setUser(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -268,7 +279,7 @@ const ProtectedRoute = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [location.state]);
+  }, [location.pathname, location.state]);
 
   if (isAuthenticated === null) {
     return (
@@ -283,7 +294,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

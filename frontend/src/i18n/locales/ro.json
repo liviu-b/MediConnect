@@ -242,6 +242,27 @@
     "exportPdf": "Export PDF",
     "remove": "Elimină"
   },
+  "centers": {
+    "title": "Centre Medicale",
+    "subtitle": "Caută și filtrează centre medicale din România",
+    "searchTitle": "Caută Centre Medicale",
+    "searchDescription": "Găsește centre medicale după nume, specialitate sau locație",
+    "searchLabel": "Caută după nume sau specialitate",
+    "searchPlaceholder": "ex. Cardiologie, Dermatologie...",
+    "locationLabel": "Locație",
+    "countyLabel": "Județ",
+    "cityLabel": "Oraș",
+    "allRomania": "Toată România",
+    "allCities": "Toate Orașele",
+    "results": "Rezultate",
+    "filteringBy": "Filtrare după",
+    "noResults": "Nu s-au găsit centre medicale",
+    "noResultsDescription": "Încearcă să ajustezi criteriile de căutare sau filtrul de locație",
+    "noResultsInCity": "Nu s-au găsit clinici în {{city}}. Vrei să vezi rezultate din Toată România?",
+    "noResultsInLocation": "Nu s-au găsit clinici în {{location}}. Vrei să vezi rezultate din Toată România?",
+    "showAllRomania": "Arată Toată România",
+    "errorFetching": "Eroare la încărcarea centrelor medicale"
+  },
   "clinics": {
     "title": "Centre Medicale",
     "subtitle": "Facilități medicale",
@@ -284,6 +305,8 @@
   "settings": {
     "welcomeTitle": "Bine ai venit la MediConnect!",
     "welcomeMessage": "Te rugăm să completezi profilul centrului medical completând câmpurile obligatorii de mai jos.",
+    "locationSuggestionTitle": "Ajută Pacienții să Te Găsească!",
+    "locationSuggestionMessage": "Adaugă județul și orașul tău pentru ca pacienții să găsească ușor centrul tău medical când caută după locație. Acest lucru va crește vizibilitatea ta!",
     "verified": "Verificat",
     "enterClinicName": "Introdu numele centrului medical",
     "enterAddress": "Introdu adresa centrului medical",

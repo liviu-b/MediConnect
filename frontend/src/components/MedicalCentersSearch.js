@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../App';
-import { Search, MapPin, Phone, Mail, Building2, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Building2, AlertCircle, ExternalLink } from 'lucide-react';
 import { ROMANIAN_COUNTIES, getCitiesForCounty } from '../lib/ro-cities';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
 
 const MedicalCentersSearch = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [countyFilter, setCountyFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
@@ -258,7 +260,7 @@ const MedicalCentersSearch = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-base mb-0.5 truncate">{center.name}</CardTitle>
-                      <CardDescription className="text-xs">{center.specialty}</CardDescription>
+                      <CardDescription className="text-xs">{center.description || center.city}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -292,6 +294,17 @@ const MedicalCentersSearch = () => {
                     </p>
                   )}
                 </CardContent>
+                <CardFooter className="pt-3 border-t border-gray-100">
+                  <Button
+                    onClick={() => navigate(`/clinics/${center.clinic_id}`, { replace: true })}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    {t('clinics.viewDetails') || 'View Details'}
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>
