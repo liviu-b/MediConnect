@@ -40,7 +40,7 @@ __pycache__/
 venv/
 .venv/
 /backend/venv/
-/backend/.venv/
+/backend/.venv/migrate_services.py
 
 # --- Environment files (Securitate critică) ---
 .env

@@ -26,7 +26,11 @@ async def create_service(data: ServiceCreate, request: Request):
     service = Service(
         clinic_id=user.clinic_id,
         name=data.name,
+        name_en=data.name_en,
+        name_ro=data.name_ro,
         description=data.description,
+        description_en=data.description_en,
+        description_ro=data.description_ro,
         duration=data.duration,
         price=data.price,
         currency=data.currency
@@ -45,7 +49,11 @@ async def update_service(service_id: str, data: ServiceCreate, request: Request)
         raise HTTPException(status_code=404, detail="Service not found")
     update_data = {
         "name": data.name,
+        "name_en": data.name_en,
+        "name_ro": data.name_ro,
         "description": data.description,
+        "description_en": data.description_en,
+        "description_ro": data.description_ro,
         "duration": data.duration,
         "price": data.price,
         "currency": data.currency
