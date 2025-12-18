@@ -41,7 +41,7 @@ const Services = () => {
 
   useEffect(() => {
     fetchServices();
-  }, []);
+  }, [i18n.language]);
 
   const fetchServices = async () => {
     try {

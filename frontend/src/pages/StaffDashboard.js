@@ -793,6 +793,7 @@ const StaffDashboard = () => {
                                 value={period.start || '09:00'}
                                 onChange={(e) => updateAvailability(day, index, 'start', e.target.value)}
                                 className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                step="900"
                               />
                               <span className="text-gray-400">-</span>
                               <input
@@ -800,6 +801,7 @@ const StaffDashboard = () => {
                                 value={period.end || '17:00'}
                                 onChange={(e) => updateAvailability(day, index, 'end', e.target.value)}
                                 className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                step="900"
                               />
                               <button
                                 onClick={() => removePeriod(day, index)}
