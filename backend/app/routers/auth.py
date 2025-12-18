@@ -12,6 +12,20 @@ from ..services.email import send_password_reset_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Add OPTIONS handler for CORS preflight
+@router.options("/login")
+@router.options("/register")
+@router.options("/register-clinic")
+@router.options("/session")
+@router.options("/me")
+@router.options("/profile")
+@router.options("/logout")
+@router.options("/forgot-password")
+@router.options("/reset-password")
+@router.options("/validate-cui")
+async def options_handler():
+    return Response(status_code=200)
+
 
 @router.post("/register")
 async def register_user(data: UserRegister, response: Response):

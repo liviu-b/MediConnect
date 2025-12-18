@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from .config import CORS_ORIGINS, CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
 from .routers import auth as auth_router
 from .routers import clinics as clinics_router
@@ -18,7 +18,7 @@ from .routers import access_requests as access_requests_router
 
 app = FastAPI(title="MediConnect API", version="2.0.0")
 
-# Add CORS middleware
+# Add CORS middleware - must be added before routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -26,6 +26,7 @@ app.add_middleware(
     allow_methods=CORS_ALLOW_METHODS,
     allow_headers=CORS_ALLOW_HEADERS,
     expose_headers=["*"],
+    max_age=3600,
 )
 
 # Health check endpoint
