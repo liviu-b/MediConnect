@@ -536,7 +536,7 @@
     "errorFetching": "Failed to load organization details",
     "basicInfo": "Basic Information",
     "name": "Organization Name",
-    "namePlaceholder": "e.g., Medical Group XYZ",
+    "namePlaceholder": "If different from location name",
     "legalName": "Legal Name",
     "legalNamePlaceholder": "Official registered name",
     "description": "Description",

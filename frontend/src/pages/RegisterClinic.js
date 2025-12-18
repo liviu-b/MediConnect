@@ -405,16 +405,16 @@ const RegisterClinic = () => {
                   {/* Organization Name (Optional) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Organization Name (Optional)
+                      {t('organization.name')} ({t('auth.clinicDescription')})
                     </label>
-                    <p className="text-xs text-gray-500 mb-1">If different from location name</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('organization.namePlaceholder')}</p>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
                         value={form.organization_name}
                         onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
-                        placeholder="e.g., Medical Group XYZ"
+                        placeholder={t('organization.namePlaceholder')}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       />
                     </div>
@@ -423,9 +423,9 @@ const RegisterClinic = () => {
                   {/* Location Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Location Name <span className="text-red-500">*</span>
+                      {t('locations.locationName')} <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-xs text-gray-500 mb-1">Your clinic/branch name</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('locations.locationNamePlaceholder')}</p>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
@@ -433,7 +433,7 @@ const RegisterClinic = () => {
                         required
                         value={form.location_name}
                         onChange={(e) => setForm({ ...form, location_name: e.target.value })}
-                        placeholder="e.g., Clinica Timișoara"
+                        placeholder={t('locations.locationNamePlaceholder')}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       />
                     </div>
@@ -442,13 +442,13 @@ const RegisterClinic = () => {
                   {/* Location City */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City
+                      {t('locations.locationCity')}
                     </label>
                     <input
                       type="text"
                       value={form.location_city}
                       onChange={(e) => setForm({ ...form, location_city: e.target.value })}
-                      placeholder="e.g., Timișoara"
+                      placeholder={t('locations.cityPlaceholder')}
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>

@@ -79,6 +79,16 @@ const Doctors = () => {
     fetchDoctors();
   }, []);
 
+  // Listen for location changes
+  useEffect(() => {
+    const handleLocationChange = () => {
+      fetchDoctors(); // Refresh doctors when location changes
+    };
+    
+    window.addEventListener('locationChanged', handleLocationChange);
+    return () => window.removeEventListener('locationChanged', handleLocationChange);
+  }, []);
+
   const fetchDoctors = async () => {
     try {
       const res = await api.get('/doctors');

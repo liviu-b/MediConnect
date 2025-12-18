@@ -19,7 +19,8 @@ import {
   Save,
   CheckCircle,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -30,6 +31,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState(null);
 
   // Profile form
   const [profileForm, setProfileForm] = useState({
@@ -51,8 +53,33 @@ const Dashboard = () => {
     fetchData();
   }, [user]);
 
+  // Listen for location changes
+  useEffect(() => {
+    const handleLocationChange = () => {
+      fetchData(); // Refresh data when location changes
+    };
+    
+    window.addEventListener('locationChanged', handleLocationChange);
+    return () => window.removeEventListener('locationChanged', handleLocationChange);
+  }, []);
+
   const fetchData = async () => {
     try {
+      // Fetch current location if user has organization
+      let locationData = null;
+      if (user?.organization_id) {
+        try {
+          const activeLocationId = localStorage.getItem('active_location_id');
+          if (activeLocationId) {
+            const locRes = await api.get(`/locations/${activeLocationId}`);
+            locationData = locRes.data;
+          }
+        } catch (err) {
+          console.error('Error fetching location:', err);
+        }
+      }
+      setCurrentLocation(locationData);
+
       const [statsRes, aptsRes] = await Promise.all([
         api.get('/stats'),
         api.get('/appointments')
