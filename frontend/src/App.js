@@ -5,6 +5,7 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import "./i18n";
 import LanguageSwitcher from "./components/LanguageSwitcher";
+import LocationSwitcher from "./components/LocationSwitcher";
 import {
   Home,
   Calendar,
@@ -16,7 +17,9 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  UserPlus,
+  MapPin
 } from "lucide-react";
 import { ChevronDown } from 'lucide-react';
 
@@ -29,12 +32,18 @@ axios.defaults.withCredentials = true;
 // In-memory/session storage for bearer fallback
 const TOKEN_STORAGE_KEY = 'session_token';
 
-// Attach Authorization header if we have a session_token (bearer fallback)
+// Attach Authorization header and Location context if available
 axios.interceptors.request.use((config) => {
   try {
     const token = sessionStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(TOKEN_STORAGE_KEY);
     if (token && !config.headers?.Authorization) {
       config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
+    }
+    
+    // Add active location context to API calls
+    const activeLocationId = localStorage.getItem('active_location_id');
+    if (activeLocationId && !config.headers?.['X-Location-ID']) {
+      config.headers = { ...(config.headers || {}), 'X-Location-ID': activeLocationId };
     }
   } catch (_) {}
   config.withCredentials = true;
@@ -334,6 +343,7 @@ const Layout = ({ children }) => {
   };
 
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const navItems = [
     { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
@@ -341,7 +351,15 @@ const Layout = ({ children }) => {
     { path: '/clinics', labelKey: 'nav.clinics', icon: Building2 },
   ];
 
-  if (isClinicAdmin) {
+  // Add Super Admin specific items
+  if (isSuperAdmin) {
+    navItems.push(
+      { path: '/locations', labelKey: 'locations.manageLocations', icon: MapPin },
+      { path: '/access-requests', labelKey: 'Access Requests', icon: UserPlus }
+    );
+  }
+
+  if (isClinicAdmin || isSuperAdmin) {
     navItems.push(
       { path: '/doctors', labelKey: 'nav.doctors', icon: Stethoscope },
       { path: '/staff', labelKey: 'nav.staff', icon: UserCog },
@@ -471,6 +489,11 @@ const Layout = ({ children }) => {
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
+              
+              {/* Location Switcher - Show for clinic admins and staff */}
+              {(user?.role === 'CLINIC_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'LOCATION_ADMIN' || user?.role === 'STAFF' || user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') && (
+                <LocationSwitcher compact />
+              )}
 
               {/* User Profile Dropdown - Always visible */}
               <div className="relative">
@@ -545,6 +568,9 @@ import ResetPassword from "./pages/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import StaffDashboard from "./pages/StaffDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
+import AccessRequestSent from "./pages/AccessRequestSent";
+import AccessRequests from "./pages/AccessRequests";
+import Locations from "./pages/Locations";
 
 // App Router
 function AppRouter() {
@@ -564,6 +590,7 @@ function AppRouter() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/accept-invitation" element={<AcceptInvitation />} />
+      <Route path="/access-request-sent" element={<AccessRequestSent />} />
       <Route
         path="/staff-dashboard"
         element={
@@ -657,6 +684,22 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <Layout><SettingsPage /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/access-requests"
+        element={
+          <ProtectedRoute>
+            <Layout><AccessRequests /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/locations"
+        element={
+          <ProtectedRoute>
+            <Layout><Locations /></Layout>
           </ProtectedRoute>
         }
       />

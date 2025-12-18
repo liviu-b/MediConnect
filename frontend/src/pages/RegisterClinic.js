@@ -16,9 +16,16 @@ const RegisterClinic = () => {
   
   const [form, setForm] = useState({
     cui: '',
+    organization_name: '',
+    location_name: '',
+    location_city: '',
+    location_county: '',
+    location_address: '',
+    location_phone: '',
     admin_name: '',
     admin_email: '',
     admin_password: '',
+    admin_phone: '',
     confirm_password: ''
   });
   const [loginForm, setLoginForm] = useState({
@@ -49,7 +56,8 @@ const RegisterClinic = () => {
     
     setCuiStatus('checking');
     try {
-      const res = await api.post(`/auth/validate-cui?cui=${cui}`);
+      // Use new organizations endpoint
+      const res = await api.post(`/organizations/validate-cui?cui=${cui}`);
       if (res.data.valid && res.data.available) {
         setCuiStatus('valid');
       } else if (res.data.valid && !res.data.available) {
@@ -92,21 +100,52 @@ const RegisterClinic = () => {
       return;
     }
 
-    if (!cuiChecked || cuiStatus !== 'valid') {
+    if (!cuiChecked || (cuiStatus !== 'valid' && cuiStatus !== 'taken')) {
       setError(t('auth.cuiInvalid'));
+      return;
+    }
+
+    if (!form.location_name) {
+      setError('Location name is required');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/register-clinic', {
+      // Use new organizations endpoint
+      const res = await api.post('/organizations/register', {
         cui: form.cui,
+        organization_name: form.organization_name || form.location_name,
+        location_name: form.location_name,
+        location_city: form.location_city,
+        location_county: form.location_county,
+        location_address: form.location_address,
+        location_phone: form.location_phone,
         admin_name: form.admin_name,
         admin_email: form.admin_email,
-        admin_password: form.admin_password
+        admin_password: form.admin_password,
+        admin_phone: form.admin_phone
       });
-      sessionStorage.setItem('just_authenticated', 'true');
-      navigate('/settings', { replace: true, state: { user: res.data.user, isNewClinic: true } });
+
+      // Handle two scenarios
+      if (res.data.status === 'success') {
+        // New organization created - log in user
+        sessionStorage.setItem('just_authenticated', 'true');
+        navigate('/dashboard', { 
+          replace: true, 
+          state: { user: res.data.user, isNewOrganization: true } 
+        });
+      } else if (res.data.status === 'access_request_created') {
+        // Access request created - show confirmation
+        navigate('/access-request-sent', { 
+          replace: true,
+          state: { 
+            requestId: res.data.request_id,
+            organizationName: res.data.organization_name,
+            email: form.admin_email
+          }
+        });
+      }
     } catch (err) {
       setError(err.response?.data?.detail || t('notifications.error'));
     } finally {
@@ -363,6 +402,57 @@ const RegisterClinic = () => {
                     )}
                   </div>
 
+                  {/* Organization Name (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Organization Name (Optional)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">If different from location name</p>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={form.organization_name}
+                        onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
+                        placeholder="e.g., Medical Group XYZ"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location Name <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">Your clinic/branch name</p>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        required
+                        value={form.location_name}
+                        onChange={(e) => setForm({ ...form, location_name: e.target.value })}
+                        placeholder="e.g., Clinica Timișoara"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location City */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={form.location_city}
+                      onChange={(e) => setForm({ ...form, location_city: e.target.value })}
+                      placeholder="e.g., Timișoara"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+
                   {/* Admin Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -454,11 +544,11 @@ const RegisterClinic = () => {
 
                   <button
                     type="submit"
-                    disabled={loading || cuiStatus !== 'valid'}
+                    disabled={loading || (cuiStatus !== 'valid' && cuiStatus !== 'taken')}
                     className="w-full py-2.5 bg-gradient-to-r from-teal-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {t('auth.registerClinic')}
+                    {cuiStatus === 'taken' ? 'Request Access' : t('auth.registerClinic')}
                   </button>
                 </form>
               </>

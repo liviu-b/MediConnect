@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useAuth, api } from '../App';
 import { ROMANIAN_COUNTIES, getCitiesForCounty } from '../lib/ro-cities';
+import OrganizationSettings from '../components/OrganizationSettings';
 import {
   Building2,
   MapPin,
@@ -24,6 +25,8 @@ const Settings = () => {
   const { user } = useAuth();
   const location = useLocation();
   const isNewClinic = location.state?.isNewClinic;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [activeTab, setActiveTab] = useState('location');
   const [clinic, setClinic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -151,6 +154,12 @@ const Settings = () => {
   const isProfileIncomplete = !clinic?.name || !clinic?.address;
   const isLocationMissing = !clinic?.city || !clinic?.county;
 
+  // Super Admin sees Organization Settings
+  if (isSuperAdmin) {
+    return <OrganizationSettings />;
+  }
+
+  // Only CLINIC_ADMIN can access location settings
   if (user?.role !== 'CLINIC_ADMIN') {
     return (
       <div className="text-center py-12">
