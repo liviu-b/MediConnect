@@ -304,7 +304,9 @@ const ProtectedRoute = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, setUser, refreshUser }}>
-      {children}
+      <PermissionProvider user={user}>
+        {children}
+      </PermissionProvider>
     </AuthContext.Provider>
   );
 };
@@ -566,6 +568,8 @@ import PatientDashboard from "./pages/PatientDashboard";
 import AccessRequestSent from "./pages/AccessRequestSent";
 import AccessRequests from "./pages/AccessRequests";
 import Locations from "./pages/Locations";
+import { PermissionProvider } from "./contexts/PermissionContext";
+import DashboardRouter from "./components/DashboardRouter";
 
 // App Router
 function AppRouter() {
@@ -586,6 +590,14 @@ function AppRouter() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/accept-invitation" element={<AcceptInvitation />} />
       <Route path="/access-request-sent" element={<AccessRequestSent />} />
+      <Route 
+        path="/dashboard-router" 
+        element={
+          <ProtectedRoute>
+            <DashboardRouter user={null} />
+          </ProtectedRoute>
+        } 
+      />
       <Route
         path="/staff-dashboard"
         element={

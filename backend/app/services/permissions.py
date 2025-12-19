@@ -64,6 +64,7 @@ class PermissionService:
         scope = permission_config.get("scope", "location")
         
         # CRITICAL: Check view-only constraint for admins on appointments
+        # But allow doctors to manage their own appointments
         if permission.startswith("appointments:") and permission != PermissionConstants.APPOINTMENTS_VIEW:
             if user.role in [UserRole.SUPER_ADMIN, UserRole.LOCATION_ADMIN]:
                 # Admins cannot perform operational appointment actions
@@ -152,7 +153,8 @@ class PermissionService:
         if location_id:
             return location_id in user.assigned_location_ids
         
-        return True
+        # If no specific location_id provided, allow if user has any assigned locations
+        return len(user.assigned_location_ids) > 0
     
     @staticmethod
     async def _check_organization_access(user: User, organization_id: Optional[str]) -> bool:

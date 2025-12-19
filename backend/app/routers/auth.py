@@ -59,15 +59,87 @@ async def login_user(data: UserLogin, response: Response):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user_doc.get('is_active', True):
         raise HTTPException(status_code=401, detail="Account is disabled")
+    
+    # Update last login timestamp
+    await db.users.update_one(
+        {"user_id": user_doc['user_id']},
+        {"$set": {"last_login_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
     session_token = await create_session(user_doc['user_id'], response)
     user_data = {k: v for k, v in user_doc.items() if k != 'password_hash'}
+    
+    # Determine redirect based on role and location count
     role = user_doc.get('role', 'USER')
-    if role == 'CLINIC_ADMIN':
-        user_data['redirect_to'] = '/dashboard'
-    elif role in ['DOCTOR', 'ASSISTANT']:
+    organization_id = user_doc.get('organization_id')
+    
+    if role == 'SUPER_ADMIN' and organization_id:
+        # Check number of locations in organization
+        location_count = await db.locations.count_documents({
+            "organization_id": organization_id,
+            "is_active": True
+        })
+        
+        if location_count > 1:
+            # Multi-location: Show global dashboard
+            user_data['redirect_to'] = '/dashboard'
+            user_data['dashboard_type'] = 'global'
+        else:
+            # Single location: Direct to location dashboard
+            location = await db.locations.find_one({
+                "organization_id": organization_id,
+                "is_active": True
+            }, {"_id": 0})
+            if location:
+                user_data['redirect_to'] = f"/location/{location['location_id']}/dashboard"
+                user_data['dashboard_type'] = 'location'
+                user_data['primary_location_id'] = location['location_id']
+            else:
+                user_data['redirect_to'] = '/dashboard'
+                user_data['dashboard_type'] = 'global'
+        
+        user_data['location_count'] = location_count
+    
+    elif role == 'LOCATION_ADMIN':
+        # Location admin goes to their assigned location
+        assigned_locations = user_doc.get('assigned_location_ids', [])
+        if assigned_locations:
+            primary_location = assigned_locations[0]
+            user_data['redirect_to'] = f"/location/{primary_location}/dashboard"
+            user_data['dashboard_type'] = 'location'
+            user_data['primary_location_id'] = primary_location
+        else:
+            user_data['redirect_to'] = '/dashboard'
+            user_data['dashboard_type'] = 'location'
+    
+    elif role in ['RECEPTIONIST', 'DOCTOR', 'ASSISTANT']:
+        # Staff goes to staff dashboard
         user_data['redirect_to'] = '/staff-dashboard'
-    else:
+        user_data['dashboard_type'] = 'staff'
+        
+        # Include primary location if available
+        assigned_locations = user_doc.get('assigned_location_ids', [])
+        if assigned_locations:
+            user_data['primary_location_id'] = assigned_locations[0]
+    
+    elif role == 'CLINIC_ADMIN':
+        # Legacy support
         user_data['redirect_to'] = '/dashboard'
+        user_data['dashboard_type'] = 'admin'
+    
+    else:
+        # Regular user (patient)
+        user_data['redirect_to'] = '/patient-dashboard'
+        user_data['dashboard_type'] = 'patient'
+    
+    # Include accessible locations
+    if role in ['SUPER_ADMIN', 'LOCATION_ADMIN', 'RECEPTIONIST', 'DOCTOR', 'ASSISTANT']:
+        from ..services.permissions import PermissionService
+        from ..schemas.user import User
+        user_obj = User(**user_doc)
+        accessible_locations = await PermissionService.get_accessible_locations(user_obj)
+        user_data['accessible_location_ids'] = accessible_locations
+    
     return {"user": user_data, "session_token": session_token}
 
 

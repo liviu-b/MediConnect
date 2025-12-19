@@ -242,7 +242,14 @@
     "prescriptionSuccess": "Prescription created successfully",
     "recordSuccess": "Medical document created successfully",
     "exportPdf": "Export PDF",
-    "remove": "Remove"
+    "remove": "Remove",
+    "viewOnly": "View Only",
+    "adminViewOnly": "Admin View Only",
+    "adminViewOnlyTooltip": "Admins have view-only access to appointments. Only receptionists can accept/reject appointments.",
+    "noPermissionToAccept": "You don't have permission to accept appointments. Only receptionists can perform this action.",
+    "noPermissionToReject": "You don't have permission to reject appointments. Only receptionists and doctors can perform this action.",
+    "locations": "Locations",
+    "invitedBy": "Invited by"
   },
   "centers": {
     "title": "Medical Centers",

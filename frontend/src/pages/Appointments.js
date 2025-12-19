@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
+import { usePermissions } from '../contexts/PermissionContext';
 import {
   CalendarDays,
   Clock,
@@ -14,12 +15,21 @@ import {
   AlertTriangle,
   History,
   Pill,
-  FileEdit
+  FileEdit,
+  Lock,
+  Eye
 } from 'lucide-react';
 
 const Appointments = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { 
+    canAcceptAppointments, 
+    canModifyAppointments, 
+    isAdmin,
+    hasPermission 
+  } = usePermissions();
+  
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -99,15 +109,30 @@ const Appointments = () => {
     }
   };
   const handleAcceptAppointment = async (id) => {
+    // Check permission before accepting
+    if (!canAcceptAppointments()) {
+      alert(t('appointments.noPermissionToAccept'));
+      return;
+    }
+    
     try {
-      await api.put(`/appointments/${id}`, {
-        status: 'CONFIRMED'
-      });
+      await api.post(`/appointments/${id}/accept`);
       fetchAppointments();
     } catch (err) {
       console.error('Error accepting appointment:', err);
-      alert(t('notifications.error'));
+      const errorMsg = err.response?.data?.detail || t('notifications.error');
+      alert(errorMsg);
     }
+  };
+  
+  const handleRejectAppointment = async (apt) => {
+    // Check permission before rejecting
+    if (!hasPermission('appointments:reject')) {
+      alert(t('appointments.noPermissionToReject'));
+      return;
+    }
+    
+    openCancelModal(apt);
   };
   const viewPatientHistory = async (apt) => {
     setSelectedAppointmentForHistory(apt);
@@ -258,23 +283,51 @@ const Appointments = () => {
                     {t(`appointments.${apt.status.toLowerCase()}`)}
                   </span>
                   <div className="flex gap-1">
-                    {/* Admin actions - Accept/Reject for SCHEDULED appointments */}
-                    {isClinicAdmin && apt.status === 'SCHEDULED' && (
+                    {/* View-Only Indicator for Admins */}
+                    {isAdmin() && apt.status === 'SCHEDULED' && !canAcceptAppointments() && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                        <Eye className="w-3 h-3 text-amber-600" />
+                        <span className="text-xs text-amber-700 font-medium">
+                          {t('appointments.viewOnly')}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Accept/Reject actions - Only for users with permission */}
+                    {apt.status === 'SCHEDULED' && (
                       <>
-                        <button
-                          onClick={() => handleAcceptAppointment(apt.appointment_id)}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title={t('appointments.acceptAppointment')}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openCancelModal(apt)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title={t('appointments.rejectAppointment')}
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
+                        {canAcceptAppointments() ? (
+                          <>
+                            <button
+                              onClick={() => handleAcceptAppointment(apt.appointment_id)}
+                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title={t('appointments.acceptAppointment')}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRejectAppointment(apt)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title={t('appointments.rejectAppointment')}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : isAdmin() && (
+                          <div className="relative group">
+                            <button
+                              disabled
+                              className="p-1.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed"
+                              title={t('appointments.adminViewOnly')}
+                            >
+                              <Lock className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                              {t('appointments.adminViewOnlyTooltip')}
+                              <div className="absolute top-full right-4 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
 

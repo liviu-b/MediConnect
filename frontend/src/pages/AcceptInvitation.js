@@ -31,7 +31,7 @@ const AcceptInvitation = () => {
 
   const fetchInvitationDetails = async () => {
     try {
-      const res = await api.get(`/staff/invitation/${token}`);
+      const res = await api.get(`/invitations/token/${token}`);
       setInvitation(res.data);
     } catch (err) {
       setError(err.response?.data?.detail || t('invitation.invalidLink'));
@@ -56,14 +56,14 @@ const AcceptInvitation = () => {
 
     setSubmitting(true);
     try {
-      const res = await api.post('/staff/accept-invitation', {
+      const res = await api.post('/invitations/accept', {
         token,
         password: form.password
       });
       setSuccess(true);
       sessionStorage.setItem('just_authenticated', 'true');
 
-      // Redirect to staff dashboard after 2 seconds
+      // Redirect based on response
       setTimeout(() => {
         const redirectTo = res.data.user.redirect_to || '/staff-dashboard';
         navigate(redirectTo, { replace: true, state: { user: res.data.user } });
@@ -81,7 +81,9 @@ const AcceptInvitation = () => {
       'ASSISTANT': t('staff.assistant'),
       'RECEPTIONIST': t('staff.receptionist'),
       'NURSE': t('staff.nurse'),
-      'ADMIN': t('staff.admin')
+      'ADMIN': t('staff.admin'),
+      'LOCATION_ADMIN': 'Location Admin',
+      'SUPER_ADMIN': 'Super Admin'
     };
     return roleMap[role] || role;
   };
@@ -152,15 +154,23 @@ const AcceptInvitation = () => {
             {/* Invitation Details */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600 mb-2">{t('invitation.youreInvitedTo')}</p>
-              <p className="font-semibold text-gray-900 text-lg">{invitation?.clinic_name}</p>
+              <p className="font-semibold text-gray-900 text-lg">{invitation?.organization_name}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-sm text-gray-600">{t('invitation.as')}</span>
                 <span className="text-sm font-medium px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
                   {getRoleDisplay(invitation?.role)}
                 </span>
               </div>
+              {invitation?.location_names && invitation.location_names.length > 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  {t('invitation.locations')}: {invitation.location_names.join(', ')}
+                </p>
+              )}
               <p className="text-sm text-gray-500 mt-2">
                 {t('invitation.email')}: {invitation?.email}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                {t('invitation.invitedBy')}: {invitation?.invited_by_name}
               </p>
             </div>
 

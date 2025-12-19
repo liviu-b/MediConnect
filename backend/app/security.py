@@ -71,16 +71,48 @@ async def require_auth(request: Request) -> User:
 
 
 async def require_clinic_admin(request: Request) -> User:
+    """
+    DEPRECATED: Use require_role decorator instead.
+    Kept for backward compatibility.
+    """
     user = await require_auth(request)
-    if user.role != "CLINIC_ADMIN":
-        raise HTTPException(status_code=403, detail="Clinic admin access required")
+    if user.role not in ["CLINIC_ADMIN", "SUPER_ADMIN", "LOCATION_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
 
 async def require_staff_or_admin(request: Request) -> User:
+    """
+    DEPRECATED: Use require_role decorator instead.
+    Kept for backward compatibility.
+    """
     user = await require_auth(request)
-    if user.role not in {"CLINIC_ADMIN", "DOCTOR", "ASSISTANT"}:
+    if user.role not in {"CLINIC_ADMIN", "SUPER_ADMIN", "LOCATION_ADMIN", "RECEPTIONIST", "DOCTOR", "ASSISTANT"}:
         raise HTTPException(status_code=403, detail="Staff or admin access required")
+    return user
+
+
+async def require_super_admin(request: Request) -> User:
+    """Require SUPER_ADMIN role."""
+    user = await require_auth(request)
+    if user.role != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    return user
+
+
+async def require_admin(request: Request) -> User:
+    """Require SUPER_ADMIN or LOCATION_ADMIN role."""
+    user = await require_auth(request)
+    if user.role not in ["SUPER_ADMIN", "LOCATION_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+
+async def require_operational_staff(request: Request) -> User:
+    """Require operational staff roles (RECEPTIONIST, DOCTOR, ASSISTANT)."""
+    user = await require_auth(request)
+    if user.role not in ["RECEPTIONIST", "DOCTOR", "ASSISTANT"]:
+        raise HTTPException(status_code=403, detail="Operational staff access required")
     return user
 
 
