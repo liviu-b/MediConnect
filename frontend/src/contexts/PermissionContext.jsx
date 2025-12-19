@@ -37,7 +37,7 @@ export const PermissionProvider = ({ children, user }) => {
         setPermissions(user.cached_permissions);
       } else {
         // Fallback: fetch from API
-        const res = await api.get('/users/me/permissions');
+        const res = await api.get('/auth/me/permissions');
         setPermissions(res.data.permissions || []);
       }
     } catch (err) {

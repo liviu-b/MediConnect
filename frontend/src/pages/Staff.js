@@ -21,17 +21,28 @@ const Staff = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [staff, setStaff] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'RECEPTIONIST' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'RECEPTIONIST', location_id: '' });
   const [saving, setSaving] = useState(false);
   const [resendingId, setResendingId] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     fetchStaff();
+    fetchLocations();
   }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await api.get('/locations');
+      setLocations(res.data);
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    }
+  };
 
   const fetchStaff = async () => {
     try {
@@ -118,9 +129,10 @@ const Staff = () => {
 
   const getRoleLabel = (role) => {
     switch (role) {
+      case 'LOCATION_ADMIN': return t('staff.locationAdmin') || 'Location Admin';
       case 'RECEPTIONIST': return t('staff.receptionist');
       case 'NURSE': return t('staff.nurse');
-      case 'ADMIN': return t('staff.admin');
+      case 'ADMIN': return t('staff.admin'); // Legacy
       case 'DOCTOR': return t('staff.doctor');
       default: return role;
     }
@@ -143,7 +155,10 @@ const Staff = () => {
     );
   };
 
-  if (user?.role !== 'CLINIC_ADMIN') {
+  // Allow SUPER_ADMIN, LOCATION_ADMIN, and CLINIC_ADMIN to manage staff
+  const isAdmin = ['SUPER_ADMIN', 'LOCATION_ADMIN', 'CLINIC_ADMIN'].includes(user?.role);
+  
+  if (!isAdmin) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">{t('auth.noPermission')}</p>
@@ -320,12 +335,45 @@ const Staff = () => {
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="ADMIN">{t('staff.admin')}</option>
-                  <option value="DOCTOR">{t('staff.doctor')}</option>
-                  <option value="NURSE">{t('staff.nurse')}</option>
-                  <option value="RECEPTIONIST">{t('staff.receptionist')}</option>
+                  {/* Only SUPER_ADMIN can invite Location Admin */}
+                  {user?.role === 'SUPER_ADMIN' && (
+                    <option value="LOCATION_ADMIN">Location Admin</option>
+                  )}
+                  <option value="RECEPTIONIST">{t('staff.receptionist') || 'Receptionist'}</option>
+                  <option value="DOCTOR">{t('staff.doctor') || 'Doctor'}</option>
+                  <option value="NURSE">{t('staff.nurse') || 'Nurse'}</option>
                 </select>
+                {user?.role === 'SUPER_ADMIN' && form.role === 'LOCATION_ADMIN' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Location Admins can manage their assigned locations
+                  </p>
+                )}
               </div>
+              
+              {/* Location Selector - Show only for Location Admin */}
+              {!editingStaff && form.role === 'LOCATION_ADMIN' && locations.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Location <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={form.location_id}
+                    onChange={(e) => setForm({ ...form, location_id: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select a location...</option>
+                    {locations.map((location) => (
+                      <option key={location.location_id} value={location.location_id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This Location Admin will manage this location
+                  </p>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"

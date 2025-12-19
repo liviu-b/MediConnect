@@ -7,7 +7,12 @@ import uuid
 class Service(BaseModel):
     model_config = ConfigDict(extra="ignore")
     service_id: str = Field(default_factory=lambda: f"svc_{uuid.uuid4().hex[:12]}")
-    clinic_id: str
+    
+    # Support both old and new system
+    clinic_id: Optional[str] = None  # Legacy field
+    organization_id: Optional[str] = None  # New RBAC system
+    location_id: Optional[str] = None  # New RBAC system
+    
     name: str  # Keep for backward compatibility
     name_en: Optional[str] = None
     name_ro: Optional[str] = None

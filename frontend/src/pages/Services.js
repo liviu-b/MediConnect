@@ -127,7 +127,10 @@ const Services = () => {
     return `${symbol}${price.toFixed(2)}`;
   };
 
-  if (user?.role !== 'CLINIC_ADMIN') {
+  // Allow SUPER_ADMIN, LOCATION_ADMIN, and CLINIC_ADMIN to manage services
+  const isAdmin = ['SUPER_ADMIN', 'LOCATION_ADMIN', 'CLINIC_ADMIN'].includes(user?.role);
+  
+  if (!isAdmin) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">{t('auth.noPermission')}</p>

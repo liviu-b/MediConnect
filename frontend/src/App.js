@@ -319,7 +319,32 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false); // <--- FIXED: Added this line
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      // Restore scroll position
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [sidebarOpen]);
 
   const handleLogout = async () => {
     try {
@@ -380,96 +405,122 @@ const Layout = ({ children }) => {
           navigate(item.path);
           setSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${isActive
-          ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-          : 'text-gray-600 hover:bg-gray-100'
-          }`}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+          isActive
+            ? 'bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
+            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+        }`}
       >
-        <Icon className="w-5 h-5 flex-shrink-0" />
-        {!sidebarCollapsed && <span className="text-sm font-medium text-left leading-tight">{t(item.labelKey)}</span>}
+        <Icon className={`w-5 h-5 flex-shrink-0 ${
+          isActive ? '' : 'group-hover:scale-110 transition-transform'
+        }`} />
+        {!sidebarCollapsed && (
+          <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+            {t(item.labelKey)}
+          </span>
+        )}
       </button>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile Overlay */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex relative">
+      {/* Mobile Overlay with blur */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Modern Design */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 z-50 transition-all duration-300 ${sidebarOpen ? 'left-0' : '-left-64 lg:left-0'
-          } ${sidebarCollapsed ? 'w-16' : 'w-56'}`}
+        className={`fixed lg:sticky top-0 h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl z-50 flex flex-col ${
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'
+        } w-64 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+        style={{
+          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
       >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-3 border-b border-gray-200">
-            <a href="#" onClick={handleLogoClick} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-              {!sidebarCollapsed && (
-                <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
-                  MediConnect
-                </span>
-              )}
-            </a>
-          </div>
+        {/* Logo Section */}
+        <div className="p-4 border-b border-slate-700/50">
+          <a 
+            href="#" 
+            onClick={handleLogoClick} 
+            className="flex items-center gap-3 group"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-400 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-200">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+            {!sidebarCollapsed && (
+              <span className="text-xl font-bold text-white whitespace-nowrap">
+                MediConnect
+              </span>
+            )}
+          </a>
+        </div>
 
-          {/* Nav */}
-          <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-            {/* Home Button - Uses replace to skip history */}
-            <button
-              onClick={() => {
-                // Always navigate to role-specific dashboard
-                let dashboardPath = '/dashboard';
-                if (user?.role === 'USER') {
-                  dashboardPath = '/patient-dashboard';
-                } else if (user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') {
-                  dashboardPath = '/staff-dashboard';
-                } else if (user?.role === 'CLINIC_ADMIN') {
-                  dashboardPath = '/dashboard';
-                }
-                navigate(dashboardPath, { replace: true });
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Home className="w-5 h-5 flex-shrink-0" />
-              {!sidebarCollapsed && <span className="text-sm font-medium text-left leading-tight">{t('nav.dashboard')}</span>}
-            </button>
-            
-            {/* Separator */}
-            {!sidebarCollapsed && <div className="border-t border-gray-200 my-2"></div>}
-            
-            {navItems.map(renderNavItem)}
-          </nav>
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
+          {/* Dashboard */}
+          <button
+            onClick={() => {
+              let dashboardPath = '/dashboard';
+              if (user?.role === 'USER') {
+                dashboardPath = '/patient-dashboard';
+              } else if (user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') {
+                dashboardPath = '/staff-dashboard';
+              } else if (user?.role === 'CLINIC_ADMIN') {
+                dashboardPath = '/dashboard';
+              }
+              navigate(dashboardPath, { replace: true });
+              setSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+              location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
+                ? 'bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
+                : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+            }`}
+          >
+            <Home className={`w-5 h-5 flex-shrink-0 ${
+              location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
+                ? '' : 'group-hover:scale-110 transition-transform'
+            }`} />
+            {!sidebarCollapsed && (
+              <span className="text-sm font-medium">{t('nav.dashboard')}</span>
+            )}
+          </button>
+          
+          {/* Menu Items */}
+          {navItems.map(renderNavItem)}
+        </nav>
 
-          {/* User & Collapse */}
-          <div className="p-2 border-t border-gray-200">
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex w-full items-center justify-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg mb-2"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-            >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {!sidebarCollapsed && <span className="text-sm font-medium">{t('common.signOut')}</span>}
-            </button>
-          </div>
+        {/* Bottom Section */}
+        <div className="p-3 border-t border-slate-700/50 space-y-2">
+          {/* Collapse Toggle - Desktop Only */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="hidden lg:flex w-full items-center justify-center px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-200 group"
+            title={sidebarCollapsed ? 'Expand' : 'Collapse'}
+          >
+            <Menu className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
+          </button>
+          
+          {/* Sign Out */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-200 group relative overflow-hidden"
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+            <span className={`text-sm font-medium absolute left-14 whitespace-nowrap transition-opacity duration-300 ${
+              sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}>
+              {t('common.signOut')}
+            </span>
+          </button>
         </div>
       </aside>
 

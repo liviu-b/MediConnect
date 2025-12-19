@@ -80,23 +80,19 @@ async def login_user(data: UserLogin, response: Response):
             "is_active": True
         })
         
-        if location_count > 1:
-            # Multi-location: Show global dashboard
-            user_data['redirect_to'] = '/dashboard'
-            user_data['dashboard_type'] = 'global'
-        else:
-            # Single location: Direct to location dashboard
+        # For now, always redirect SUPER_ADMIN to /dashboard
+        # TODO: Implement location-specific dashboard routes in frontend
+        user_data['redirect_to'] = '/dashboard'
+        user_data['dashboard_type'] = 'global' if location_count > 1 else 'location'
+        
+        # Store primary location for single-location orgs
+        if location_count == 1:
             location = await db.locations.find_one({
                 "organization_id": organization_id,
                 "is_active": True
             }, {"_id": 0})
             if location:
-                user_data['redirect_to'] = f"/location/{location['location_id']}/dashboard"
-                user_data['dashboard_type'] = 'location'
                 user_data['primary_location_id'] = location['location_id']
-            else:
-                user_data['redirect_to'] = '/dashboard'
-                user_data['dashboard_type'] = 'global'
         
         user_data['location_count'] = location_count
     
@@ -133,12 +129,17 @@ async def login_user(data: UserLogin, response: Response):
         user_data['dashboard_type'] = 'patient'
     
     # Include accessible locations
-    if role in ['SUPER_ADMIN', 'LOCATION_ADMIN', 'RECEPTIONIST', 'DOCTOR', 'ASSISTANT']:
+    if role in ['SUPER_ADMIN', 'LOCATION_ADMIN', 'RECEPTIONIST', 'DOCTOR', 'ASSISTANT', 'CLINIC_ADMIN']:
         from ..services.permissions import PermissionService
         from ..schemas.user import User
         user_obj = User(**user_doc)
         accessible_locations = await PermissionService.get_accessible_locations(user_obj)
         user_data['accessible_location_ids'] = accessible_locations
+    
+    # Log the response for debugging
+    import logging
+    logger = logging.getLogger("mediconnect")
+    logger.info(f"Login response for {user_doc.get('email')}: role={role}, redirect_to={user_data.get('redirect_to')}, dashboard_type={user_data.get('dashboard_type')}")
     
     return {"user": user_data, "session_token": session_token}
 
@@ -233,6 +234,26 @@ async def get_me(request: Request):
         clinic = await db.clinics.find_one({"clinic_id": user.clinic_id}, {"_id": 0})
         user_dict['clinic'] = clinic
     return user_dict
+
+
+@router.get("/me/permissions")
+async def get_my_permissions(request: Request):
+    """Get current user's permissions"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Get permissions from role matrix
+    from ..schemas.permission import ROLE_PERMISSIONS_MATRIX
+    
+    role_permissions = ROLE_PERMISSIONS_MATRIX.get(user.role, {})
+    permissions = list(role_permissions.keys())
+    
+    return {
+        "permissions": permissions,
+        "role": user.role,
+        "user_id": user.user_id
+    }
 
 
 @router.put("/profile")
