@@ -122,6 +122,81 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
                 "total_appointments": total_appointments
             }
 
+        elif role == "SUPER_ADMIN":
+            # Super admin stats - organization-wide
+            organization_id = current_user.organization_id if hasattr(current_user, 'organization_id') else current_user.get("organization_id")
+            
+            if not organization_id:
+                raise HTTPException(status_code=400, detail="Organization ID not found for super admin")
+
+            # Get all clinics in the organization
+            clinics = await db.clinics.find({"organization_id": organization_id}).to_list(None)
+            clinic_ids = [clinic["clinic_id"] for clinic in clinics]
+
+            # Today's appointments across all clinics
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            today_appointments = await db.appointments.count_documents({
+                "clinic_id": {"$in": clinic_ids},
+                "date_time": {
+                    "$gte": today_start.isoformat(),
+                    "$lt": today_end.isoformat()
+                },
+                "status": {"$ne": "CANCELLED"}
+            })
+
+            # Upcoming appointments
+            now = datetime.now()
+            upcoming_appointments = await db.appointments.count_documents({
+                "clinic_id": {"$in": clinic_ids},
+                "date_time": {"$gte": now.isoformat()},
+                "status": {"$ne": "CANCELLED"}
+            })
+
+            # Total doctors across all clinics
+            total_doctors = await db.doctors.count_documents({
+                "clinic_id": {"$in": clinic_ids}
+            })
+
+            # Total patients (unique)
+            pipeline = [
+                {"$match": {"clinic_id": {"$in": clinic_ids}}},
+                {"$group": {"_id": "$patient_id"}},
+                {"$count": "total"}
+            ]
+            patient_result = await db.appointments.aggregate(pipeline).to_list(1)
+            total_patients = patient_result[0]["total"] if patient_result else 0
+
+            # Total staff
+            total_staff = await db.staff.count_documents({
+                "clinic_id": {"$in": clinic_ids}
+            })
+
+            # Total services
+            total_services = await db.services.count_documents({
+                "clinic_id": {"$in": clinic_ids}
+            })
+
+            # Total appointments
+            total_appointments = await db.appointments.count_documents({
+                "clinic_id": {"$in": clinic_ids}
+            })
+
+            # Total clinics
+            total_clinics = len(clinic_ids)
+
+            stats = {
+                "today_appointments": today_appointments,
+                "upcoming_appointments": upcoming_appointments,
+                "total_doctors": total_doctors,
+                "total_patients": total_patients,
+                "total_staff": total_staff,
+                "total_services": total_services,
+                "total_appointments": total_appointments,
+                "total_clinics": total_clinics
+            }
+
         elif role == "USER":
             # Patient stats
             now = datetime.now()
@@ -144,7 +219,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             }
 
         else:
-            raise HTTPException(status_code=403, detail="Invalid user role")
+            raise HTTPException(status_code=403, detail=f"Invalid user role: {role}")
 
         return stats
 

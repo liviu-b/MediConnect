@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
 
   // Profile form
@@ -63,20 +64,26 @@ const Dashboard = () => {
     };
   }, [user?.user_id]); // Only re-run when user ID changes, not on every user object change
 
-  // Listen for location changes
+  // Listen for location changes - only if user exists
   useEffect(() => {
+    if (!user) return;
+    
     const handleLocationChange = () => {
-      fetchData(); // Refresh data when location changes
+      // Only fetch if not already fetching
+      if (!isFetching) {
+        fetchData();
+      }
     };
     
     window.addEventListener('locationChanged', handleLocationChange);
     return () => window.removeEventListener('locationChanged', handleLocationChange);
-  }, []);
+  }, [user, isFetching]);
 
   const fetchData = async () => {
-    // Prevent duplicate calls if already loading
-    if (loading) return;
+    // Prevent duplicate calls if already fetching
+    if (isFetching) return;
     
+    setIsFetching(true);
     try {
       // Fetch current location if user has organization
       let locationData = null;
@@ -109,6 +116,7 @@ const Dashboard = () => {
       console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 

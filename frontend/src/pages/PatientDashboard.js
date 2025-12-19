@@ -57,6 +57,7 @@ const PatientDashboard = () => {
   
   const [activeTab, setActiveTab] = useState(getInitialTab());
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Update URL when tab changes
@@ -171,9 +172,10 @@ const PatientDashboard = () => {
   // Removed old clinicDetail tab logic - now using local state
 
   const fetchData = async () => {
-    // Prevent duplicate calls if already loading
-    if (loading) return;
+    // Prevent duplicate calls if already fetching
+    if (isFetching) return;
     
+    setIsFetching(true);
     try {
       const [appointmentsRes, clinicsRes] = await Promise.all([
         api.get('/appointments'),
@@ -199,6 +201,7 @@ const PatientDashboard = () => {
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
