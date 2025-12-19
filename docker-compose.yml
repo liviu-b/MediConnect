@@ -1,107 +1,39 @@
-version: '3.8'
-
 services:
-  mongodb:
-    image: mongo:6.0
-    container_name: mediconnect-mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: mediconnect_admin_password
-      MONGO_INITDB_DATABASE: mediconnect
-    volumes:
-      - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - mediconnect-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/mediconnect --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: mediconnect-backend
+    build: ./backend
     restart: unless-stopped
-    depends_on:
-      mongodb:
-        condition: service_healthy
     environment:
-      # Database
-      MONGODB_URI: mongodb://admin:mediconnect_admin_password@mongodb:27017/mediconnect?authSource=admin
-      MONGODB_DB_NAME: mediconnect
-      
-      # Security
-      SECRET_KEY: dev-secret-key-change-in-production
-      JWT_SECRET_KEY: dev-jwt-secret-change-in-production
-      SESSION_SECRET: dev-session-secret-change-in-production
-      
-      # CORS
-      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
-      FRONTEND_URL: http://localhost:3000
-      
-      # Email (configure with your SMTP)
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: 587
-      SMTP_USER: your-email@gmail.com
-      SMTP_PASSWORD: your-app-password
-      SMTP_FROM: noreply@mediconnect.local
-      
-      # Environment
-      ENVIRONMENT: development
-      DEBUG: "True"
-      
-      # Session
-      SESSION_COOKIE_SECURE: "False"
-      SESSION_COOKIE_HTTPONLY: "True"
-      SESSION_COOKIE_SAMESITE: Lax
-      SESSION_MAX_AGE: 86400
-    ports:
-      - "8000:8000"
+      - MONGO_URL=${MONGO_URL}
+      - DB_NAME=${DB_NAME:-mediconnect_db}
+      - FRONTEND_URL=http://localhost:3000
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
+      - CORS_ALLOW_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Location-ID
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-MediConnect <onboarding@resend.dev>}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./.env
     volumes:
       - ./backend:/app
-      - backend_logs:/app/logs
-    networks:
-      - mediconnect-network
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - /app/__pycache__
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: mediconnect-frontend
-    restart: unless-stopped
     depends_on:
       - backend
+    restart: unless-stopped
     environment:
-      REACT_APP_BACKEND_URL: http://localhost:8000
-      REACT_APP_ENVIRONMENT: development
-    ports:
-      - "3000:3000"
+      - REACT_APP_BACKEND_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    networks:
-      - mediconnect-network
-    command: npm start
-    stdin_open: true
-    tty: true
-
-volumes:
-  mongodb_data:
-    driver: local
-  backend_logs:
-    driver: local
-
-networks:
-  mediconnect-network:
-    driver: bridge
+    ports:
+      - "3000:3000"
