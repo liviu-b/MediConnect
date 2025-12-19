@@ -42,7 +42,7 @@ const AccessRequests = () => {
       setRequests(res.data);
     } catch (error) {
       console.error('Error fetching requests:', error);
-      setError('Failed to load access requests');
+      setError(t('accessRequests.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ const AccessRequests = () => {
         create_new_location: false
       });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to approve request');
+      setError(err.response?.data?.detail || t('accessRequests.failedToApprove'));
     } finally {
       setActionLoading(false);
     }
@@ -86,7 +86,7 @@ const AccessRequests = () => {
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectForm.rejection_reason.trim()) {
-      setError('Please provide a rejection reason');
+      setError(t('accessRequests.provideRejectionReason'));
       return;
     }
 
@@ -104,7 +104,7 @@ const AccessRequests = () => {
       setSelectedRequest(null);
       setRejectForm({ rejection_reason: '' });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to reject request');
+      setError(err.response?.data?.detail || t('accessRequests.failedToReject'));
     } finally {
       setActionLoading(false);
     }
@@ -145,7 +145,7 @@ const AccessRequests = () => {
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
         <Icon className="w-3 h-3" />
-        {status}
+        {t(`accessRequests.${status.toLowerCase()}`)}
       </span>
     );
   };
@@ -156,9 +156,9 @@ const AccessRequests = () => {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <UserPlus className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Access Requests</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('accessRequests.title')}</h1>
         </div>
-        <p className="text-gray-600">Review and manage access requests to your organization</p>
+        <p className="text-gray-600">{t('accessRequests.subtitle')}</p>
       </div>
 
       {/* Filter Tabs */}
@@ -173,7 +173,7 @@ const AccessRequests = () => {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            {status}
+            {t(`accessRequests.${status.toLowerCase()}`)}
             {requests.length > 0 && filter === status && (
               <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
                 {requests.length}
@@ -200,12 +200,15 @@ const AccessRequests = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <UserPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No {filter.toLowerCase()} requests
+            {filter === 'PENDING' 
+              ? t('accessRequests.noPendingRequests')
+              : t('accessRequests.noRequestsFound', { status: t(`accessRequests.${filter.toLowerCase()}`) })
+            }
           </h3>
           <p className="text-gray-500">
             {filter === 'PENDING' 
-              ? 'New access requests will appear here'
-              : `No ${filter.toLowerCase()} requests found`
+              ? t('accessRequests.noPendingRequestsDesc')
+              : t('accessRequests.noRequestsFound', { status: t(`accessRequests.${filter.toLowerCase()}`) })
             }
           </p>
         </div>
@@ -243,7 +246,7 @@ const AccessRequests = () => {
               {/* Proposed Location */}
               {request.proposed_location_name && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Proposed Location</p>
+                  <p className="text-xs font-medium text-gray-500 mb-2">{t('accessRequests.proposedLocation')}</p>
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-gray-600" />
                     <span className="font-medium text-gray-900">{request.proposed_location_name}</span>
@@ -259,9 +262,9 @@ const AccessRequests = () => {
 
               {/* Metadata */}
               <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                <span>Request ID: {request.request_id}</span>
+                <span>{t('accessRequests.requestId')}: {request.request_id}</span>
                 <span>•</span>
-                <span>Submitted: {formatDate(request.created_at)}</span>
+                <span>{t('accessRequests.submitted')}: {formatDate(request.created_at)}</span>
               </div>
 
               {/* Actions */}
@@ -272,14 +275,14 @@ const AccessRequests = () => {
                     className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
-                    Approve
+                    {t('accessRequests.approve')}
                   </button>
                   <button
                     onClick={() => openRejectModal(request)}
                     className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <XCircle className="w-4 h-4" />
-                    Reject
+                    {t('accessRequests.reject')}
                   </button>
                 </div>
               )}
@@ -287,7 +290,7 @@ const AccessRequests = () => {
               {/* Rejection Reason */}
               {request.status === 'REJECTED' && request.rejection_reason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
+                  <p className="text-xs font-medium text-red-800 mb-1">{t('accessRequests.rejectionReason')}:</p>
                   <p className="text-sm text-red-700">{request.rejection_reason}</p>
                 </div>
               )}
@@ -300,7 +303,7 @@ const AccessRequests = () => {
       {showApproveModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Approve Access Request</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{t('accessRequests.approveRequest')}</h2>
             
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
               <p className="text-sm font-medium text-gray-900">{selectedRequest.requester_name}</p>
@@ -316,18 +319,18 @@ const AccessRequests = () => {
             {/* Role Selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign Role
+                {t('accessRequests.assignRole')}
               </label>
               <select
                 value={approveForm.role}
                 onChange={(e) => setApproveForm({ ...approveForm, role: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="SUPER_ADMIN">Super Admin (Full Access)</option>
-                <option value="LOCATION_ADMIN">Location Admin</option>
-                <option value="STAFF">Staff</option>
-                <option value="DOCTOR">Doctor</option>
-                <option value="ASSISTANT">Assistant</option>
+                <option value="SUPER_ADMIN">{t('accessRequests.roles.superAdmin')}</option>
+                <option value="LOCATION_ADMIN">{t('accessRequests.roles.locationAdmin')}</option>
+                <option value="STAFF">{t('accessRequests.roles.staff')}</option>
+                <option value="DOCTOR">{t('accessRequests.roles.doctor')}</option>
+                <option value="ASSISTANT">{t('accessRequests.roles.assistant')}</option>
               </select>
             </div>
 
@@ -335,7 +338,7 @@ const AccessRequests = () => {
             {approveForm.role !== 'SUPER_ADMIN' && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assign Locations
+                  {t('accessRequests.assignLocations')}
                 </label>
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
                   {locations.map((location) => (
@@ -363,7 +366,7 @@ const AccessRequests = () => {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to grant access to all locations
+                  {t('accessRequests.leaveEmptyForAll')}
                 </p>
               </div>
             )}
@@ -379,7 +382,7 @@ const AccessRequests = () => {
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">
-                    Create proposed location: <span className="font-medium">{selectedRequest.proposed_location_name}</span>
+                    {t('accessRequests.createProposedLocation')}: <span className="font-medium">{selectedRequest.proposed_location_name}</span>
                   </span>
                 </label>
               </div>
@@ -396,7 +399,7 @@ const AccessRequests = () => {
                 disabled={actionLoading}
                 className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleApprove}
@@ -404,7 +407,7 @@ const AccessRequests = () => {
                 className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Approve
+                {t('accessRequests.approve')}
               </button>
             </div>
           </div>
@@ -415,7 +418,7 @@ const AccessRequests = () => {
       {showRejectModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Reject Access Request</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{t('accessRequests.rejectRequest')}</h2>
             
             <div className="mb-4 p-3 bg-red-50 rounded-lg">
               <p className="text-sm font-medium text-gray-900">{selectedRequest.requester_name}</p>
@@ -431,17 +434,17 @@ const AccessRequests = () => {
             {/* Rejection Reason */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rejection Reason <span className="text-red-500">*</span>
+                {t('accessRequests.rejectionReasonRequired')}
               </label>
               <textarea
                 value={rejectForm.rejection_reason}
                 onChange={(e) => setRejectForm({ rejection_reason: e.target.value })}
-                placeholder="Please provide a reason for rejection..."
+                placeholder={t('accessRequests.rejectionReasonPlaceholder')}
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
               />
               <p className="text-xs text-gray-500 mt-1">
-                This message will be sent to the requester
+                {t('accessRequests.rejectionReasonHelp')}
               </p>
             </div>
 
@@ -456,7 +459,7 @@ const AccessRequests = () => {
                 disabled={actionLoading}
                 className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleReject}
@@ -464,7 +467,7 @@ const AccessRequests = () => {
                 className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Reject
+                {t('accessRequests.reject')}
               </button>
             </div>
           </div>

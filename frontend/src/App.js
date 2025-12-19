@@ -388,7 +388,7 @@ const Layout = ({ children }) => {
   if (isSuperAdmin) {
     navItems.push(
       { path: '/locations', labelKey: 'locations.manageLocations', icon: MapPin },
-      { path: '/access-requests', labelKey: 'Access Requests', icon: UserPlus }
+      { path: '/access-requests', labelKey: 'nav.accessRequests', icon: UserPlus }
     );
   }
 

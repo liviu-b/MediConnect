@@ -36,7 +36,8 @@
     "staff": "Staff",
     "services": "Services",
     "settings": "Settings",
-    "reports": "Reports"
+    "reports": "Reports",
+    "accessRequests": "Access Requests"
   },
   "landing": {
     "title": "Modern Healthcare",
@@ -605,5 +606,41 @@
     "cityPlaceholder": "e.g., Timișoara",
     "countyPlaceholder": "e.g., Timiș",
     "setPrimary": "Set as primary location"
+  },
+  "accessRequests": {
+    "title": "Access Requests",
+    "subtitle": "Review and manage access requests to your organization",
+    "pending": "PENDING",
+    "approved": "APPROVED",
+    "rejected": "REJECTED",
+    "noPendingRequests": "No pending requests",
+    "noPendingRequestsDesc": "New access requests will appear here",
+    "noRequestsFound": "No {{status}} requests found",
+    "requestId": "Request ID",
+    "submitted": "Submitted",
+    "proposedLocation": "Proposed Location",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approveRequest": "Approve Access Request",
+    "rejectRequest": "Reject Access Request",
+    "assignRole": "Assign Role",
+    "assignLocations": "Assign Locations",
+    "leaveEmptyForAll": "Leave empty to grant access to all locations",
+    "createProposedLocation": "Create proposed location",
+    "rejectionReason": "Rejection Reason",
+    "rejectionReasonRequired": "Rejection Reason *",
+    "rejectionReasonPlaceholder": "Please provide a reason for rejection...",
+    "rejectionReasonHelp": "This message will be sent to the requester",
+    "failedToLoad": "Failed to load access requests",
+    "failedToApprove": "Failed to approve request",
+    "failedToReject": "Failed to reject request",
+    "provideRejectionReason": "Please provide a rejection reason",
+    "roles": {
+      "superAdmin": "Super Admin (Full Access)",
+      "locationAdmin": "Location Admin",
+      "staff": "Staff",
+      "doctor": "Doctor",
+      "assistant": "Assistant"
+    }
   }
 }

@@ -36,7 +36,8 @@
     "staff": "Personal",
     "services": "Servicii",
     "settings": "Setări",
-    "reports": "Rapoarte"
+    "reports": "Rapoarte",
+    "accessRequests": "Cereri de Acces"
   },
   "landing": {
     "title": "Sănătate Modernă",
@@ -581,5 +582,41 @@
     "cityPlaceholder": "ex. Timișoara",
     "countyPlaceholder": "ex. Timiș",
     "setPrimary": "Setează ca locație principală"
+  },
+  "accessRequests": {
+    "title": "Cereri de Acces",
+    "subtitle": "Revizuiește și gestionează cererile de acces la organizația ta",
+    "pending": "ÎN AȘTEPTARE",
+    "approved": "APROBATE",
+    "rejected": "RESPINSE",
+    "noPendingRequests": "Nicio cerere în așteptare",
+    "noPendingRequestsDesc": "Cererile noi de acces vor apărea aici",
+    "noRequestsFound": "Nu s-au găsit cereri {{status}}",
+    "requestId": "ID Cerere",
+    "submitted": "Trimisă",
+    "proposedLocation": "Locație Propusă",
+    "approve": "Aprobă",
+    "reject": "Respinge",
+    "approveRequest": "Aprobă Cererea de Acces",
+    "rejectRequest": "Respinge Cererea de Acces",
+    "assignRole": "Atribuie Rol",
+    "assignLocations": "Atribuie Locații",
+    "leaveEmptyForAll": "Lasă gol pentru a acorda acces la toate locațiile",
+    "createProposedLocation": "Creează locația propusă",
+    "rejectionReason": "Motivul Respingerii",
+    "rejectionReasonRequired": "Motivul Respingerii *",
+    "rejectionReasonPlaceholder": "Te rugăm să oferi un motiv pentru respingere...",
+    "rejectionReasonHelp": "Acest mesaj va fi trimis solicitantului",
+    "failedToLoad": "Nu s-au putut încărca cererile de acces",
+    "failedToApprove": "Nu s-a putut aproba cererea",
+    "failedToReject": "Nu s-a putut respinge cererea",
+    "provideRejectionReason": "Te rugăm să oferi un motiv pentru respingere",
+    "roles": {
+      "superAdmin": "Super Admin (Acces Complet)",
+      "locationAdmin": "Administrator Locație",
+      "staff": "Personal",
+      "doctor": "Medic",
+      "assistant": "Asistent"
+    }
   }
 }
