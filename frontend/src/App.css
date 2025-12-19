@@ -2,12 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Compact Design Variables */
-:root {
-  --sidebar-width: 220px;
-  --sidebar-collapsed: 64px;
-  --header-height: 56px;
-}
+/* Import Design System - Typography & Spacing tokens defined there */
+@import './design-system.css';
 
 /* Custom scrollbar - minimal */
 ::-webkit-scrollbar {
@@ -100,7 +96,7 @@
   border: 1px solid #e5e7eb;
 }
 
-/* Compact Cards */
+/* Legacy card/input/button classes */
 .card {
   @apply bg-white rounded-lg border border-gray-200 p-4;
 }
@@ -109,9 +105,8 @@
   @apply bg-white rounded-lg border border-gray-200 p-3;
 }
 
-/* Compact Form Elements */
 .input {
-  @apply w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+  @apply w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
 
 .input-sm {
@@ -295,7 +290,7 @@
 .sidebar-nav-item {
   position: relative;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s ease;
 }
 
 .sidebar-nav-item::before {
@@ -313,33 +308,36 @@
   left: 100%;
 }
 
+/* Removed translateX animation that causes text movement */
 .sidebar-nav-item:hover {
-  transform: translateX(4px);
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-nav-item.active {
-  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: none;
 }
 
 .sidebar-nav-icon {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease;
 }
 
+/* Reduced icon animation */
 .sidebar-nav-item:hover .sidebar-nav-icon {
-  transform: scale(1.15) rotate(5deg);
+  transform: scale(1.05);
 }
 
 .sidebar-nav-item.active .sidebar-nav-icon {
-  transform: scale(1.05);
+  transform: scale(1);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .sidebar-nav-text {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: none;
 }
 
+/* Removed letter-spacing animation that causes text movement */
 .sidebar-nav-item:hover .sidebar-nav-text {
-  letter-spacing: 0.02em;
+  /* No animation */
 }
 
 /* Table Compact */

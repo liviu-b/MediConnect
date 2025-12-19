@@ -372,11 +372,17 @@ const Layout = ({ children }) => {
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  const navItems = [
-    { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
-    { path: '/appointments', labelKey: 'nav.appointments', icon: ClipboardList },
-    { path: '/clinics', labelKey: 'nav.clinics', icon: Building2 },
-  ];
+  const navItems = [];
+
+  // Add navigation items based on role
+  if (!isSuperAdmin) {
+    navItems.push(
+      { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
+      { path: '/appointments', labelKey: 'nav.appointments', icon: ClipboardList }
+    );
+  }
+
+  navItems.push({ path: '/clinics', labelKey: 'nav.clinics', icon: Building2 });
 
   // Add Super Admin specific items
   if (isSuperAdmin) {
@@ -444,7 +450,7 @@ const Layout = ({ children }) => {
         }}
       >
         {/* Logo Section */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="px-4 h-[57px] border-b border-gray-200 flex items-center justify-center">
           <a 
             href="#" 
             onClick={handleLogoClick} 
@@ -454,7 +460,7 @@ const Layout = ({ children }) => {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             {!sidebarCollapsed && (
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent whitespace-nowrap">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent whitespace-nowrap leading-none">
                 MediConnect
               </span>
             )}
@@ -522,16 +528,16 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <main className="flex-1 min-w-0">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-30">
-          <div className="flex justify-between items-center">
+        <header className="bg-white border-b border-gray-200 px-4 h-[57px] sticky top-0 z-30 flex items-center">
+          <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-lg font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900">
                 {t(navItems.find(item => item.path === location.pathname)?.labelKey || 'nav.dashboard')}
               </h1>
             </div>
