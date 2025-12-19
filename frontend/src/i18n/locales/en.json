@@ -332,8 +332,12 @@
   "doctors": {
     "title": "Doctors",
     "subtitle": "Manage doctors",
+    "viewSubtitle": "View and manage doctor profiles. To add a new doctor, go to Staff section and send an invitation.",
     "addDoctor": "Add Doctor",
     "noDoctors": "No doctors found",
+    "noDoctorsYet": "No doctors yet",
+    "inviteInstructions": "To add doctors to your medical center, go to the Staff section and invite them. They will receive an email to set up their profile.",
+    "goToStaff": "Go to Staff Section",
     "addFirst": "Add your first doctor",
     "consultation": "{{duration}} min",
     "editDoctor": "Edit Doctor",
@@ -346,7 +350,19 @@
     "bio": "Bio",
     "bioPlaceholder": "Doctor's experience and expertise",
     "updateDoctor": "Update",
-    "deleteConfirm": "Remove this doctor?"
+    "deleteConfirm": "Remove this doctor?",
+    "completeProfile": "Complete Your Doctor Profile",
+    "completeProfileSubtitle": "Set up your profile so patients can book appointments with you",
+    "personalInfo": "Personal Information",
+    "professionalInfo": "Professional Information",
+    "availabilityNote": "About Your Availability",
+    "availabilityNoteText": "After completing your profile, you can set your working hours and availability schedule from your dashboard.",
+    "creatingProfile": "Creating Profile...",
+    "completeProfileButton": "Complete Profile & Continue",
+    "profileEditNote": "You can edit your profile information anytime from your dashboard",
+    "profilePicture": "Profile Picture URL",
+    "pictureHelp": "You can add a profile picture URL or skip for now",
+    "bioHelp": "This will be visible to patients when they book appointments"
   },
   "staff": {
     "title": "Staff",

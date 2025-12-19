@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
 import {
@@ -12,7 +13,8 @@ import {
   Loader2,
   X,
   Euro,
-  Coins
+  Coins,
+  UserCog
 } from 'lucide-react';
 
 // Specialty keys for translation
@@ -57,6 +59,7 @@ const CURRENCIES = [
 const Doctors = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -74,6 +77,8 @@ const Doctors = () => {
   const [saving, setSaving] = useState(false);
 
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const canManageDoctors = isClinicAdmin || isSuperAdmin;
 
   useEffect(() => {
     fetchDoctors();
@@ -176,38 +181,42 @@ const Doctors = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{t('doctors.title')}</h1>
-          <p className="text-sm text-gray-500">{t('doctors.subtitle')}</p>
+          <p className="text-sm text-gray-500">
+            {t('doctors.viewSubtitle') || 'View and manage doctor profiles. To add a new doctor, go to Staff section and send an invitation.'}
+          </p>
         </div>
-        {isClinicAdmin && (
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            {t('doctors.addDoctor')}
-          </button>
-        )}
       </div>
+
+      {/* Info Banner */}
+      {canManageDoctors && doctors.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Stethoscope className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-blue-900 mb-1">
+                {t('doctors.noDoctorsYet') || 'No doctors yet'}
+              </h3>
+              <p className="text-sm text-blue-700 mb-3">
+                {t('doctors.inviteInstructions') || 'To add doctors to your medical center, go to the Staff section and invite them. They will receive an email to set up their profile.'}
+              </p>
+              <button
+                onClick={() => navigate('/staff')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+              >
+                <UserCog className="w-4 h-4" />
+                {t('doctors.goToStaff') || 'Go to Staff Section'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Doctors Grid */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
-      ) : doctors.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <Stethoscope className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500">{t('doctors.noDoctors')}</p>
-          {isClinicAdmin && (
-            <button
-              onClick={() => openModal()}
-              className="mt-3 text-blue-600 hover:underline text-sm"
-            >
-              {t('doctors.addFirst')}
-            </button>
-          )}
-        </div>
-      ) : (
+      ) : doctors.length > 0 && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           {doctors.map((doctor) => (
             <div key={doctor.doctor_id} className="bg-white rounded-xl border border-gray-200 p-4">
@@ -218,10 +227,10 @@ const Doctors = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Dr. {doctor.name}</h3>
-                    <p className="text-sm text-blue-600">{t(`specialties.${doctor.specialty}`, doctor.specialty)}</p>
+                    <p className="text-sm text-blue-600">{t(`specialties.${doctor.specialty}`) || doctor.specialty}</p>
                   </div>
                 </div>
-                {isClinicAdmin && (
+                {canManageDoctors && (
                   <div className="flex gap-1">
                     <button
                       onClick={() => openModal(doctor)}

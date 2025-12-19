@@ -269,7 +269,11 @@ async def accept_staff_invitation(data: dict, response: Response):
     user_data = {k: v for k, v in user_doc.items() if k != 'password_hash' and k != '_id'}
     
     # Determine redirect based on role
-    if user_role == "LOCATION_ADMIN":
+    if user_role == "DOCTOR":
+        # Redirect doctors to complete their profile
+        user_data['redirect_to'] = '/complete-doctor-profile'
+        user_data['dashboard_type'] = 'doctor_setup'
+    elif user_role == "LOCATION_ADMIN":
         # Redirect Location Admin to Settings page
         user_data['redirect_to'] = '/settings'
         user_data['dashboard_type'] = 'location_admin'

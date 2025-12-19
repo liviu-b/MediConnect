@@ -7,7 +7,10 @@ import uuid
 class Doctor(BaseModel):
     model_config = ConfigDict(extra="ignore")
     doctor_id: str = Field(default_factory=lambda: f"doctor_{uuid.uuid4().hex[:12]}")
-    clinic_id: str
+    user_id: Optional[str] = None  # Link to user account (for doctors who have system access)
+    clinic_id: Optional[str] = None  # For backward compatibility
+    location_id: Optional[str] = None  # New location-based system
+    organization_id: Optional[str] = None  # Organization reference
     name: str
     email: str
     phone: Optional[str] = None

@@ -614,6 +614,7 @@ import PatientDashboard from "./pages/PatientDashboard";
 import AccessRequestSent from "./pages/AccessRequestSent";
 import AccessRequests from "./pages/AccessRequests";
 import Locations from "./pages/Locations";
+import CompleteDoctorProfile from "./pages/CompleteDoctorProfile";
 import { PermissionProvider } from "./contexts/PermissionContext";
 import DashboardRouter from "./components/DashboardRouter";
 
@@ -753,6 +754,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <Layout><Locations /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/complete-doctor-profile"
+        element={
+          <ProtectedRoute>
+            <CompleteDoctorProfile />
           </ProtectedRoute>
         }
       />
