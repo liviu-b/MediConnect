@@ -126,6 +126,8 @@ const PatientDashboard = () => {
   const [clinicDetailTab, setClinicDetailTab] = useState('info');
 
   useEffect(() => {
+    let isMounted = true;
+    
     if (user) {
       setProfileForm({
         name: user.name || '',
@@ -134,8 +136,16 @@ const PatientDashboard = () => {
         date_of_birth: user.date_of_birth || ''
       });
     }
-    fetchData();
-  }, [user]);
+    
+    // Only fetch if mounted and user exists
+    if (isMounted && user) {
+      fetchData();
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.user_id]); // Only re-run when user ID changes, not on every user object change
 
   useEffect(() => {
     if (activeTab === 'history' && user) {
@@ -161,6 +171,9 @@ const PatientDashboard = () => {
   // Removed old clinicDetail tab logic - now using local state
 
   const fetchData = async () => {
+    // Prevent duplicate calls if already loading
+    if (loading) return;
+    
     try {
       const [appointmentsRes, clinicsRes] = await Promise.all([
         api.get('/appointments'),

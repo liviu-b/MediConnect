@@ -43,6 +43,8 @@ const Dashboard = () => {
   const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
     if (user) {
       setProfileForm({
         name: user.name || '',
@@ -50,8 +52,16 @@ const Dashboard = () => {
         email: user.email || ''
       });
     }
-    fetchData();
-  }, [user]);
+    
+    // Only fetch if mounted and user exists
+    if (isMounted && user) {
+      fetchData();
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.user_id]); // Only re-run when user ID changes, not on every user object change
 
   // Listen for location changes
   useEffect(() => {
@@ -64,6 +74,9 @@ const Dashboard = () => {
   }, []);
 
   const fetchData = async () => {
+    // Prevent duplicate calls if already loading
+    if (loading) return;
+    
     try {
       // Fetch current location if user has organization
       let locationData = null;
