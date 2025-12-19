@@ -21,14 +21,16 @@ const Login = () => {
       const res = await api.post('/auth/login', form);
       sessionStorage.setItem('just_authenticated', 'true');
 
-      // Redirect based on role
-      const role = res.data.user?.role;
-      let redirectPath = '/dashboard';
-      if (role === 'USER') {
-        redirectPath = '/patient-dashboard';
-      } else if (role === 'DOCTOR' || role === 'ASSISTANT') {
-        redirectPath = '/staff-dashboard';
-      }
+      // Use redirect_to from backend response (includes routing logic)
+      const redirectPath = res.data.user?.redirect_to || '/dashboard';
+      
+      // Log for debugging
+      console.log('Login successful:', {
+        role: res.data.user?.role,
+        redirect_to: res.data.user?.redirect_to,
+        dashboard_type: res.data.user?.dashboard_type,
+        location_count: res.data.user?.location_count
+      });
 
       navigate(redirectPath, { replace: true, state: { user: res.data.user } });
     } catch (err) {
