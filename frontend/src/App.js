@@ -405,17 +405,15 @@ const Layout = ({ children }) => {
           navigate(item.path);
           setSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+        className={`sidebar-nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl group ${
           isActive
-            ? 'bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
-            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+            ? 'active bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
+            : 'text-gray-600 hover:bg-gray-100'
         }`}
       >
-        <Icon className={`w-5 h-5 flex-shrink-0 ${
-          isActive ? '' : 'group-hover:scale-110 transition-transform'
-        }`} />
+        <Icon className={`sidebar-nav-icon w-5 h-5 flex-shrink-0`} />
         {!sidebarCollapsed && (
-          <span className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+          <span className="sidebar-nav-text text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
             {t(item.labelKey)}
           </span>
         )}
@@ -436,7 +434,7 @@ const Layout = ({ children }) => {
 
       {/* Sidebar - Modern Design */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl z-50 flex flex-col ${
+        className={`fixed lg:sticky top-0 h-screen bg-white border-r border-gray-200 shadow-2xl z-50 flex flex-col ${
           sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'
         } w-64 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -446,7 +444,7 @@ const Layout = ({ children }) => {
         }}
       >
         {/* Logo Section */}
-        <div className="p-4 border-b border-slate-700/50">
+        <div className="p-4 border-b border-gray-200">
           <a 
             href="#" 
             onClick={handleLogoClick} 
@@ -456,7 +454,7 @@ const Layout = ({ children }) => {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             {!sidebarCollapsed && (
-              <span className="text-xl font-bold text-white whitespace-nowrap">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent whitespace-nowrap">
                 MediConnect
               </span>
             )}
@@ -479,18 +477,15 @@ const Layout = ({ children }) => {
               navigate(dashboardPath, { replace: true });
               setSidebarOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+            className={`sidebar-nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl group ${
               location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
-                ? 'bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
-                : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                ? 'active bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <Home className={`w-5 h-5 flex-shrink-0 ${
-              location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
-                ? '' : 'group-hover:scale-110 transition-transform'
-            }`} />
+            <Home className={`sidebar-nav-icon w-5 h-5 flex-shrink-0`} />
             {!sidebarCollapsed && (
-              <span className="text-sm font-medium">{t('nav.dashboard')}</span>
+              <span className="sidebar-nav-text text-sm font-medium">{t('nav.dashboard')}</span>
             )}
           </button>
           
@@ -499,11 +494,11 @@ const Layout = ({ children }) => {
         </nav>
 
         {/* Bottom Section */}
-        <div className="p-3 border-t border-slate-700/50 space-y-2">
+        <div className="p-3 border-t border-gray-200 space-y-2">
           {/* Collapse Toggle - Desktop Only */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex w-full items-center justify-center px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-200 group"
+            className="hidden lg:flex w-full items-center justify-center px-4 py-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200 group"
             title={sidebarCollapsed ? 'Expand' : 'Collapse'}
           >
             <Menu className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
@@ -512,7 +507,7 @@ const Layout = ({ children }) => {
           {/* Sign Out */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-200 group relative overflow-hidden"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 group relative overflow-hidden"
           >
             <LogOut className="w-5 h-5 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
             <span className={`text-sm font-medium absolute left-14 whitespace-nowrap transition-opacity duration-300 ${
