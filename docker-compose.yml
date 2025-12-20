@@ -41,7 +41,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - MONGO_URL=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-admin123}@mongodb:27017/${DB_NAME:-mediconnect_db}?authSource=admin
+      - MONGO_URL=mongodb://admin:admin123@mongodb:27017/mediconnect_db?authSource=admin
       - DB_NAME=${DB_NAME:-mediconnect_db}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
