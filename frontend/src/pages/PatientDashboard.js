@@ -149,7 +149,7 @@ const PatientDashboard = () => {
   }, [user?.user_id]); // Only re-run when user ID changes, not on every user object change
 
   useEffect(() => {
-    if (activeTab === 'history' && user) {
+    if (activeTab === 'profile' && user) {
       fetchHistory();
     }
   }, [activeTab, user]);
@@ -577,17 +577,6 @@ const PatientDashboard = () => {
             </button>
 
             <button
-              onClick={() => changeTab('history')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history'
-                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-                }`}
-            >
-              <History className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{t('patientDashboard.myHistory')}</span>
-            </button>
-
-            <button
               onClick={() => changeTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
@@ -628,7 +617,6 @@ const PatientDashboard = () => {
                 {activeTab === 'dashboard' && t('patientDashboard.title')}
                 {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
                 {activeTab === 'clinics' && t('clinics.title')}
-                {activeTab === 'history' && t('patientDashboard.myHistory')}
                 {activeTab === 'profile' && t('patientDashboard.profileSettings')}
               </h1>
             </div>
@@ -910,35 +898,130 @@ const PatientDashboard = () => {
           ) : activeTab === 'clinics' ? (
             /* Clinics Tab - Medical Centers Search */
             <MedicalCentersSearch />
-          ) : activeTab === 'history' ? (
-            /* History Tab */
-            <div className="space-y-6">
-              <p className="text-sm text-gray-500">{t('patientDashboard.historySubtitle')}</p>
+          ) : (
+            /* Profile Settings Tab - Now includes My History */
+            <div className="max-w-6xl mx-auto space-y-4">
+              {/* Profile Settings Header */}
+              <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-semibold text-gray-900">{t('patientDashboard.personalData')}</h3>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span>{user?.email}</span>
+                </div>
+              </div>
+
+              {/* Profile Form - Compact */}
+              <form onSubmit={handleSaveProfile} className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.name')}</label>
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder={t('patientDashboard.namePlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.phone')}</label>
+                    <div className="relative">
+                      <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder={t('auth.placeholders.phone')}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('patientDashboard.dateOfBirth')}</label>
+                    <div className="relative">
+                      <Cake className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="date"
+                        value={profileForm.date_of_birth}
+                        onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setProfileForm({
+                      name: user?.name || '',
+                      phone: user?.phone || '',
+                      address: user?.address || '',
+                      date_of_birth: user?.date_of_birth || ''
+                    })}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md text-sm font-semibold hover:shadow-md disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {savingProfile ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : profileSaved ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {profileSaved ? t('notifications.saveSuccess') : t('common.save')}
+                  </button>
+                  {profileSaved && (
+                    <div className="flex-1 min-w-[200px] py-2 px-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-xs flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      {t('notifications.profileUpdated')}
+                    </div>
+                  )}
+                </div>
+              </form>
+
+              {/* My History Section - Now integrated into Profile Settings */}
+              <div className="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-teal-600" />
+                  <h3 className="text-base font-semibold text-gray-900">{t('patientDashboard.myHistory')}</h3>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{t('patientDashboard.historySubtitle')}</p>
+              </div>
 
               {historyLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
               ) : (
-                <>
+                <div className="space-y-4">
                   {/* Completed Appointments */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
                       {t('patientDashboard.completedAppointments')}
-                    </h3>
+                    </h4>
 
                     {completedAppointments.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {completedAppointments.map((apt) => (
                           <div key={apt.appointment_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                                <Stethoscope className="w-5 h-5 text-green-600" />
+                              <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
+                                <Stethoscope className="w-4 h-4 text-green-600" />
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900">Dr. {apt.doctor_name}</p>
-                                <p className="text-sm text-gray-500">{apt.doctor_specialty}</p>
+                                <p className="font-medium text-gray-900 text-sm">Dr. {apt.doctor_name}</p>
+                                <p className="text-xs text-gray-500">{apt.doctor_specialty}</p>
                                 <p className="text-xs text-gray-400">{formatDateTime(apt.date_time)}</p>
                               </div>
                             </div>
@@ -954,14 +1037,14 @@ const PatientDashboard = () => {
                   </div>
 
                   {/* Prescriptions */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <Pill className="w-5 h-5 text-purple-600" />
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                      <Pill className="w-4 h-4 text-purple-600" />
                       {t('patientDashboard.prescriptionsReceived')}
-                    </h3>
+                    </h4>
 
                     {prescriptions.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {prescriptions.map((prescription) => {
                           const isExpanded = expandedPrescription === prescription.prescription_id;
                           const apt = appointments.find(a => a.appointment_id === prescription.appointment_id);
@@ -973,15 +1056,15 @@ const PatientDashboard = () => {
                                 className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 transition-colors"
                               >
                                 <div className="flex items-center gap-3">
-                                  <FileText className="w-5 h-5 text-purple-600" />
+                                  <FileText className="w-4 h-4 text-purple-600" />
                                   <div className="text-left">
-                                    <p className="font-medium text-gray-900">
+                                    <p className="font-medium text-gray-900 text-sm">
                                       {prescription.medications.length} {t('patientDashboard.medication')}(s)
                                     </p>
-                                    <p className="text-sm text-gray-500">{formatDate(prescription.created_at)}</p>
+                                    <p className="text-xs text-gray-500">{formatDate(prescription.created_at)}</p>
                                   </div>
                                 </div>
-                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                               </button>
 
                               {isExpanded && (
@@ -994,8 +1077,8 @@ const PatientDashboard = () => {
 
                                   {prescription.medications.map((med, idx) => (
                                     <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                                      <p className="font-medium text-gray-900">{med.name}</p>
-                                      <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                                      <p className="font-medium text-gray-900 text-sm">{med.name}</p>
+                                      <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
                                         <div>
                                           <span className="text-gray-500">{t('patientDashboard.dosage')}:</span>
                                           <p className="font-medium">{med.dosage}</p>
@@ -1037,14 +1120,14 @@ const PatientDashboard = () => {
                   </div>
 
                   {/* Medical Records / Recommendations */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-teal-600" />
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+                      <FileText className="w-4 h-4 text-teal-600" />
                       {t('patientDashboard.recommendationsReceived')}
-                    </h3>
+                    </h4>
 
                     {medicalRecords.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {medicalRecords.map((record) => {
                           const isExpanded = expandedRecord === record.record_id;
                           const apt = appointments.find(a => a.appointment_id === record.appointment_id);
@@ -1062,18 +1145,18 @@ const PatientDashboard = () => {
                                 className="w-full flex items-center justify-between p-3 bg-teal-50 hover:bg-teal-100 transition-colors"
                               >
                                 <div className="flex items-center gap-3">
-                                  <FileText className="w-5 h-5 text-teal-600" />
+                                  <FileText className="w-4 h-4 text-teal-600" />
                                   <div className="text-left">
-                                    <p className="font-medium text-gray-900">{record.title}</p>
+                                    <p className="font-medium text-gray-900 text-sm">{record.title}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeColor}`}>
                                         {record.record_type}
                                       </span>
-                                      <span className="text-sm text-gray-500">{formatDate(record.created_at)}</span>
+                                      <span className="text-xs text-gray-500">{formatDate(record.created_at)}</span>
                                     </div>
                                   </div>
                                 </div>
-                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                               </button>
 
                               {isExpanded && (
@@ -1085,7 +1168,7 @@ const PatientDashboard = () => {
                                   )}
 
                                   <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-700 whitespace-pre-wrap">{record.content}</p>
+                                    <p className="text-gray-700 whitespace-pre-wrap text-sm">{record.content}</p>
                                   </div>
 
                                   <button
@@ -1105,10 +1188,13 @@ const PatientDashboard = () => {
                       <p className="text-gray-500 text-sm">{t('patientDashboard.noRecommendations')}</p>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
-          ) : activeTab === 'clinicDetail' && selectedClinicData ? (
+          )}
+
+          {/* Clinic Detail View - Separate from tabs */}
+          {activeTab === 'clinicDetail' && selectedClinicData && (
             /* Clinic Detail Tab */
             <div className="space-y-4">
               {/* Clinic Header */}
@@ -1302,121 +1388,7 @@ const PatientDashboard = () => {
                 </div>
               )}
             </div>
-          ) : (
-            /* Profile Settings Tab - High density full-width layout */
-            <div className="mx-auto">
-              {/* Header strip */}
-              <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-gray-900">{t('patientDashboard.personalData')}</h3>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <User className="w-3.5 h-3.5 text-gray-400" />
-                  <span>{user?.email}</span>
-                </div>
-              </div>
-
-              {/* Dense form container */}
-              <form onSubmit={handleSaveProfile} className="bg-white border border-gray-200 rounded-lg p-3">
-                {/* Identity row */}
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-12 md:col-span-5">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.name')}</label>
-                    <input
-                      type="text"
-                      value={profileForm.name}
-                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                      className="w-full px-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder={t('patientDashboard.namePlaceholder')}
-                    />
-                  </div>
-                  <div className="col-span-12 md:col-span-4">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.phone')}</label>
-                    <div className="relative">
-                      <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={profileForm.phone}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder={t('auth.placeholders.phone')}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-3">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('patientDashboard.dateOfBirth')}</label>
-                    <div className="relative">
-                      <Cake className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="date"
-                        value={profileForm.date_of_birth}
-                        onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
-                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account row */}
-                <div className="grid grid-cols-12 gap-3 mt-3">
-                  <div className="col-span-12 md:col-span-6">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{t('auth.email')}</label>
-                    <div className="relative">
-                      <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="email"
-                        value={user?.email || ''}
-                        disabled
-                        className="w-full pl-8 pr-2.5 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-500 text-sm"
-                      />
-                    </div>
-                    <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {t('patientDashboard.emailCannotChange')}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setProfileForm({
-                      name: user?.name || '',
-                      phone: user?.phone || '',
-                      address: user?.address || '',
-                      date_of_birth: user?.date_of_birth || ''
-                    })}
-                    className="sm:w-40 w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="sm:w-48 w-full py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md text-sm font-semibold hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {savingProfile ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : profileSaved ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Save className="w-4 h-4" />
                     )}
-                    {profileSaved ? t('notifications.saveSuccess') : t('common.save')}
-                  </button>
-
-                  {profileSaved && (
-                    <div className="flex-1 py-2 px-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-xs flex items-center gap-2">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {t('notifications.profileUpdated')}
-                    </div>
-                  )}
-                </div>
-              </form>
-            </div>
-          )}
         </div>
       </main>
 
