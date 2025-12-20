@@ -163,7 +163,7 @@ const AcceptInvitation = () => {
               </div>
               {invitation?.location_names && invitation.location_names.length > 0 && (
                 <p className="text-sm text-gray-500 mt-2">
-                  {t('invitation.locations')}: {invitation.location_names.join(', ')}
+                  {t('appointments.locations') || 'Locations'}: {invitation.location_names.join(', ')}
                 </p>
               )}
               <p className="text-sm text-gray-500 mt-2">

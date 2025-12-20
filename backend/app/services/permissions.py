@@ -272,7 +272,12 @@ class PermissionService:
         Check if user can view appointments.
         
         All staff roles can view appointments, but with different scopes.
+        Doctors can always view their own appointments regardless of location assignment.
         """
+        # Doctors can always view appointments (they'll be filtered to their own appointments)
+        if user.role == UserRole.DOCTOR:
+            return True
+        
         result = await PermissionService.check_permission(
             user=user,
             permission=PermissionConstants.APPOINTMENTS_VIEW,

@@ -171,12 +171,22 @@ const Staff = () => {
   };
 
   // Allow SUPER_ADMIN, LOCATION_ADMIN, and CLINIC_ADMIN to manage staff
+  // DOCTORS should NEVER access this page - they have their own StaffDashboard
   const isAdmin = ['SUPER_ADMIN', 'LOCATION_ADMIN', 'CLINIC_ADMIN'].includes(user?.role);
   
   if (!isAdmin) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">{t('auth.noPermission')}</p>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('auth.accessDenied')}</h2>
+          <p className="text-gray-500 mb-4">{t('auth.noPermission')}</p>
+          <p className="text-sm text-gray-400">
+            {user?.role === 'DOCTOR' ? 'Doctors should use the Staff Dashboard instead.' : 'Only administrators can manage staff.'}
+          </p>
+        </div>
       </div>
     );
   }

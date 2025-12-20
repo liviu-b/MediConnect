@@ -149,15 +149,19 @@ async def create_doctor(data: DoctorCreate, request: Request, location_id: Optio
 
 @router.put("/{doctor_id}")
 async def update_doctor(doctor_id: str, data: DoctorUpdate, request: Request):
-    user = await require_clinic_admin(request)
+    user = await require_auth(request)
     doctor = await db.doctors.find_one({"doctor_id": doctor_id}, {"_id": 0})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
     
     # Check access permissions
     has_access = False
-    if user.role == "SUPER_ADMIN":
-        # Super admin can update doctors in their organization
+    
+    # Doctors can update their own profile
+    if user.role == "DOCTOR" and user.email.lower() == doctor.get("email", "").lower():
+        has_access = True
+    # Super admin can update doctors in their organization
+    elif user.role == "SUPER_ADMIN":
         if doctor.get("organization_id") == user.organization_id:
             has_access = True
         elif doctor.get("location_id"):
@@ -167,7 +171,8 @@ async def update_doctor(doctor_id: str, data: DoctorUpdate, request: Request):
                 {"_id": 0}
             )
             has_access = location is not None
-    elif user.clinic_id and doctor.get("clinic_id") == user.clinic_id:
+    # Clinic/Location admins can update doctors in their clinic
+    elif user.role in ["CLINIC_ADMIN", "LOCATION_ADMIN"] and user.clinic_id and doctor.get("clinic_id") == user.clinic_id:
         has_access = True
     
     if not has_access:

@@ -26,10 +26,54 @@ import {
   ChevronDown,
   FileText,
   Pill,
-  Plus
+  Plus,
+  User,
+  Users,
+  BarChart3,
+  Stethoscope,
+  DollarSign,
+  Image as ImageIcon
 } from 'lucide-react';
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+const specialtyKeys = [
+  'anesthesiology',
+  'cardiology',
+  'dentistry',
+  'dermatology',
+  'emergencyMedicine',
+  'endocrinology',
+  'gastroenterology',
+  'generalPractice',
+  'generalSurgery',
+  'geriatrics',
+  'gynecology',
+  'hematology',
+  'immunology',
+  'medicalTests',
+  'infectiousDisease',
+  'nephrology',
+  'neurology',
+  'obstetrics',
+  'oncology',
+  'ophthalmology',
+  'orthopedics',
+  'otolaryngology',
+  'pediatrics',
+  'plasticSurgery',
+  'psychiatry',
+  'pulmonology',
+  'radiology',
+  'rheumatology',
+  'sportsMedicine',
+  'urology',
+];
+
+const CURRENCIES = [
+  { code: 'LEI', symbol: 'LEI' },
+  { code: 'EURO', symbol: '€' }
+];
 
 const StaffDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -40,6 +84,11 @@ const StaffDashboard = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [loading, setLoading] = useState(true);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  
+  // Profile editing
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({});
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Doctor data
   const [doctor, setDoctor] = useState(null);
@@ -82,6 +131,21 @@ const StaffDashboard = () => {
       fetchAppointments();
     }
   }, [activeTab]);
+
+  // Initialize profile form when doctor data loads or tab changes to profile
+  useEffect(() => {
+    if (doctor && activeTab === 'profile') {
+      setProfileForm({
+        phone: doctor.phone || '',
+        specialty: doctor.specialty || '',
+        bio: doctor.bio || '',
+        picture: doctor.picture || '',
+        consultation_duration: doctor.consultation_duration || 30,
+        consultation_fee: doctor.consultation_fee || 0,
+        currency: doctor.currency || 'LEI'
+      });
+    }
+  }, [doctor, activeTab]);
 
   const fetchData = async () => {
     try {
@@ -183,6 +247,23 @@ const StaffDashboard = () => {
       alert(err.response?.data?.detail || 'Error saving availability');
     } finally {
       setSavingAvailability(false);
+    }
+  };
+
+  // Profile management
+  const handleSaveProfile = async () => {
+    if (!doctor) return;
+
+    setSavingProfile(true);
+    try {
+      await api.put(`/doctors/${doctor.doctor_id}`, profileForm);
+      alert(t('doctors.profileUpdated') || 'Profile updated successfully!');
+      fetchData(); // Refresh doctor data
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      alert(err.response?.data?.detail || 'Error saving profile');
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -455,16 +536,29 @@ const StaffDashboard = () => {
             </button>
 
             {user?.role === 'DOCTOR' && (
-              <button
-                onClick={() => setActiveTab('availability')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'availability'
-                  ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-              >
-                <Clock className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium">{t('staffDashboard.myAvailability')}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
+                    ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <User className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{t('doctors.profileSettings') || 'Profile Settings'}</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('availability')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'availability'
+                    ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  <Clock className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{t('staffDashboard.myAvailability')}</span>
+                </button>
+              </>
             )}
           </nav>
 
@@ -496,6 +590,7 @@ const StaffDashboard = () => {
               <h1 className="text-lg font-bold text-gray-900">
                 {activeTab === 'calendar' ? t('nav.calendar') :
                   activeTab === 'appointments' ? t('nav.appointments') :
+                  activeTab === 'profile' ? (t('doctors.profileSettings') || 'Profile Settings') :
                     t('staffDashboard.myAvailability')}
               </h1>
             </div>
@@ -529,6 +624,18 @@ const StaffDashboard = () => {
                       <p className="text-xs text-gray-500">{user?.email}</p>
                       <p className="text-xs text-blue-600 mt-1">{getRoleLabel(user?.role)}</p>
                     </div>
+                    {user?.role === 'DOCTOR' && (
+                      <button
+                        onClick={() => {
+                          setActiveTab('profile');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        {t('doctors.profileSettings') || 'Profile Settings'}
+                      </button>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -741,6 +848,211 @@ const StaffDashboard = () => {
                   ))}
                 </div>
               )}
+            </div>
+          ) : activeTab === 'profile' ? (
+            /* Profile Settings Tab (Doctors Only) */
+            <div className="space-y-4 max-w-3xl">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+                {/* Personal Information - Read Only */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <User className="w-5 h-5 text-blue-600" />
+                    {t('doctors.personalInfo') || 'Personal Information'}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('common.name') || 'Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={user?.name || ''}
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('common.email') || 'Email'}
+                      </label>
+                      <input
+                        type="email"
+                        value={user?.email || ''}
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <User className="w-5 h-5 text-blue-600" />
+                    {t('doctors.contactInfo') || 'Contact Information'}
+                  </h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('doctors.phone') || 'Phone Number'}
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone || ''}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      placeholder="+40 XXX XXX XXX"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Professional Information */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Stethoscope className="w-5 h-5 text-blue-600" />
+                    {t('doctors.professionalInfo') || 'Professional Information'}
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('doctors.specialty') || 'Specialty'}
+                      </label>
+                      <select
+                        value={profileForm.specialty || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, specialty: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">{t('doctors.selectSpecialty') || 'Select specialty'}</option>
+                        {specialtyKeys.map((key) => (
+                          <option key={key} value={key}>
+                            {t(`specialties.${key}`) || key}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('doctors.bio') || 'Bio / Description'}
+                      </label>
+                      <textarea
+                        value={profileForm.bio || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                        rows={4}
+                        placeholder={t('doctors.bioPlaceholder') || 'Tell patients about your experience, education, and approach to care...'}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <span className="flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4" />
+                          {t('doctors.profilePicture') || 'Profile Picture URL'}
+                        </span>
+                      </label>
+                      <input
+                        type="url"
+                        value={profileForm.picture || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, picture: e.target.value })}
+                        placeholder="https://example.com/photo.jpg"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Consultation Settings */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    {t('doctors.consultationSettings') || 'Consultation Settings'}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('doctors.consultationDuration') || 'Duration (minutes)'}
+                      </label>
+                      <select
+                        value={profileForm.consultation_duration || 30}
+                        onChange={(e) => setProfileForm({ ...profileForm, consultation_duration: parseInt(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value={15}>15 min</option>
+                        <option value={20}>20 min</option>
+                        <option value={30}>30 min</option>
+                        <option value={45}>45 min</option>
+                        <option value={60}>60 min</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('doctors.consultationFee') || 'Consultation Fee'}
+                      </label>
+                      <input
+                        type="number"
+                        value={profileForm.consultation_fee || 0}
+                        onChange={(e) => setProfileForm({ ...profileForm, consultation_fee: parseFloat(e.target.value) || 0 })}
+                        min="0"
+                        step="10"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('doctors.currency') || 'Currency'}
+                      </label>
+                      <select
+                        value={profileForm.currency || 'LEI'}
+                        onChange={(e) => setProfileForm({ ...profileForm, currency: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {CURRENCIES.map((curr) => (
+                          <option key={curr.code} value={curr.code}>
+                            {curr.symbol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="border-t border-gray-200 pt-6 flex gap-3">
+                  <button
+                    onClick={() => {
+                      // Reset form to original doctor data
+                      if (doctor) {
+                        setProfileForm({
+                          phone: doctor.phone || '',
+                          specialty: doctor.specialty || '',
+                          bio: doctor.bio || '',
+                          picture: doctor.picture || '',
+                          consultation_duration: doctor.consultation_duration || 30,
+                          consultation_fee: doctor.consultation_fee || 0,
+                          currency: doctor.currency || 'LEI'
+                        });
+                      }
+                    }}
+                    className="px-6 py-2.5 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-all"
+                  >
+                    {t('common.cancel') || 'Cancel'}
+                  </button>
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {savingProfile ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Save className="w-5 h-5" />
+                    )}
+                    {t('doctors.saveProfile') || 'Save Profile'}
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             /* Availability Tab (Doctors Only) */

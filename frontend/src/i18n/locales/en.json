@@ -25,7 +25,9 @@
     "next": "Next",
     "submit": "Submit",
     "required": "Required",
-    "clearFilters": "Clear Filters"
+    "clearFilters": "Clear Filters",
+    "name": "Name",
+    "email": "Email"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -367,7 +369,14 @@
     "profileEditNote": "You can edit your profile information anytime from your dashboard",
     "profilePicture": "Profile Picture URL",
     "pictureHelp": "You can add a profile picture URL or skip for now",
-    "bioHelp": "This will be visible to patients when they book appointments"
+    "bioHelp": "This will be visible to patients when they book appointments",
+    "profileSettings": "Profile Settings",
+    "contactInfo": "Contact Information",
+    "phone": "Phone Number",
+    "consultationSettings": "Consultation Details",
+    "currency": "Currency",
+    "saveProfile": "Save Profile",
+    "profileUpdated": "Profile updated successfully!"
   },
   "staff": {
     "title": "Staff",

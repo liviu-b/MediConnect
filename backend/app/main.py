@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from .config import CORS_ORIGINS, CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
+from .middleware import setup_error_handlers, RequestValidationMiddleware, setup_rate_limiting
 import logging
 
 logger = logging.getLogger("mediconnect")
@@ -78,3 +79,10 @@ app.include_router(locations_router.router, prefix=api_prefix)
 app.include_router(access_requests_router.router, prefix=api_prefix)
 app.include_router(invitations_router.router, prefix=api_prefix)
 app.include_router(analytics_router.router, prefix=api_prefix)
+
+# Setup middleware (after routers)
+setup_error_handlers(app)
+app.add_middleware(RequestValidationMiddleware)
+setup_rate_limiting(app)
+
+logger.info("✅ MediConnect API initialized successfully")

@@ -13,7 +13,8 @@ class Appointment(BaseModel):
     patient_email: Optional[str] = None
     patient_phone: Optional[str] = None
     doctor_id: str
-    clinic_id: str
+    clinic_id: str  # DEPRECATED: kept for backward compatibility
+    location_id: Optional[str] = None  # New multi-location support
     date_time: datetime
     duration: int = 30
     status: str = "SCHEDULED"
@@ -21,6 +22,11 @@ class Appointment(BaseModel):
     cancellation_reason: Optional[str] = None
     cancelled_by: Optional[str] = None
     cancelled_at: Optional[datetime] = None
+    accepted_by: Optional[str] = None  # Who accepted the appointment
+    accepted_at: Optional[datetime] = None  # When it was accepted
+    rejected_by: Optional[str] = None  # Who rejected the appointment
+    rejected_at: Optional[datetime] = None  # When it was rejected
+    rejection_reason: Optional[str] = None  # Why it was rejected
     recurrence: Optional[RecurrencePattern] = None
     parent_appointment_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
