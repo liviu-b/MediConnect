@@ -87,6 +87,17 @@ test_specific_scenarios.py
 # --- Data and databases ---
 agenthub/agents/youtube/db
 
+# Database backups and exports (NU commita date reale!)
+backup/
+backups/
+*.dump
+*.bson
+*_backup_*.json
+dump.rdb
+*.sql
+*.sqlite
+*.db
+
 # --- Mobile development ---
 android-sdk/
 

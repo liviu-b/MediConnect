@@ -1,4 +1,23 @@
 services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-admin123}
+      - MONGO_INITDB_DATABASE=${DB_NAME:-mediconnect_db}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -17,10 +36,12 @@ services:
     build: ./backend
     restart: unless-stopped
     depends_on:
+      mongodb:
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      - MONGO_URL=${MONGO_URL}
+      - MONGO_URL=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-admin123}@mongodb:27017/${DB_NAME:-mediconnect_db}?authSource=admin
       - DB_NAME=${DB_NAME:-mediconnect_db}
       - REDIS_URL=redis://redis:6379/0
       - REDIS_ENABLED=true
@@ -60,5 +81,9 @@ services:
       - "3000:3000"
 
 volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
   redis_data:
     driver: local
