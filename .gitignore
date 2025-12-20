@@ -102,6 +102,10 @@ android-sdk/
 # --- Documentation archive ---
 docs_archive/
 
+# Old documentation (archived)
+TECHNICAL_DOCUMENTATION.md
+USER_GUIDE.md
+
 # production deployment
 PRODUCTION_DEPLOYMENT.md
 PRODUCTION_CHECKLIST.md
