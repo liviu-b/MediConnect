@@ -12,6 +12,19 @@ from ..config import FRONTEND_URL
 router = APIRouter(prefix="/staff", tags=["staff"])
 
 
+async def require_clinic_admin(request: Request):
+    """Helper function to require clinic admin authentication"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Check if user can manage staff
+    if user.role not in ["SUPER_ADMIN", "LOCATION_ADMIN", "CLINIC_ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized to manage staff")
+    
+    return user
+
+
 @router.get("")
 async def get_staff(request: Request):
     user = await get_current_user(request)
@@ -316,9 +329,31 @@ async def update_staff(staff_id: str, data: StaffUpdate, request: Request):
 async def delete_staff(staff_id: str, request: Request):
     user = await require_clinic_admin(request)
     staff = await db.staff.find_one({"staff_id": staff_id}, {"_id": 0})
-    if not staff or staff["clinic_id"] != user.clinic_id:
+    
+    if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
+    
+    # Check authorization based on user role and system (organization vs clinic)
+    authorized = False
+    if user.role == "SUPER_ADMIN" and user.organization_id:
+        # Super admin can delete staff in their organization
+        authorized = staff.get("organization_id") == user.organization_id
+    elif user.role == "LOCATION_ADMIN" and user.assigned_location_ids:
+        # Location admin can delete staff in their locations
+        staff_locations = staff.get("assigned_location_ids", [])
+        authorized = any(loc in user.assigned_location_ids for loc in staff_locations)
+    elif user.role == "CLINIC_ADMIN" and user.clinic_id:
+        # Clinic admin can delete staff in their clinic (legacy system)
+        authorized = staff.get("clinic_id") == user.clinic_id
+    
+    if not authorized:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this staff member")
+    
+    # Soft delete the staff member
     await db.staff.update_one({"staff_id": staff_id}, {"$set": {"is_active": False}})
+    
+    # Also deactivate the associated user account if exists
     if staff.get('user_id'):
         await db.users.update_one({"user_id": staff['user_id']}, {"$set": {"is_active": False}})
+    
     return {"message": "Staff removed successfully"}

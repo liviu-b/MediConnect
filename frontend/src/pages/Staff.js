@@ -29,6 +29,8 @@ const Staff = () => {
   const [saving, setSaving] = useState(false);
   const [resendingId, setResendingId] = useState(null);
   const [error, setError] = useState('');
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchStaff();
@@ -117,14 +119,27 @@ const Staff = () => {
     }
   };
 
-  const handleDelete = async (staffId) => {
-    if (!window.confirm(t('staff.deleteConfirm'))) return;
+  const handleDeleteClick = (member) => {
+    setDeleteConfirmModal(member);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmModal) return;
+    setDeleting(true);
     try {
-      await api.delete(`/staff/${staffId}`);
+      await api.delete(`/staff/${deleteConfirmModal.staff_id}`);
+      setDeleteConfirmModal(null);
       fetchStaff();
     } catch (err) {
       console.error('Error deleting staff:', err);
+      alert(err.response?.data?.detail || t('notifications.error'));
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmModal(null);
   };
 
   const getRoleLabel = (role) => {
@@ -202,16 +217,16 @@ const Staff = () => {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           {staff.map((member) => (
-            <div key={member.staff_id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div key={member.staff_id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white font-semibold">
-                    {member.name.charAt(0)}
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-teal-400 flex items-center justify-center text-white shadow-sm">
+                    <UserCog className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{member.name}</h3>
                     <div className="flex flex-wrap items-center gap-1 mt-1">
-                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
                         {getRoleLabel(member.role)}
                       </span>
                       {getStatusBadge(member.invitation_status)}
@@ -241,8 +256,9 @@ const Staff = () => {
                     </button>
                   )}
                   <button
-                    onClick={() => handleDelete(member.staff_id)}
+                    onClick={() => handleDeleteClick(member)}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    title={t('common.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -398,6 +414,51 @@ const Staff = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                {t('staff.deleteConfirm')}
+              </h3>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                {deleteConfirmModal.name} ({deleteConfirmModal.email})
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {t('common.delete')}...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      {t('common.delete')}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
