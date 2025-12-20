@@ -7,7 +7,6 @@ import { ROMANIAN_COUNTIES, getCitiesForCounty } from '../lib/ro-cities';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Alert, AlertDescription } from './ui/alert';
 
 const MedicalCentersSearch = () => {
@@ -136,58 +135,59 @@ const MedicalCentersSearch = () => {
                 </div>
               </div>
 
-              {/* County Dropdown */}
+              {/* County Dropdown - Native HTML */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   {t('centers.countyLabel') || 'County'}
                 </label>
-                <Select value={countyFilter} onValueChange={handleCountyChange}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {t('centers.allRomania') || 'All Romania'}
-                    </SelectItem>
+                <div className="relative">
+                  <MapPin className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none z-10" />
+                  <select
+                    value={countyFilter}
+                    onChange={(e) => handleCountyChange(e.target.value)}
+                    className="w-full h-9 pl-8 pr-8 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer"
+                  >
+                    <option value="all">{t('centers.allRomania') || 'All Romania'}</option>
                     {ROMANIAN_COUNTIES.map((county) => (
-                      <SelectItem key={county} value={county}>
+                      <option key={county} value={county}>
                         {county}
-                      </SelectItem>
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                  <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              {/* City Dropdown */}
+              {/* City Dropdown - Native HTML */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   {t('centers.cityLabel') || 'City'}
                 </label>
-                <Select
-                  value={cityFilter}
-                  onValueChange={handleCityChange}
-                  disabled={countyFilter === 'all' || availableCities.length === 0}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {t('centers.allCities') || 'All Cities'}
-                    </SelectItem>
+                <div className="relative">
+                  <MapPin className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none z-10" />
+                  <select
+                    value={cityFilter}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    disabled={countyFilter === 'all' || availableCities.length === 0}
+                    className="w-full h-9 pl-8 pr-8 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                  >
+                    <option value="all">{t('centers.allCities') || 'All Cities'}</option>
                     {availableCities.map((city) => (
-                      <SelectItem key={city} value={city}>
+                      <option key={city} value={city}>
                         {city}
-                      </SelectItem>
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                  <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -1,13 +1,14 @@
 """
 Rate Limiting Middleware
 Protects API endpoints from abuse and DDoS attacks
+Uses Redis for distributed rate limiting with fallback to in-memory
 """
 
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from datetime import datetime, timedelta
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import logging
 import asyncio
 
@@ -16,13 +17,21 @@ logger = logging.getLogger("mediconnect")
 
 class RateLimiter:
     """
-    In-memory rate limiter using sliding window algorithm.
+    Redis-backed rate limiter using sliding window algorithm.
+    Falls back to in-memory if Redis is unavailable.
     
-    For production, consider using Redis for distributed rate limiting.
+    Best Practices:
+    - Uses Redis for distributed rate limiting across multiple instances
+    - Sliding window algorithm for accurate rate limiting
+    - Automatic fallback to in-memory for resilience
+    - Per-endpoint rate limits
     """
     
-    def __init__(self):
-        # Store: {client_ip: [(timestamp, endpoint), ...]}
+    def __init__(self, redis_client=None):
+        # Redis client for distributed rate limiting
+        self.redis_client = redis_client
+        
+        # In-memory fallback: {client_ip: [(timestamp, endpoint), ...]}
         self.requests: Dict[str, list] = defaultdict(list)
         self.lock = asyncio.Lock()
         
@@ -40,9 +49,79 @@ class RateLimiter:
     async def is_rate_limited(self, client_ip: str, endpoint: str) -> Tuple[bool, int, int]:
         """
         Check if client has exceeded rate limit.
+        Uses Redis if available, falls back to in-memory.
         
         Returns:
             (is_limited, current_count, limit)
+        """
+        # Try Redis first
+        if self.redis_client and self.redis_client.is_available():
+            return await self._is_rate_limited_redis(client_ip, endpoint)
+        
+        # Fallback to in-memory
+        return await self._is_rate_limited_memory(client_ip, endpoint)
+    
+    async def _is_rate_limited_redis(self, client_ip: str, endpoint: str) -> Tuple[bool, int, int]:
+        """
+        Redis-based rate limiting using sliding window.
+        """
+        try:
+            limit = self._get_limit_for_endpoint(endpoint)
+            window = 60  # 60 seconds window
+            
+            # Create Redis key
+            key = f"rate_limit:{client_ip}:{endpoint}"
+            
+            # Get current timestamp
+            now = datetime.now().timestamp()
+            window_start = now - window
+            
+            # Get Redis client
+            client = await self.redis_client.get_client()
+            if not client:
+                return await self._is_rate_limited_memory(client_ip, endpoint)
+            
+            # Use Redis pipeline for atomic operations
+            pipe = client.pipeline()
+            
+            # Remove old entries outside the window
+            pipe.zremrangebyscore(key, 0, window_start)
+            
+            # Count requests in current window
+            pipe.zcard(key)
+            
+            # Add current request
+            pipe.zadd(key, {str(now): now})
+            
+            # Set expiration
+            pipe.expire(key, window + 10)
+            
+            # Execute pipeline
+            results = await pipe.execute()
+            current_count = results[1]  # Result of zcard
+            
+            # Check if limit exceeded
+            if current_count >= limit:
+                logger.warning(
+                    f"Rate limit exceeded (Redis) for {client_ip} on {endpoint}",
+                    extra={
+                        "client_ip": client_ip,
+                        "endpoint": endpoint,
+                        "current_count": current_count,
+                        "limit": limit
+                    }
+                )
+                return True, current_count, limit
+            
+            return False, current_count + 1, limit
+            
+        except Exception as e:
+            logger.error(f"Redis rate limiting error: {e}. Falling back to in-memory.")
+            return await self._is_rate_limited_memory(client_ip, endpoint)
+    
+    async def _is_rate_limited_memory(self, client_ip: str, endpoint: str) -> Tuple[bool, int, int]:
+        """
+        In-memory rate limiting fallback.
         """
         async with self.lock:
             now = datetime.now()

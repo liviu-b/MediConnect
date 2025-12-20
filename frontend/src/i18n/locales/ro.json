@@ -191,6 +191,8 @@
     "weekly": "Săptămânal",
     "monthly": "Lunar",
     "recurrenceEndDate": "Dată Sfârșit",
+    "recurringNote": "Programările vor fi create automat până la această dată",
+    "recurringCreated": "programări recurente create",
     "availableSlots": "Intervale Disponibile",
     "noSlots": "Fără intervale disponibile."
   },
@@ -210,7 +212,7 @@
     "cancelConfirm": "Anulezi programarea cu {{doctor}} pe {{date}} la {{time}}?",
     "keepAppointment": "Păstrează",
     "yesCancel": "Da, Anulează",
-    "colleaguePatient": "pacient coleg",
+    "colleaguePatient": "Pacient al Colegului",
     "limitedView": "Vizualizare limitată",
     "cancellationReason": "Motivul Anulării",
     "reasonPlaceholder": "ex. Urgență Medicală, Medic Indisponibil, Conflict de Program...",

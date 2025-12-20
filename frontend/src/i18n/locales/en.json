@@ -191,6 +191,8 @@
     "weekly": "Weekly",
     "monthly": "Monthly",
     "recurrenceEndDate": "End Date",
+    "recurringNote": "Appointments will be created automatically until this date",
+    "recurringCreated": "recurring appointments created",
     "availableSlots": "Available Slots",
     "noSlots": "No available slots for this date."
   },
@@ -210,7 +212,7 @@
     "cancelConfirm": "Cancel appointment with {{doctor}} on {{date}} at {{time}}?",
     "keepAppointment": "Keep",
     "yesCancel": "Yes, Cancel",
-    "colleaguePatient": "colleague's patient",
+    "colleaguePatient": "Colleague's Patient",
     "limitedView": "Limited view",
     "cancellationReason": "Cancellation Reason",
     "reasonPlaceholder": "e.g., Medical Emergency, Doctor Unavailable, Schedule Conflict...",

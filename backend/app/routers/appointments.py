@@ -9,6 +9,11 @@ from ..schemas.permission import PermissionConstants
 from ..schemas.audit_log import AuditActions
 from ..security import require_auth
 from ..services.notifications import send_notification_email
+from ..services.email import (
+    send_appointment_confirmation_email,
+    send_cancellation_notification_email,
+    send_appointment_reminder_email
+)
 from ..services.permissions import PermissionService
 from ..middleware.permissions import (
     require_permission,
@@ -17,6 +22,86 @@ from ..middleware.permissions import (
 )
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
+
+
+async def create_recurring_appointments(base_appointment, recurrence, user, doctor, clinic):
+    """
+    Create recurring appointments based on the recurrence pattern.
+    
+    Args:
+        base_appointment: The initial appointment
+        recurrence: RecurrencePattern with frequency and end_date
+        user: The patient user object
+        doctor: The doctor document
+        clinic: The clinic document
+    
+    Returns:
+        List of created recurring appointments
+    """
+    import uuid
+    from ..schemas.common import RecurrencePattern
+    
+    recurring_appointments = []
+    current_date = base_appointment.date_time
+    end_date = recurrence.end_date
+    
+    # Limit to maximum 52 occurrences (1 year weekly) to prevent abuse
+    max_occurrences = 52
+    occurrence_count = 0
+    
+    while occurrence_count < max_occurrences:
+        # Calculate next occurrence based on frequency
+        if recurrence.frequency == "daily":
+            current_date = current_date + timedelta(days=1)
+        elif recurrence.frequency == "weekly":
+            current_date = current_date + timedelta(weeks=1)
+        elif recurrence.frequency == "monthly":
+            # Add one month (approximately 30 days, adjust for month boundaries)
+            current_date = current_date + timedelta(days=30)
+        else:
+            break
+        
+        # Stop if we've passed the end date
+        if end_date and current_date > end_date:
+            break
+        
+        # Check if slot is available
+        existing = await db.appointments.find_one({
+            "doctor_id": base_appointment.doctor_id,
+            "date_time": current_date.isoformat(),
+            "status": {"$ne": "CANCELLED"}
+        })
+        
+        if existing:
+            # Skip this slot if already booked
+            continue
+        
+        # Create recurring appointment
+        recurring_apt = Appointment(
+            appointment_id=f"apt_{uuid.uuid4().hex[:12]}",
+            patient_id=user.user_id,
+            patient_name=user.name,
+            patient_email=user.email,
+            patient_phone=user.phone,
+            doctor_id=base_appointment.doctor_id,
+            clinic_id=base_appointment.clinic_id,
+            date_time=current_date,
+            duration=base_appointment.duration,
+            notes=base_appointment.notes,
+            status="SCHEDULED",
+            parent_appointment_id=base_appointment.appointment_id,  # Link to parent
+            recurrence=None  # Recurring appointments don't have their own recurrence
+        )
+        
+        doc = recurring_apt.model_dump()
+        doc['date_time'] = doc['date_time'].isoformat()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.appointments.insert_one(doc)
+        recurring_appointments.append(recurring_apt)
+        occurrence_count += 1
+    
+    return recurring_appointments
 
 
 @router.get("")
@@ -188,15 +273,42 @@ async def create_appointment(data: AppointmentCreate, request: Request):
         doc['recurrence']['end_date'] = doc['recurrence']['end_date'].isoformat()
 
     await db.appointments.insert_one(doc)
+    
+    # Handle recurring appointments
+    recurring_appointments = []
+    if data.recurrence and data.recurrence.frequency != "none":
+        recurring_appointments = await create_recurring_appointments(
+            base_appointment=appointment,
+            recurrence=data.recurrence,
+            user=user,
+            doctor=doctor,
+            clinic=clinic
+        )
 
+    # Send confirmation email to patient
+    send_appointment_confirmation_email(
+        patient_email=user.email,
+        patient_name=user.name,
+        doctor_name=doctor.get('name', 'Unknown'),
+        clinic_name=clinic.get('name', 'Unknown'),
+        appointment_date=apt_datetime.isoformat(),
+        appointment_id=appointment.appointment_id,
+        clinic_address=clinic.get('address')
+    )
+    
+    # Also log notification
     await send_notification_email(
         user_id=user.user_id,
         appointment_id=appointment.appointment_id,
         notification_type="BOOKING_CONFIRMATION",
-        message=f"Your appointment with {doctor['name']} on {apt_datetime.strftime('%B %d, %Y at %H:%M')} has been confirmed."
+        message=f"Your appointment with {doctor['name']} on {apt_datetime.strftime('%B %d, %Y at %H:%M')} has been confirmed." + 
+                (f" ({len(recurring_appointments)} recurring appointments created)" if recurring_appointments else "")
     )
 
-    return appointment
+    return {
+        **appointment.model_dump(),
+        "recurring_count": len(recurring_appointments) if recurring_appointments else 0
+    }
 
 
 @router.put("/{appointment_id}")
@@ -293,6 +405,20 @@ async def cancel_appointment_with_reason(appointment_id: str, data: AppointmentC
             "cancelled_by": user.user_id,
             "cancelled_at": datetime.now(timezone.utc).isoformat()
         }}
+    )
+    
+    # Get doctor and clinic info for email
+    doctor = await db.doctors.find_one({"doctor_id": appointment["doctor_id"]}, {"_id": 0})
+    clinic = await db.clinics.find_one({"clinic_id": appointment["clinic_id"]}, {"_id": 0})
+    
+    # Send cancellation email to patient
+    send_cancellation_notification_email(
+        patient_email=appointment.get("patient_email", ""),
+        patient_name=appointment.get("patient_name", ""),
+        doctor_name=doctor.get("name", "Unknown") if doctor else "Unknown",
+        clinic_name=clinic.get("name", "Unknown") if clinic else "Unknown",
+        appointment_date=appointment.get("date_time", ""),
+        cancellation_reason=data.reason.strip()
     )
 
     return {"message": "Appointment cancelled successfully", "reason": data.reason}

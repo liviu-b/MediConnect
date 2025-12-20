@@ -1,10 +1,38 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from .config import CORS_ORIGINS, CORS_ALLOW_CREDENTIALS, CORS_ALLOW_METHODS, CORS_ALLOW_HEADERS
 from .middleware import setup_error_handlers, RequestValidationMiddleware, setup_rate_limiting
+from .middleware.rate_limiter import rate_limiter
+from .redis_client import redis_client
 import logging
 
 logger = logging.getLogger("mediconnect")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager.
+    Handles startup and shutdown events.
+    """
+    # Startup
+    logger.info("🚀 Starting MediConnect API...")
+    
+    # Initialize Redis
+    await redis_client.initialize()
+    
+    # Connect rate limiter to Redis
+    rate_limiter.redis_client = redis_client
+    
+    logger.info("✅ MediConnect API started successfully")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 Shutting down MediConnect API...")
+    await redis_client.close()
+    logger.info("✅ MediConnect API shutdown complete")
 from .routers import auth as auth_router
 from .routers import clinics as clinics_router
 from .routers import centers as centers_router
@@ -22,7 +50,11 @@ from .routers import access_requests as access_requests_router
 from .routers import invitations as invitations_router
 from .routers import analytics as analytics_router
 
-app = FastAPI(title="MediConnect API", version="2.0.0")
+app = FastAPI(
+    title="MediConnect API",
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # Add CORS middleware FIRST - this is critical for OPTIONS requests
 app.add_middleware(

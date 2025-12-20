@@ -5,6 +5,7 @@ from typing import Optional
 from ..db import db
 from ..schemas.doctor import Doctor, DoctorCreate, DoctorUpdate
 from ..security import require_clinic_admin, get_current_user, require_auth
+from ..services.cache import doctors_cache, cache_invalidate
 
 router = APIRouter(prefix="/doctors", tags=["doctors"])
 
@@ -50,11 +51,21 @@ async def get_doctors(request: Request, clinic_id: Optional[str] = None, locatio
 
 @router.get("/{doctor_id}")
 async def get_doctor(doctor_id: str):
+    # Try to get from cache first
+    cached_doctor = await doctors_cache.get(doctor_id)
+    if cached_doctor:
+        return cached_doctor
+    
+    # Fetch from database
     doctor = await db.doctors.find_one({"doctor_id": doctor_id}, {"_id": 0})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
     clinic = await db.clinics.find_one({"clinic_id": doctor["clinic_id"]}, {"_id": 0})
     doctor["clinic_name"] = clinic.get("name") if clinic else "Unknown"
+    
+    # Cache the result
+    await doctors_cache.set(doctor_id, doctor, ttl=300)
+    
     return doctor
 
 
@@ -181,6 +192,8 @@ async def update_doctor(doctor_id: str, data: DoctorUpdate, request: Request):
     update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     if update_data:
         await db.doctors.update_one({"doctor_id": doctor_id}, {"$set": update_data})
+        # Invalidate cache
+        await doctors_cache.delete(doctor_id)
     return await get_doctor(doctor_id)
 
 
@@ -211,6 +224,8 @@ async def delete_doctor(doctor_id: str, request: Request):
         raise HTTPException(status_code=403, detail="Access denied")
     
     await db.doctors.update_one({"doctor_id": doctor_id}, {"$set": {"is_active": False}})
+    # Invalidate cache
+    await doctors_cache.delete(doctor_id)
     return {"message": "Doctor deactivated successfully"}
 
 
@@ -292,5 +307,7 @@ async def update_doctor_availability(doctor_id: str, data: dict, request: Reques
         {"doctor_id": doctor_id},
         {"$set": {"availability_schedule": validated_schedule}}
     )
+    # Invalidate cache
+    await doctors_cache.delete(doctor_id)
     updated_doctor = await db.doctors.find_one({"doctor_id": doctor_id}, {"_id": 0})
     return updated_doctor

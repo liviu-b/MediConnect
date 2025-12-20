@@ -32,6 +32,8 @@ const CalendarPage = () => {
   const [booking, setBooking] = useState(false);
   const [notes, setNotes] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState('none');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
 
   const isClinicAdmin = user?.role === 'CLINIC_ADMIN';
 
@@ -140,15 +142,33 @@ const CalendarPage = () => {
     if (!selectedSlot) return;
     setBooking(true);
     try {
-      await api.post('/appointments', {
+      const appointmentData = {
         doctor_id: selectedDoctor,
         clinic_id: selectedClinic,
         date_time: selectedSlot.datetime,
         notes: notes || null
-      });
+      };
+
+      // Add recurrence if selected
+      if (recurrenceFrequency !== 'none' && recurrenceEndDate) {
+        appointmentData.recurrence = {
+          frequency: recurrenceFrequency,
+          end_date: recurrenceEndDate
+        };
+      }
+
+      const response = await api.post('/appointments', appointmentData);
+      
+      // Show success message with recurring count if applicable
+      if (response.data.recurring_count > 0) {
+        alert(`${t('notifications.bookingSuccess')} ${response.data.recurring_count} ${t('calendar.recurringCreated')}`);
+      }
+      
       setShowBookingModal(false);
       setNotes('');
       setSelectedSlot(null);
+      setRecurrenceFrequency('none');
+      setRecurrenceEndDate('');
       fetchAppointments();
     } catch (err) {
       console.error('Error booking appointment:', err);
@@ -293,6 +313,37 @@ const CalendarPage = () => {
                         {slot.time}
                       </button>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recurring Appointment Options */}
+              <div className="border-t border-gray-200 pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('calendar.recurringAppointment')}</label>
+                <select
+                  value={recurrenceFrequency}
+                  onChange={(e) => setRecurrenceFrequency(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3"
+                >
+                  <option value="none">{t('calendar.noRecurrence')}</option>
+                  <option value="daily">{t('calendar.daily')}</option>
+                  <option value="weekly">{t('calendar.weekly')}</option>
+                  <option value="monthly">{t('calendar.monthly')}</option>
+                </select>
+
+                {recurrenceFrequency !== 'none' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('calendar.recurrenceEndDate')}</label>
+                    <input
+                      type="date"
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                      min={selectedDate ? selectedDate.toISOString().split('T')[0] : ''}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('calendar.recurringNote')}
+                    </p>
                   </div>
                 )}
               </div>
