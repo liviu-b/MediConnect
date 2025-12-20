@@ -11,8 +11,12 @@ from collections import defaultdict
 from typing import Dict, Tuple, Optional
 import logging
 import asyncio
+import os
 
 logger = logging.getLogger("mediconnect")
+
+# Check if rate limiting is enabled
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 
 
 class RateLimiter:
@@ -219,6 +223,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         Check rate limit before processing request.
         """
+        # Skip rate limiting if disabled (e.g., for testing)
+        if not RATE_LIMIT_ENABLED:
+            return await call_next(request)
+        
         # Skip rate limiting for excluded paths
         if request.url.path in self.excluded_paths:
             return await call_next(request)

@@ -3,12 +3,25 @@ Redis Client Configuration and Connection Pool
 Provides centralized Redis connection management with best practices
 """
 
-import redis.asyncio as redis
-from redis.asyncio.connection import ConnectionPool
 from typing import Optional
 import logging
 import json
-from .config import REDIS_URL, REDIS_ENABLED, REDIS_MAX_CONNECTIONS
+import os
+
+# Try to import redis, but don't fail if not available (for testing)
+try:
+    import redis.asyncio as redis
+    from redis.asyncio.connection import ConnectionPool
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    redis = None
+    ConnectionPool = None
+
+# Get configuration with fallbacks
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_ENABLED = os.getenv("REDIS_ENABLED", "true").lower() == "true" and REDIS_AVAILABLE
+REDIS_MAX_CONNECTIONS = int(os.getenv("REDIS_MAX_CONNECTIONS", "50"))
 
 logger = logging.getLogger("mediconnect")
 
