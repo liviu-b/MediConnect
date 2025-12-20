@@ -50,6 +50,9 @@ from .routers import access_requests as access_requests_router
 from .routers import invitations as invitations_router
 from .routers import analytics as analytics_router
 from .routers import health as health_router
+from .routers import notifications as notifications_router
+from .routers import favorites as favorites_router
+from .routers import health_stats as health_stats_router
 from .middleware import (
     RequestIDMiddleware,
     SecurityHeadersMiddleware,
@@ -126,6 +129,9 @@ app.include_router(locations_router.router, prefix=api_prefix)
 app.include_router(access_requests_router.router, prefix=api_prefix)
 app.include_router(invitations_router.router, prefix=api_prefix)
 app.include_router(analytics_router.router, prefix=api_prefix)
+app.include_router(notifications_router.router, prefix=api_prefix)
+app.include_router(favorites_router.router, prefix=api_prefix)
+app.include_router(health_stats_router.router, prefix=api_prefix)
 
 # Setup error handling and rate limiting middleware (after routers)
 setup_error_handlers(app)

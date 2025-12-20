@@ -262,8 +262,17 @@ const Appointments = () => {
                         <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full">{t('appointments.limitedView')}</span>
                       )}
                     </div>
-                    {(isClinicAdmin || apt.is_own_patient) && apt.patient_email && (
-                      <p className="text-sm text-gray-500">{apt.patient_email}</p>
+                    {(isClinicAdmin || apt.is_own_patient) && (
+                      <>
+                        {apt.patient_email && (
+                          <p className="text-sm text-gray-500">{apt.patient_email}</p>
+                        )}
+                        {apt.patient_phone && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                            <span>📞</span> {apt.patient_phone}
+                          </p>
+                        )}
+                      </>
                     )}
                     <p className="text-sm text-blue-600">{apt.doctor_specialty} - Dr. {apt.doctor_name}</p>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">

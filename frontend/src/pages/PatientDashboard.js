@@ -4,6 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth, api } from '../App';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import MedicalCentersSearch from '../components/MedicalCentersSearch';
+import NotificationBell from '../components/NotificationBell';
+import NotificationsPage from './NotificationsPage';
+import FavoriteDoctorsPage from './FavoriteDoctorsPage';
+import HealthStatsPage from './HealthStatsPage';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -38,7 +42,10 @@ import {
   AlertCircle,
   ArrowLeft,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Bell,
+  Heart,
+  Activity
 } from 'lucide-react';
 
 const PatientDashboard = () => {
@@ -577,6 +584,39 @@ const PatientDashboard = () => {
             </button>
 
             <button
+              onClick={() => changeTab('notifications')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'notifications'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+              <Bell className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{t('notifications.title')}</span>
+            </button>
+
+            <button
+              onClick={() => changeTab('favorites')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'favorites'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+              <Heart className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{t('favorites.title')}</span>
+            </button>
+
+            <button
+              onClick={() => changeTab('health')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'health'
+                ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+              <Activity className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{t('healthStats.title')}</span>
+            </button>
+
+            <button
               onClick={() => changeTab('profile')}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'profile'
                 ? 'bg-gradient-to-r from-blue-600 to-teal-500 text-white'
@@ -617,11 +657,17 @@ const PatientDashboard = () => {
                 {activeTab === 'dashboard' && t('patientDashboard.title')}
                 {activeTab === 'calendar' && t('patientDashboard.myCalendar')}
                 {activeTab === 'clinics' && t('clinics.title')}
+                {activeTab === 'notifications' && t('notifications.title')}
+                {activeTab === 'favorites' && t('favorites.title')}
+                {activeTab === 'health' && t('healthStats.title')}
                 {activeTab === 'profile' && t('patientDashboard.profileSettings')}
               </h1>
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher compact />
+              
+              {/* Notification Bell */}
+              <NotificationBell />
 
               {/* User Profile - Always visible in top right */}
               <div className="relative">
@@ -898,6 +944,15 @@ const PatientDashboard = () => {
           ) : activeTab === 'clinics' ? (
             /* Clinics Tab - Medical Centers Search */
             <MedicalCentersSearch />
+          ) : activeTab === 'notifications' ? (
+            /* Notifications Tab */
+            <NotificationsPage />
+          ) : activeTab === 'favorites' ? (
+            /* Favorite Doctors Tab */
+            <FavoriteDoctorsPage />
+          ) : activeTab === 'health' ? (
+            /* Health Stats Tab */
+            <HealthStatsPage />
           ) : (
             /* Profile Settings Tab - Now includes My History */
             <div className="max-w-6xl mx-auto space-y-4">
