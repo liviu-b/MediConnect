@@ -52,3 +52,4 @@ python-multipart==0.0.20
 pytokens==0.3.0
 pytz==2025.2
 redis==5.0.1
+uvicorn[standard]
