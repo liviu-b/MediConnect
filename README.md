@@ -1387,6 +1387,36 @@ This project is licensed under the MIT License.
 - FastAPI team for the excellent Python framework
 - All contributors and users of MediConnect
 
+## 📊 Production Readiness
+
+### Current Status: 75% Production Ready
+
+For detailed assessment and roadmap, see:
+- **[Production Readiness Audit](PRODUCTION_READINESS_AUDIT.md)** - Comprehensive security and compliance assessment
+- **[Roadmap to Production](ROADMAP_TO_PRODUCTION.md)** - 12-week plan to reach 95% production ready
+- **[Best Practices Guide](BEST_PRACTICES.md)** - Implementation guide for all best practices
+
+### Key Metrics:
+- ✅ **Security**: 70% (Good)
+- ⚠️ **Privacy/GDPR**: 60% (Needs Work)
+- ✅ **Performance**: 85% (Excellent)
+- ✅ **Reliability**: 75% (Good)
+- ⚠️ **Testing**: 40% (Poor)
+- ⚠️ **DevOps/CI/CD**: 30% (Poor)
+
+### Critical Blockers Before Production:
+1. 🔴 **HTTPS/TLS** - Must implement SSL certificates
+2. 🔴 **Data Encryption at Rest** - Encrypt sensitive medical data
+3. 🔴 **GDPR Compliance** - Implement consent management and data rights
+4. 🔴 **Comprehensive Testing** - Achieve 80%+ test coverage
+5. 🔴 **Secrets Management** - Move secrets to secure vault
+
+### Recommended Use Cases (Current State):
+- ✅ Development and testing
+- ✅ Demo and proof-of-concept
+- ✅ Internal non-production environments
+- ❌ **NOT for real patient data** (HIPAA/GDPR violations)
+
 ## 📞 Support
 
 For support, email support@mediconnect.com or open an issue in the repository.
