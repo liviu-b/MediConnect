@@ -49,11 +49,18 @@ from .routers import locations as locations_router
 from .routers import access_requests as access_requests_router
 from .routers import invitations as invitations_router
 from .routers import analytics as analytics_router
+from .routers import health as health_router
+from .middleware.request_id import RequestIDMiddleware
+from .middleware.security_headers import SecurityHeadersMiddleware
+from .middleware.api_versioning import APIVersionMiddleware
 
 app = FastAPI(
     title="MediConnect API",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    description="Modern healthcare appointment scheduling platform with best practices",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Add CORS middleware FIRST - this is critical for OPTIONS requests
@@ -93,8 +100,14 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
+# Add best practices middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(APIVersionMiddleware)
+
 # Include routers
 api_prefix = "/api"
+app.include_router(health_router.router)  # Health checks at root level
 app.include_router(auth_router.router, prefix=api_prefix)
 app.include_router(clinics_router.router, prefix=api_prefix)
 app.include_router(centers_router.router, prefix=api_prefix)
@@ -112,7 +125,7 @@ app.include_router(access_requests_router.router, prefix=api_prefix)
 app.include_router(invitations_router.router, prefix=api_prefix)
 app.include_router(analytics_router.router, prefix=api_prefix)
 
-# Setup middleware (after routers)
+# Setup error handling and rate limiting middleware (after routers)
 setup_error_handlers(app)
 app.add_middleware(RequestValidationMiddleware)
 setup_rate_limiting(app)
