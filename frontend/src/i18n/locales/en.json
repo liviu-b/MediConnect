@@ -597,6 +597,8 @@
     "locationCounty": "County",
     "locationPhone": "Phone",
     "locationEmail": "Email",
+    "emailNote": "Email Contact",
+    "emailInherited": "Email is managed at the organization level. Update it in Medical Center Settings to apply to all locations.",
     "noLocations": "No locations found",
     "createFirst": "Create your first location",
     "subtitle": "Manage your organization's locations",
@@ -606,6 +608,42 @@
     "cityPlaceholder": "e.g., Timișoara",
     "countyPlaceholder": "e.g., Timiș",
     "setPrimary": "Set as primary location"
+  },
+  "analytics": {
+    "title": "Analytics & Reports",
+    "subtitle": "Overview of appointments, patients, and performance metrics",
+    "loading": "Loading analytics...",
+    "noData": "No analytics data available",
+    "timeRange": "Time Range",
+    "days": "Days",
+    "overview": {
+      "totalAppointments": "Total Appointments",
+      "totalPatients": "Active Patients",
+      "newPatients": "New Patients",
+      "totalDoctors": "Active Doctors",
+      "totalLocations": "Locations",
+      "completionRate": "Completion Rate",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "charts": {
+      "appointmentsTrend": "Appointments Trend",
+      "appointmentsByStatus": "Appointments by Status",
+      "appointmentsByLocation": "Appointments by Location",
+      "topDoctors": "Top Doctors",
+      "busiestDays": "Busiest Days of Week",
+      "busiestHours": "Busiest Hours"
+    },
+    "status": {
+      "completed": "Completed",
+      "confirmed": "Confirmed",
+      "scheduled": "Scheduled",
+      "cancelled": "Cancelled"
+    },
+    "metrics": {
+      "appointments": "appointments",
+      "newPatients": "New"
+    }
   },
   "accessRequests": {
     "title": "Access Requests",

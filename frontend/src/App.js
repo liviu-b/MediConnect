@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   UserPlus,
-  MapPin
+  MapPin,
+  BarChart3
 } from "lucide-react";
 import { ChevronDown } from 'lucide-react';
 
@@ -382,11 +383,16 @@ const Layout = ({ children }) => {
     );
   }
 
-  navItems.push({ path: '/clinics', labelKey: 'nav.clinics', icon: Building2 });
+  // Medical Centers - only for non-super-admins (patients browse clinics)
+  // Super admins manage their own locations instead
+  if (!isSuperAdmin) {
+    navItems.push({ path: '/clinics', labelKey: 'nav.clinics', icon: Building2 });
+  }
 
   // Add Super Admin specific items
   if (isSuperAdmin) {
     navItems.push(
+      { path: '/analytics', labelKey: 'analytics.title', icon: BarChart3 },
       { path: '/locations', labelKey: 'locations.manageLocations', icon: MapPin },
       { path: '/access-requests', labelKey: 'nav.accessRequests', icon: UserPlus }
     );
@@ -620,6 +626,7 @@ import PatientDashboard from "./pages/PatientDashboard";
 import AccessRequestSent from "./pages/AccessRequestSent";
 import AccessRequests from "./pages/AccessRequests";
 import Locations from "./pages/Locations";
+import Analytics from "./pages/Analytics";
 import CompleteDoctorProfile from "./pages/CompleteDoctorProfile";
 import { PermissionProvider } from "./contexts/PermissionContext";
 import DashboardRouter from "./components/DashboardRouter";
@@ -760,6 +767,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <Layout><Locations /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <Layout><Analytics /></Layout>
           </ProtectedRoute>
         }
       />

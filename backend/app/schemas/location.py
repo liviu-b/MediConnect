@@ -54,10 +54,10 @@ class LocationCreate(BaseModel):
     city: Optional[str] = None
     county: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[str] = None
     description: Optional[str] = None
     working_hours: Optional[dict] = None
     settings: Optional[dict] = None
+    is_primary: Optional[bool] = False
 
 
 class LocationUpdate(BaseModel):
@@ -67,8 +67,8 @@ class LocationUpdate(BaseModel):
     city: Optional[str] = None
     county: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[str] = None
     description: Optional[str] = None
     working_hours: Optional[dict] = None
     settings: Optional[dict] = None
     is_active: Optional[bool] = None
+    is_primary: Optional[bool] = None

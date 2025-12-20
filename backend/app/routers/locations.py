@@ -72,8 +72,57 @@ async def create_location(data: LocationCreate, request: Request):
     if not user.organization_id:
         raise HTTPException(status_code=404, detail="User is not associated with an organization")
     
+    # Check if location with same name already exists
+    existing = await db.locations.find_one({
+        "organization_id": user.organization_id,
+        "name": data.name,
+        "is_active": True
+    })
+    
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="A location with this name already exists in your organization"
+        )
+    
     # Create location
     location_id = f"loc_{uuid.uuid4().hex[:12]}"
+    
+    # Check if this is the first location (make it primary)
+    location_count = await db.locations.count_documents({
+        "organization_id": user.organization_id,
+        "is_active": True
+    })
+    
+    # If this is the first location OR user explicitly set it as primary
+    is_primary = location_count == 0 or data.is_primary
+    
+    # If user wants to set this as primary, unset other primary locations
+    if data.is_primary and location_count > 0:
+        await db.locations.update_many(
+            {"organization_id": user.organization_id, "is_primary": True},
+            {"$set": {"is_primary": False}}
+        )
+    
+    # Default working hours
+    default_working_hours = {
+        "monday": {"start": "09:00", "end": "17:00"},
+        "tuesday": {"start": "09:00", "end": "17:00"},
+        "wednesday": {"start": "09:00", "end": "17:00"},
+        "thursday": {"start": "09:00", "end": "17:00"},
+        "friday": {"start": "09:00", "end": "17:00"},
+        "saturday": {"start": "10:00", "end": "14:00"},
+        "sunday": None
+    }
+    
+    # Default settings
+    default_settings = {
+        "allow_online_booking": True,
+        "booking_advance_days": 30,
+        "cancellation_hours": 24,
+        "reminder_hours": 24
+    }
+    
     location = Location(
         location_id=location_id,
         organization_id=user.organization_id,
@@ -82,19 +131,32 @@ async def create_location(data: LocationCreate, request: Request):
         city=data.city,
         county=data.county,
         phone=data.phone,
-        email=data.email,
         description=data.description,
-        working_hours=data.working_hours or Location().working_hours,
-        settings=data.settings or Location().settings,
-        is_primary=False
+        working_hours=data.working_hours or default_working_hours,
+        settings=data.settings or default_settings,
+        is_primary=is_primary
     )
     
     location_doc = location.model_dump()
     location_doc['created_at'] = location_doc['created_at'].isoformat()
+    if location_doc.get('updated_at'):
+        location_doc['updated_at'] = location_doc['updated_at'].isoformat()
     
-    await db.locations.insert_one(location_doc)
+    try:
+        await db.locations.insert_one(location_doc)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create location: {str(e)}"
+        )
     
-    return {k: v for k, v in location_doc.items() if k != '_id'}
+    # Return the created location (without _id)
+    created_location = await db.locations.find_one(
+        {"location_id": location_id},
+        {"_id": 0}
+    )
+    
+    return created_location
 
 
 @router.put("/{location_id}")

@@ -573,6 +573,8 @@
     "locationCounty": "Județ",
     "locationPhone": "Telefon",
     "locationEmail": "Email",
+    "emailNote": "Contact Email",
+    "emailInherited": "Email-ul este gestionat la nivel de organizație. Actualizează-l în Setări Centru Medical pentru a se aplica la toate locațiile.",
     "noLocations": "Nu s-au găsit locații",
     "createFirst": "Creează prima ta locație",
     "subtitle": "Gestionează locațiile organizației tale",
@@ -582,6 +584,42 @@
     "cityPlaceholder": "ex. Timișoara",
     "countyPlaceholder": "ex. Timiș",
     "setPrimary": "Setează ca locație principală"
+  },
+  "analytics": {
+    "title": "Analize și Rapoarte",
+    "subtitle": "Prezentare generală a programărilor, pacienților și metrici de performanță",
+    "loading": "Se încarcă analizele...",
+    "noData": "Nu sunt disponibile date de analiză",
+    "timeRange": "Interval de Timp",
+    "days": "Zile",
+    "overview": {
+      "totalAppointments": "Total Programări",
+      "totalPatients": "Pacienți Activi",
+      "newPatients": "Pacienți Noi",
+      "totalDoctors": "Medici Activi",
+      "totalLocations": "Locații",
+      "completionRate": "Rată Finalizare",
+      "completed": "Finalizate",
+      "cancelled": "Anulate"
+    },
+    "charts": {
+      "appointmentsTrend": "Tendință Programări",
+      "appointmentsByStatus": "Programări după Status",
+      "appointmentsByLocation": "Programări după Locație",
+      "topDoctors": "Top Medici",
+      "busiestDays": "Cele Mai Aglomerate Zile",
+      "busiestHours": "Cele Mai Aglomerate Ore"
+    },
+    "status": {
+      "completed": "Finalizate",
+      "confirmed": "Confirmate",
+      "scheduled": "Programate",
+      "cancelled": "Anulate"
+    },
+    "metrics": {
+      "appointments": "programări",
+      "newPatients": "Noi"
+    }
   },
   "accessRequests": {
     "title": "Cereri de Acces",
