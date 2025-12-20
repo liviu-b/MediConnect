@@ -32,6 +32,18 @@ from .rate_limiter import (
     setup_rate_limiting
 )
 
+from .request_id import (
+    RequestIDMiddleware,
+    get_request_id
+)
+
+from .security_headers import SecurityHeadersMiddleware
+
+from .api_versioning import (
+    APIVersionMiddleware,
+    get_api_version
+)
+
 __all__ = [
     # Permissions
     'require_permission',
@@ -57,5 +69,13 @@ __all__ = [
     'RateLimiter',
     'RateLimitMiddleware',
     'rate_limiter',
-    'setup_rate_limiting'
+    'setup_rate_limiting',
+    # Request ID
+    'RequestIDMiddleware',
+    'get_request_id',
+    # Security Headers
+    'SecurityHeadersMiddleware',
+    # API Versioning
+    'APIVersionMiddleware',
+    'get_api_version'
 ]

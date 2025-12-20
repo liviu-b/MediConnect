@@ -50,9 +50,11 @@ from .routers import access_requests as access_requests_router
 from .routers import invitations as invitations_router
 from .routers import analytics as analytics_router
 from .routers import health as health_router
-from .middleware.request_id import RequestIDMiddleware
-from .middleware.security_headers import SecurityHeadersMiddleware
-from .middleware.api_versioning import APIVersionMiddleware
+from .middleware import (
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+    APIVersionMiddleware
+)
 
 app = FastAPI(
     title="MediConnect API",
