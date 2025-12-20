@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-changeme}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-admin123}
       - MONGO_INITDB_DATABASE=${DB_NAME:-mediconnect_db}
     volumes:
       - mongodb_data:/data/db
