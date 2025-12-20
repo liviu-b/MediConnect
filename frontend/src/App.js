@@ -207,7 +207,9 @@ const AuthCallback = () => {
           let redirectPath = '/dashboard';
           if (role === 'USER') {
             redirectPath = '/patient-dashboard';
-          } else if (role === 'DOCTOR' || role === 'ASSISTANT') {
+          } else if (role === 'DOCTOR') {
+            redirectPath = '/doctor-dashboard';
+          } else if (role === 'ASSISTANT') {
             redirectPath = '/staff-dashboard';
           }
 
@@ -481,16 +483,18 @@ const Layout = ({ children }) => {
               let dashboardPath = '/dashboard';
               if (user?.role === 'USER') {
                 dashboardPath = '/patient-dashboard';
-              } else if (user?.role === 'DOCTOR' || user?.role === 'ASSISTANT') {
+              } else if (user?.role === 'DOCTOR') {
+                dashboardPath = '/doctor-dashboard';
+              } else if (user?.role === 'ASSISTANT') {
                 dashboardPath = '/staff-dashboard';
-              } else if (user?.role === 'CLINIC_ADMIN') {
+              } else if (user?.role === 'CLINIC_ADMIN' || user?.role === 'SUPER_ADMIN') {
                 dashboardPath = '/dashboard';
               }
               navigate(dashboardPath, { replace: true });
               setSidebarOpen(false);
             }}
             className={`sidebar-nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl group ${
-              location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard'
+              location.pathname === '/dashboard' || location.pathname === '/staff-dashboard' || location.pathname === '/patient-dashboard' || location.pathname === '/doctor-dashboard'
                 ? 'active bg-gradient-to-r from-blue-500 to-teal-400 text-white shadow-lg shadow-blue-500/50'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
@@ -628,6 +632,7 @@ import AccessRequests from "./pages/AccessRequests";
 import Locations from "./pages/Locations";
 import Analytics from "./pages/Analytics";
 import CompleteDoctorProfile from "./pages/CompleteDoctorProfile";
+import DoctorDashboard from "./pages/DoctorDashboard";
 import { PermissionProvider } from "./contexts/PermissionContext";
 import DashboardRouter from "./components/DashboardRouter";
 
@@ -671,6 +676,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <PatientDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-dashboard"
+        element={
+          <ProtectedRoute>
+            <DoctorDashboard />
           </ProtectedRoute>
         }
       />

@@ -12,7 +12,8 @@ import { Loader2 } from 'lucide-react';
  * - SUPER_ADMIN (multi-location) → /dashboard (global)
  * - SUPER_ADMIN (single-location) → /location/{id}/dashboard
  * - LOCATION_ADMIN → /location/{id}/dashboard
- * - RECEPTIONIST/DOCTOR/ASSISTANT → /staff-dashboard
+ * - DOCTOR → /doctor-dashboard (dedicated doctor interface)
+ * - RECEPTIONIST/ASSISTANT → /staff-dashboard
  * - USER (patient) → /patient-dashboard
  */
 const DashboardRouter = ({ user }) => {
@@ -55,8 +56,11 @@ const DashboardRouter = ({ user }) => {
       } else {
         navigate('/dashboard', { replace: true });
       }
-    } else if (['RECEPTIONIST', 'DOCTOR', 'ASSISTANT'].includes(role)) {
-      // Staff goes to staff dashboard
+    } else if (role === 'DOCTOR') {
+      // Doctors get their own dedicated dashboard
+      navigate('/doctor-dashboard', { replace: true });
+    } else if (['RECEPTIONIST', 'ASSISTANT'].includes(role)) {
+      // Other staff goes to staff dashboard
       navigate('/staff-dashboard', { replace: true });
     } else if (role === 'CLINIC_ADMIN') {
       // Legacy support
