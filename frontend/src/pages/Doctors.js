@@ -250,21 +250,21 @@ const Doctors = () => {
 
       {/* Info Banner - No Doctors */}
       {canManageDoctors && doctors.length === 0 && !loading && (
-        <div className="bg-gradient-to-r from-blue-50 to-teal-50 border border-blue-200 rounded-xl p-6">
-          <div className="flex items-start gap-4">
+        <div className="bg-gradient-to-r from-blue-50 to-teal-50 border border-blue-200 rounded-xl p-6 min-h-[180px]">
+          <div className="flex items-start gap-4 h-full">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <Stethoscope className="w-6 h-6 text-blue-600" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 flex flex-col">
               <h3 className="font-semibold text-blue-900 mb-2 text-lg">
                 {t('doctors.noDoctorsYet') || 'No doctors yet'}
               </h3>
-              <p className="text-sm text-blue-700 mb-4">
+              <p className="text-sm text-blue-700 mb-4 line-clamp-3">
                 {t('doctors.inviteInstructions') || 'To add doctors to your medical center, go to the Staff section and invite them. They will receive an email to set up their profile.'}
               </p>
               <button
                 onClick={() => navigate('/staff')}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors w-fit mt-auto"
               >
                 <UserCog className="w-5 h-5" />
                 {t('doctors.goToStaff') || 'Go to Staff Section'}
@@ -447,14 +447,14 @@ const Doctors = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center min-h-[280px] flex flex-col items-center justify-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {t('doctors.noResults') || 'No doctors found'}
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500 mb-4 max-w-md">
             {t('doctors.noResultsDesc') || 'Try adjusting your search or filters'}
           </p>
           <button

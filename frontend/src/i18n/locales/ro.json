@@ -24,7 +24,8 @@
     "goBack": "Înapoi",
     "next": "Următorul",
     "submit": "Trimite",
-    "required": "Obligatoriu"
+    "required": "Obligatoriu",
+    "clearFilters": "Șterge Filtrele"
   },
   "nav": {
     "dashboard": "Panou",
@@ -325,8 +326,14 @@
   "doctors": {
     "title": "Medici",
     "subtitle": "Gestionează medici",
+    "manageSubtitle": "Gestionează medici",
     "addDoctor": "Adaugă Medic",
     "noDoctors": "Niciun medic găsit",
+    "noDoctorsYet": "Niciun medic încă",
+    "noResults": "Niciun medic găsit",
+    "noResultsDesc": "Ajustează criteriile de căutare",
+    "inviteInstructions": "Mergi la secțiunea Personal și invită medici. Aceștia vor primi un email pentru configurarea profilului.",
+    "goToStaff": "Mergi la Personal",
     "addFirst": "Adaugă primul tău medic",
     "consultation": "{{duration}} min",
     "editDoctor": "Editează Medic",

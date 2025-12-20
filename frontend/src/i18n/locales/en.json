@@ -24,7 +24,8 @@
     "back": "Back",
     "next": "Next",
     "submit": "Submit",
-    "required": "Required"
+    "required": "Required",
+    "clearFilters": "Clear Filters"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -333,10 +334,13 @@
   "doctors": {
     "title": "Doctors",
     "subtitle": "Manage doctors",
+    "manageSubtitle": "Manage doctors",
     "viewSubtitle": "View and manage doctor profiles. To add a new doctor, go to Staff section and send an invitation.",
     "addDoctor": "Add Doctor",
     "noDoctors": "No doctors found",
     "noDoctorsYet": "No doctors yet",
+    "noResults": "No doctors found",
+    "noResultsDesc": "Try adjusting your search or filter criteria",
     "inviteInstructions": "To add doctors to your medical center, go to the Staff section and invite them. They will receive an email to set up their profile.",
     "goToStaff": "Go to Staff Section",
     "addFirst": "Add your first doctor",
