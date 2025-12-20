@@ -1,10 +1,11 @@
 """
 Security Headers Middleware
-Adds security headers to all responses
+Adds comprehensive security headers to all responses
 """
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 import logging
 
 logger = logging.getLogger("mediconnect")
@@ -12,60 +13,84 @@ logger = logging.getLogger("mediconnect")
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
-    Middleware to add security headers to responses.
+    Middleware to add security headers to all responses.
     
-    Best Practices:
-    - Protect against XSS attacks
-    - Prevent clickjacking
-    - Enforce HTTPS
-    - Control content type sniffing
-    - Implement CSP (Content Security Policy)
+    Headers added:
+    - X-Content-Type-Options: Prevent MIME type sniffing
+    - X-Frame-Options: Prevent clickjacking
+    - X-XSS-Protection: Enable XSS filter
+    - Strict-Transport-Security: Force HTTPS
+    - Content-Security-Policy: Control resource loading
+    - Referrer-Policy: Control referrer information
+    - Permissions-Policy: Control browser features
     """
     
+    def __init__(self, app, enable_hsts: bool = False):
+        super().__init__(app)
+        self.enable_hsts = enable_hsts
+    
     async def dispatch(self, request: Request, call_next):
+        """Add security headers to response."""
         response = await call_next(request)
-        
-        # Prevent XSS attacks
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        
-        # Prevent clickjacking
-        response.headers["X-Frame-Options"] = "DENY"
         
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
         
-        # Enforce HTTPS (in production)
-        # Uncomment for production with HTTPS
-        # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        
+        # Enable XSS filter in browsers
+        response.headers["X-XSS-Protection"] = "1; mode=block"
         
         # Content Security Policy
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data: https:; "
-            "font-src 'self' data:; "
-            "connect-src 'self' https:; "
-            "frame-ancestors 'none';"
-        )
+        csp_directives = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ]
+        response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
         
         # Referrer Policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # Permissions Policy (formerly Feature Policy)
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), "
-            "microphone=(), "
-            "camera=(), "
-            "payment=(), "
-            "usb=(), "
-            "magnetometer=(), "
-            "gyroscope=(), "
-            "accelerometer=()"
-        )
+        # Permissions Policy (formerly Feature-Policy)
+        permissions = [
+            "geolocation=()",
+            "microphone=()",
+            "camera=()",
+            "payment=()",
+            "usb=()",
+            "magnetometer=()",
+            "gyroscope=()",
+            "accelerometer=()",
+        ]
+        response.headers["Permissions-Policy"] = ", ".join(permissions)
         
-        # Remove server header (security through obscurity)
-        if "Server" in response.headers:
-            del response.headers["Server"]
+        # HSTS (only in production with HTTPS)
+        if self.enable_hsts:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains; preload"
+            )
+        
+        # Remove server header for security
+        response.headers.pop("Server", None)
         
         return response
+
+
+def setup_security_headers(app, enable_hsts: bool = False):
+    """
+    Add security headers middleware to the application.
+    
+    Args:
+        app: FastAPI application
+        enable_hsts: Enable HSTS (only for production with HTTPS)
+    """
+    app.add_middleware(SecurityHeadersMiddleware, enable_hsts=enable_hsts)
+    logger.info("✅ Security headers middleware registered successfully")

@@ -9,6 +9,9 @@ from ..schemas.clinic import Clinic, ClinicRegistration
 from ..security import hash_password, verify_password, create_session, get_current_user, require_auth
 from ..config import FRONTEND_URL
 from ..services.email import send_password_reset_email
+from ..services.password_policy import password_policy
+from ..services.audit_log import audit_logger, AuditAction
+from ..services.sanitization import sanitizer
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
