@@ -1,7 +1,17 @@
+# --- System files ---
+.DS_Store
+Thumbs.db
+
 # --- IDE and editors ---
 .idea/
 .vscode/
 .qodo
+
+# --- Development tools ---
+chainlit.md
+.chainlit
+.ipynb_checkpoints/
+.ac
 
 # --- Dependencies (Node/JS) ---
 node_modules/
@@ -14,15 +24,6 @@ node_modules/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
-# --- Testing & Reports (Added based on your image) ---
-/coverage
-test_reports/
-test_result.md
-test_specific_scenarios.py
-
-# --- Specific Project Junk (Added based on your image) ---
-.emergent/
 
 # --- Next.js / React Builds ---
 /.next/
@@ -49,6 +50,7 @@ venv/
 .env.test.local
 .env.production.local
 *.env
+.env.prod
 *.env.*
 *token.json*
 *credentials.json*
@@ -62,21 +64,25 @@ yarn-error.log*
 dump.rdb
 admin_dashboard_test.py
 
-# --- System files ---
-.DS_Store
-Thumbs.db
+# --- Testing & Reports ---
+/coverage
+test_reports/
+test_result.md
+test_specific_scenarios.py
 
-# --- Development tools ---
-chainlit.md
-.chainlit
-.ipynb_checkpoints/
-.ac
+# --- Build caches ---
+.cache/
 
 # --- Deployment ---
 .vercel
+/nginx
+/nginx.conf
 
 # --- Data and databases ---
 agenthub/agents/youtube/db
+
+# --- Mobile development ---
+android-sdk/
 
 # --- Archive files and large assets ---
 **/*.zip
@@ -90,20 +96,11 @@ agenthub/agents/youtube/db
 # --- Documentation archive ---
 docs_archive/
 
-# --- Build caches ---
-.cache/
-
-# --- Mobile development ---
-android-sdk/
-
-
 # production deployment
 PRODUCTION_DEPLOYMENT.md
 PRODUCTION_CHECKLIST.md
 docker-compose.prod.yml
 deploy-production.sh
-/nginx
-/nginx.conf
 CLEANUP_SUMMARY.md
 OPTION1_IMPLEMENTATION.md
 STATS_ENDPOINT_FIX.md
