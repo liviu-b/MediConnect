@@ -66,7 +66,7 @@ admin_dashboard_test.py
 
 # --- Testing & Reports ---
 /coverage
-/htmlcov
+htmlcov/
 .coverage
 coverage.xml
 .pytest_cache/
