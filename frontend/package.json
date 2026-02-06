@@ -4,7 +4,7 @@
   "private": true,
   "resolutions": {
     "webpack": "^5.105.0",
-    "webpack-dev-server": "^4.15.2",
+    "webpack-dev-server": "^5.2.3",
     "postcss": "^8.4.31",
     "nth-check": "^2.0.1",
     "lodash": "^4.17.23",
