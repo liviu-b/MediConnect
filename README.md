@@ -2192,4 +2192,4 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains (production only)
 
 ---
 
-**Made with ❤️ by ACL-Smart Software**
+**Made by ACL-Smart Software**
